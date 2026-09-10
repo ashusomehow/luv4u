@@ -1,0 +1,26 @@
+{
+  "name": "luv4u",
+  "version": "3.0.0",
+  "description": "Luv4u — little gifts, big feelings.",
+  "type": "module",
+  "main": "server/worker.mjs",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "pages:deploy": "wrangler pages deploy public",
+    "test": "node --test server/worker.test.mjs"
+  },
+  "keywords": [
+    "gift",
+    "interactive",
+    "birthday",
+    "anniversary",
+    "occasions",
+    "cloudflare-worker"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "wrangler": "^4.131.0"
+  }
+}
