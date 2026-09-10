@@ -13,13 +13,7 @@
     {
       "binding": "DB",
       "database_name": "luv4u",
-      "database_id": "luv4u-d1-placeholder"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA",
-      "bucket_name": "luv4u-media"
+      "database_id": "b96103f6-88e8-4036-a0e7-946425311af3"
     }
   ]
 }
