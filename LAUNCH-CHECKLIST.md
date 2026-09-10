@@ -40,11 +40,11 @@ Track every item from developer verification to live cloud deployment and distri
 - [x] **Remote D1 Database**: Created DB `luv4u` (ID: `b96103f6-88e8-4036-a0e7-946425311af3`). *(Completed).*
 - [x] **Remote Migration Applied**: 7 database tables and indexes created on Cloudflare remote D1. *(Completed).*
 - [x] **Workers.dev Subdomain**: Subdomain `luv4u-gift.workers.dev` registered. *(Completed).*
-- [x] **Live Cloud Deployment**: Deployed to `https://luv4u.luv4u-gift.workers.dev` (Version `06da2c7c-2be3-4116-8dc7-d20be9af33d3`). *(Completed).*
+- [x] **Live Cloud Deployment**: Deployed to clean professional domain **`https://luv4u.pages.dev`** (backed by Cloudflare D1 database). *(Completed).*
 - [x] **Live Smoke Test**:
   - `/api/config`: Returned version 3 and 8 occasions. *(Verified).*
-  - `/robots.txt` & `/sitemap.xml`: Validated. *(Verified).*
-  - Live gift created: `/g/livegift101` with dynamic title `<title>A little gift for World ♡</title>`. *(Verified).*
+  - `/robots.txt` & `/sitemap.xml`: Validated for `https://luv4u.pages.dev`. *(Verified).*
+  - Live gift created: `https://luv4u.pages.dev/g/cleanlove202` with dynamic title `<title>A little gift for Sarah ♡</title>`. *(Verified).*
   - Live reaction reply submitted and retrieved in creator inbox. *(Verified).*
 - [ ] **Custom Domain Attachment (Optional)**: Can be added at any time via Cloudflare Dashboard (*Workers & Pages → luv4u → Settings → Domains & Routes*).
 
@@ -115,7 +115,7 @@ Track every item from developer verification to live cloud deployment and distri
 | **1. Source & Tests Verified** | Developer | **DONE (PASS)** | Git commit `8a410a6`, 5 unit tests pass, browser E2E clean. |
 | **2. Local Server & Schema** | Developer | **DONE (PASS)** | D1 migration executed, worker running on port 8787. |
 | **3. Account & Resources** | Operator | **DONE (PASS)** | Cloudflare authenticated, D1 DB `luv4u` active, migrations applied. |
-| **4. Live Cloud Deployment** | Developer / Operator | **DONE (PASS)** | Deployed to `https://luv4u.luv4u-gift.workers.dev`. |
+| **4. Live Cloud Deployment** | Developer / Operator | **DONE (PASS)** | Deployed to `https://luv4u.pages.dev`. |
 | **5. Mobile & Device Checks** | Operator / Tester | **NEXT STEP** | Test live link on iPhone & Android over cellular/WiFi. |
 | **6. WhatsApp & Sharing Check**| Operator / Tester | **NEXT STEP** | Send link via WhatsApp chat, verify preview card. |
 | **7. 20 Real Gifts Beta** | Operator | **PENDING** | 10–20 real gifts created by invited beta users. |
