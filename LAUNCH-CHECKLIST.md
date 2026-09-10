@@ -8,7 +8,7 @@ Track every item from developer verification to live cloud deployment and distri
 ## 1. Release Gate — Developer
 
 - [x] **Source Files Inventory**: Confirm `public/index.html`, `server/worker.mjs`, `server/occasions.mjs`, `migrations/0001_init.sql`, `wrangler.jsonc`, `package.json`, and tests exist. *(Completed: All 8 core files organized and active).*
-- [x] **Version Control**: Commit verified source to a local Git repository. *(Completed: Initial commit `8a410a6` recorded).*
+- [x] **Version Control & GitHub**: Commit verified source to Git and pushed to private GitHub repository: **[github.com/ashusomehow/luv4u](https://github.com/ashusomehow/luv4u)**. *(Completed).*
 - [x] **Secrets & Local Exclusion**: Exclude `.local/`, `.dev.vars`, secrets, database exports, and `node_modules/`. *(Completed: `.gitignore` configured).*
 - [x] **Automated Regression Suite**: Run API, occasion registry, and D1 operation tests. *(Completed: `server/worker.test.mjs` passed 5/5 tests in 133ms).*
 - [x] **Served Browser Testing**: Test navigation against real served origin `http://127.0.0.1:8787`, not just inline files. *(Completed: End-to-end browser test passed with 0 console errors).*
