@@ -169,6 +169,8 @@ try {
   assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   const link = await page.inputValue('#giftLink');
+  const [qrFile] = await Promise.all([page.waitForEvent('download'), page.click('[data-v2="download-qr"]')]);
+  assert.equal(qrFile.suggestedFilename(), 'gift-qr.png', 'a QR code can be saved for a printed card');
   const shareButtons = await page.locator('#shareView button:visible').allInnerTexts();
   assert.equal(shareButtons.filter(t => /copy link|whatsapp|share artwork|recovery file/i.test(t)).length, 2, `one way per job on the share screen: ${shareButtons}`);
   assert.match(link, /\/g\/[a-f0-9]{24}$/);

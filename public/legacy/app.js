@@ -598,6 +598,20 @@ const opensAtISO=()=>{const v=$('#opensAt')?.value;return v?new Date(v).toISOStr
 const whenText=d=>new Intl.DateTimeFormat(undefined,{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(d);
 function setOpensAt(iso){publishedOpensAt=iso&&Date.parse(iso)>Date.now()?iso:'';const f=$('#opensAt');if(!f)return;f.value=publishedOpensAt?localInput(publishedOpensAt):'';f.dataset.changed='false';$('#clearOpensAt').hidden=!f.value;}
 function opensAtBody(creating){const f=$('#opensAt');if(!f)return {};if(creating)return opensAtISO()?{opensAt:opensAtISO()}:{};return f.dataset.changed==='true'?{opensAt:opensAtISO()||null}:{};}
+/* A printable QR code for the short link, made on the device (the QR library is fetched only when asked for). */
+async function downloadQr(){
+ if(!publishedURL||!publishedGift?.server){toast('A QR code needs the short link, which is not available for this gift.');return;}
+ try{
+  if(!window.qrcode)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='/legacy/qr.js';s.onload=ok;s.onerror=no;document.head.append(s);});
+  const qr=window.qrcode(0,'M');qr.addData(publishedURL);qr.make();
+  const n=qr.getModuleCount(),cell=10,pad=40,size=n*cell+pad*2,c=document.createElement('canvas');c.width=size;c.height=size+84;
+  const x=c.getContext('2d');x.fillStyle='#fffdfa';x.fillRect(0,0,c.width,c.height);x.fillStyle='#432d32';
+  for(let r=0;r<n;r++)for(let q=0;q<n;q++)if(qr.isDark(r,q))x.fillRect(pad+q*cell,pad+r*cell,cell,cell);
+  x.textAlign='center';x.fillStyle='#8d3f51';x.font='italic 28px Georgia';x.fillText('For '+(publishedGift.sharePreview!==false?publishedGift.name:'you'),size/2,size+6);
+  x.fillStyle='#5b4549';x.font='18px Georgia';x.fillText('Point your camera here to open your little gift ♡',size/2,size+44);
+  c.toBlob(blob=>{if(blob)downloadBlob(blob,'gift-qr.png');});
+ }catch{toast('We could not make the QR code. Please try again.');}
+}
 function renderScheduledNote(){
  $('#shareScheduled')?.remove();if(!publishedOpensAt||Date.parse(publishedOpensAt)<=Date.now())return;
  $('.link-wrap').insertAdjacentHTML('afterend',`<p class="share-scheduled" id="shareScheduled">It opens for ${e(publishedGift.name)} on <strong>${e(whenText(new Date(publishedOpensAt)))}</strong>. Until then, anyone with the link sees a “not yet” page.</p>`);
@@ -635,7 +649,7 @@ function installWizard(){
  $('#moreOptions .more-options-body').insertAdjacentHTML('beforeend','<div class="field-gap"><label class="field-label" for="replyPhone">Get replies on WhatsApp <small>Optional</small></label><input class="text-input" type="tel" id="replyPhone" inputmode="tel" maxlength="18" placeholder="Country code + number, e.g. 919876543210"><p class="input-help">Their thank-you can then come straight to your WhatsApp. Your number becomes part of the gift link, so only add one you are happy to share.</p></div>');
  $('#funChoices').insertAdjacentHTML('beforeend','<button type="button" class="surprise-choice" data-fun="gifts" aria-pressed="false"><span>🎁</span>Pick a mystery gift</button>');
  $('#funDetail .detail-body').insertAdjacentHTML('beforeend','<div class="field-gap" id="quizFields" hidden><label class="field-label" for="quizQuestion">Your tiny question <small>Optional</small></label><input class="text-input" id="quizQuestion" maxlength="140" placeholder="Where did we first meet?"><div class="field-gap"><label class="field-label" for="quizAnswer">The right answer</label><input class="text-input" id="quizAnswer" maxlength="80" placeholder="That tiny coffee shop"></div><div class="field-gap"><label class="field-label" for="quizDecoy0">Two playful alternatives <small>Optional</small></label><input class="text-input" id="quizDecoy0" maxlength="80" placeholder="On the moon"><input class="text-input" id="quizDecoy1" maxlength="80" placeholder="In another lifetime" aria-label="Second playful quiz alternative" style="margin-top:8px"></div><p class="input-help">Leave this blank for a ready-made birthday question. Wrong guesses get a friendly hint, never a dead end.</p></div><label class="settings-line"><input type="checkbox" id="branchToggle" checked><span>Let them choose what to open first<small>A tiny choice between their gift and a note, or a trip down memory lane.</small></span></label><label class="settings-line"><input type="checkbox" id="motionToggle" checked><span>A little movement in their room<small>Gentle floating details. Device tilt is always opt-in.</small></span></label>');
- $('#shareView').insertAdjacentHTML('beforeend','<img class="share-cover" id="shareCover" alt="Shareable birthday artwork" hidden><div class="share-extra-actions"><button class="btn btn-secondary btn-small" id="nativeShareGift" data-v2="native-share">More apps ↗</button><button class="btn btn-secondary btn-small" data-v2="download-cover">Save this picture</button></div><p class="share-cover-note">This is the picture people see when you send the link.</p><div class="owner-note" id="ownerNote"></div>');
+ $('#shareView').insertAdjacentHTML('beforeend','<img class="share-cover" id="shareCover" alt="Shareable birthday artwork" hidden><div class="share-extra-actions"><button class="btn btn-secondary btn-small" id="nativeShareGift" data-v2="native-share">More apps ↗</button><button class="btn btn-secondary btn-small" data-v2="download-cover">Save this picture</button><button class="btn btn-secondary btn-small" id="qrGift" data-v2="download-qr">QR code for a card</button></div><p class="share-cover-note">This is the picture people see when you send the link.</p><div class="owner-note" id="ownerNote"></div>');
  $('#creatorView').insertAdjacentHTML('afterend','<main id="myGiftsView" class="view my-gifts-view" hidden><button class="back-link" data-action="home">← Back to the little magic</button><div class="eyebrow" style="margin-top:20px">Your little corner of the internet</div><h1>Gifts you’ve<br><em>put your heart into.</em></h1><p class="my-gifts-intro">No account needed. This browser remembers your gifts. Save each private recovery link to edit from another device. Keep those links just for you.</p><div id="savedGiftList"></div><button class="btn btn-primary" data-action="create">Make another little gift ♡</button></main>');
  document.body.insertAdjacentHTML('beforeend','<dialog class="crop-dialog" id="cropDialog" aria-labelledby="cropTitle"><h2 id="cropTitle">A little closer.</h2><p>Drag to frame your photo, or use the sliders. The original stays safely in your draft.</p><div class="crop-window" id="cropWindow"><img id="cropImage" alt="Photo crop preview" draggable="false"><span class="crop-guides" aria-hidden="true"></span></div><div class="crop-controls"><label>Left / right <input type="range" id="cropX" min="0" max="100" value="50"></label><label>Up / down <input type="range" id="cropY" min="0" max="100" value="50"></label><label>A little zoom <input type="range" id="cropZoom" min="1" max="2" step=".01" value="1"></label></div><div class="crop-actions"><button class="btn btn-secondary btn-small" data-v2="cancel-crop">Keep it as it was</button><button class="btn btn-primary btn-small" data-v2="save-crop">That’s the moment ♡</button></div></dialog>');
  // Copy is descriptive in both connected and standalone mode.
@@ -882,7 +896,7 @@ ${price?`<div class="unlock-price"><strong>${e(price)}</strong><span>one-time ·
 <p class="unlock-loss">${e(savedLossLine())}</p>
 <p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable.</p>`;
  $('#giftLink').value='Your link appears here once it is unlocked';
- for(const id of ['giftLink','copyGiftLink','whatsappGift','downloadGift','nativeShareGift'])if($('#'+id))$('#'+id).disabled=true;
+ for(const id of ['giftLink','copyGiftLink','whatsappGift','downloadGift','nativeShareGift','qrGift'])if($('#'+id))$('#'+id).disabled=true;
  for(const b of $$('[data-v2="native-share"],[data-v2="share-cover"]'))b.disabled=true;
  $('#linkSize').textContent='Locked until unlocked';
  $('.share-privacy').innerHTML='Your gift is saved privately. Keep your private recovery link to edit it or come back to unlock it.';
@@ -1014,6 +1028,7 @@ function bindV2(){
  case'choose-path':choosePath(b.dataset.path);break;case'pick-gift':pickMystery(b);break;case'custom-quiz':customQuiz(b);break;
  case'reveal-quiz':{const right=$('[data-right=true]');if(right){$('#quizHint').textContent='A tiny hint: '+gift.quizAnswer+'. Give it a tap. ♡';}break;}
  case'tilt':toggleTilt();break;case'native-share':nativeShare();break;case'share-cover':shareCover();break;
+ case'download-qr':downloadQr();break;
  case'download-cover':if(coverData){const blob=await (await fetch(coverData)).blob();downloadBlob(blob,'a-little-gift.png');}break;
  case'edit-saved':editSaved(id);break;case'stats':showStats(id);break;case'delete-saved':deleteSaved(id);break;case'send-reply':sendDirectReply(b);break;
  case'copy-recovery':{const entry=libraryCache.find(v=>v.id===id);if(entry?.key)copyText(recoveryURL(entry),'Your private edit link is copied. Keep this one just for you.');break;}

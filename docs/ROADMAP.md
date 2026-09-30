@@ -67,7 +67,7 @@ Order in the product: make gift → full preview → pay → get shareable link.
 
 - [ ] Optional email capture at checkout (edit link, anniversary/birthday reminders → repeat purchases)
 - [x] Scheduled delivery: pick an opening time (up to 120 days ahead); until then the link says "not yet" and reveals nothing
-- [ ] Share formats: WhatsApp message, Instagram Story image, QR code for printed cards
+- [x] Share formats: WhatsApp message, a shareable picture (works for Stories) and a saveable QR code for printed cards. The QR library is fetched only when someone asks for a code
 - [ ] Referral: "give a friend a discount"
 - [ ] Social proof: anonymised counts, testimonials, recipient reactions (with consent)
 - [ ] A/B tests on price, paywall copy and preview length
