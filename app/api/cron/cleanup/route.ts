@@ -10,7 +10,8 @@ const ORPHAN_GRACE_MS = 24 * 60 * 60 * 1000;
 /**
  * Daily housekeeping, triggered by Vercel Cron (which sends CRON_SECRET as a Bearer token):
  *  1. delete expired gifts (rows cascade to views and replies) and their media;
- *  2. delete media folders that never got a gift, e.g. an upload followed by an abandoned publish.
+ *  2. delete media folders that never got a gift, e.g. an upload followed by an abandoned publish;
+ *  3. trim rate-limit hits and old handled abuse reports.
  */
 export const GET = handle(async (request: Request) => {
   const unavailable = requireBackend();
@@ -50,6 +51,11 @@ export const GET = handle(async (request: Request) => {
       }
     }
   }
+
+  // Rate-limit bookkeeping only needs to outlive the longest window (an hour); keep a day.
+  await db.from('rate_hits').delete().lt('at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  // Handled reports are kept for six months as a record, then dropped.
+  await db.from('gift_reports').delete().lt('handled_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
 
   return json({ ok: true, expired: expired?.length ?? 0, orphans });
 });

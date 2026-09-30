@@ -50,6 +50,7 @@
     if (el.closest('#stickyCta')) { send('sticky_cta_clicked'); return; }
     if (el.closest('.price-strip .btn')) { send('price_strip_cta_clicked'); return; }
     if (el.closest('[data-v3="home-demo"]')) { send('demo_opened'); return; }
+    if (el.closest('[data-story="make-your-own"]')) { send('make_your_own_clicked'); return; }
     if (el.closest('[data-v3="unlock"]')) { send('unlock_clicked', { kind: 'panel' }); return; }
     if (el.closest('.unlock-tray-btn')) { send('unlock_clicked', { kind: 'preview_bar' }); return; }
     const pick = el.closest('[data-choose-occasion]');

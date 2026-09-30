@@ -6,6 +6,8 @@ import {
   inDays,
   isUnlocked,
   hashSecret,
+  liveUntilAfter,
+  parseOpensAt,
   ID_PATTERN,
   KEY_PATTERN,
   normalizeGift,
@@ -13,6 +15,7 @@ import {
   resolveCover,
 } from '@/lib/gifts';
 import { ApiError, handle, json, readJson, requireBackend } from '@/lib/http';
+import { LIMITS, rateLimit } from '@/lib/rate-limit';
 import { PAID_LINK_DAYS, paymentsRequired, previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
@@ -25,6 +28,7 @@ interface CreateBody {
   cover?: unknown;
   coverUrl?: unknown;
   expiresDays?: unknown;
+  opensAt?: unknown;
 }
 
 export const POST = handle(async (request: Request) => {
@@ -42,7 +46,8 @@ export const POST = handle(async (request: Request) => {
   const ownerHash = hashSecret(editKey);
 
   // The creator retries with the same id after a network failure; make that idempotent.
-  const existing = await findGift(id);
+  const existing = await findGift(id, { includeRemoved: true });
+  if (existing?.taken_down_at) throw new ApiError(409, 'That gift link is already taken.');
   if (existing) {
     if (existing.owner_hash !== ownerHash) throw new ApiError(409, 'That gift link is already taken.');
     return json({
@@ -51,10 +56,12 @@ export const POST = handle(async (request: Request) => {
       url: `${origin}/g/${id}`,
       revision: existing.revision,
       expiresAt: existing.expires_at,
+      opensAt: existing.opens_at ?? null,
       status: isUnlocked(existing) ? 'paid' : 'preview',
     });
   }
 
+  await rateLimit(request, 'create', LIMITS.create.max, LIMITS.create.window);
   let gift = normalizeGift(body.gift, id);
   gift = await offloadEmbeddedMedia(id, gift);
   gift.coverUrl = await resolveCover(id, body, gift.sharePreview !== false);
@@ -66,15 +73,18 @@ export const POST = handle(async (request: Request) => {
   const locked = paymentsRequired();
   // Paid links live for a fixed period; without payments the creator's choice applies as before.
   const liveDays = locked ? PAID_LINK_DAYS : daysFrom(body.expiresDays);
-  const expiresAt = locked ? inDays(previewTtlDays()) : expiryFrom(liveDays);
+  const opensAt = parseOpensAt(body.opensAt) ?? null;
+  const expiresAt = liveUntilAfter(locked ? inDays(previewTtlDays()) : expiryFrom(liveDays), opensAt);
   const row: Record<string, unknown> = locked
     ? { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt, status: 'preview', live_days: liveDays }
     : { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt };
+  // Only written when used, so this works before the scheduling migration has been applied.
+  if (opensAt) row.opens_at = opensAt;
   const { error } = await supabase().from('gifts').insert(row);
   if (error) {
     if (error.code === '23505') throw new ApiError(409, 'That gift link is already taken.');
     throw error;
   }
 
-  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt, status: locked ? 'preview' : 'paid' });
+  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt, opensAt, status: locked ? 'preview' : 'paid' });
 });

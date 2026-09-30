@@ -33,20 +33,20 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 
 ## Phase 2: Visual polish and motion
 
-- [ ] UI review and design tokens (type scale, spacing, colour, radius) so new screens stay consistent
+- [x] Design tokens and a short design guide (`app/tokens.css`, `docs/DESIGN.md`); older stylesheets map onto the same palette
 - [~] Landing page: demo button beside the main button, trust row, chips, sticky CTA, resume card, price strip (see `docs/CONVERSION-LEVERS.md`). A truly playable demo inside the hero is still to do
 - [x] Panel transitions, micro-interactions and an unlock celebration (CSS + small JS, transform/opacity only, honouring `prefers-reduced-motion`). Recipient-scene effects are unchanged
-- [ ] Performance budget: the 250 KB inline engine is split and lazy-loaded; Lighthouse ≥ 90 on mobile
+- [x] Performance: Lighthouse (mobile settings, local build) Performance 97–99, Accessibility 100, SEO 100 on the home, occasion and idea pages. The fade-in on the first screen was delaying the headline (LCP 3.2 s → 2.4 s) and is gone
 - [ ] Progressive move of the engine from one imperative script to typed React components (creator first)
 
 ## Phase 3: Organic traffic (starts early)
 
 - [x] **Fix duplicate content**: each `/for/<occasion>` page gets its own server-rendered H1, lead, button, intro, journey, tips, example lines, FAQ (with FAQPage/Breadcrumb structured data), internal links and share image
-- [ ] Programmatic long-tail pages: occasion × relationship × intent (for example "birthday website for girlfriend", "apology message for friend", "anniversary gift ideas for husband")
-- [ ] Public example gallery: real demos people can open, each indexable
+- [x] 14 long-tail pages under `/ideas` (person × moment, each with real advice, example lines and FAQ), an index, sitemap entries and links from the occasion pages. More can be added in `lib/ideas.ts`; tests guard uniqueness and depth
+- [x] `/examples`: a sample of every gift people can open (`/#demo=<occasion>`), each explained on an indexable page
 - [ ] Structured data (Product/FAQ/HowTo), per-page Open Graph images, clean sitemap
 - [ ] Blog and templates: gift ideas, message wording, occasion calendars (Valentine's, Raksha Bandhan, Diwali, Mother's Day, and so on)
-- [ ] Recipient-page growth loop: "Make one for someone" CTA on every gift page, plus a small "Made with Luv4u" mark
+- [x] Recipient growth loop: the end screen offers "Make someone else's day", tracked as `make_your_own_clicked`
 - [ ] Search Console and Bing Webmaster setup, index-coverage monitoring: **do this once, after the custom domain is bought** (attach it in Vercel, set `NEXT_PUBLIC_SITE_URL`, redirect the `vercel.app` address, verify a Domain property via DNS, submit `/sitemap.xml`)
 - [ ] Localisation: Hindi and other regional languages
 
@@ -60,25 +60,25 @@ Order in the product: make gift → full preview → pay → get shareable link.
 - [ ] Paywall UX: unlock panel, unlock bar during preview and the ending-scene nudge are built (behind `PAYMENTS_REQUIRED`); UPI-first checkout arrives with Razorpay
 - [ ] Payment success: unlock link, receipt/invoice email, edit-key recovery email
 - [ ] Refund and failed-payment handling; test mode → live mode checklist
-- [ ] Legal pages Razorpay needs for activation: Terms, Privacy, Refund/Cancellation, Contact; GST invoice details
+- [x] Terms, Privacy, Refund/Cancellation and Contact pages (fill in business name, contact email and grievance officer; get them read by a lawyer). GST invoice details are still to do with Razorpay
 - [x] Update all "no payment" copy across landing pages, metadata and README (done, and a test guards it)
 
 ## Phase 5: Growth and retention
 
 - [ ] Optional email capture at checkout (edit link, anniversary/birthday reminders → repeat purchases)
-- [ ] Scheduled delivery ("open at midnight on their birthday")
-- [ ] Share formats: WhatsApp message, Instagram Story image, QR code for printed cards
+- [x] Scheduled delivery: pick an opening time (up to 120 days ahead); until then the link says "not yet" and reveals nothing
+- [x] Share formats: WhatsApp message, a shareable picture (works for Stories) and a saveable QR code for printed cards. The QR library is fetched only when someone asks for a code
 - [ ] Referral: "give a friend a discount"
 - [ ] Social proof: anonymised counts, testimonials, recipient reactions (with consent)
 - [ ] A/B tests on price, paywall copy and preview length
 
 ## Phase 6: Launch readiness
 
-- [ ] Rate limiting and bot protection on create/upload/reply endpoints
-- [ ] Abuse reporting and takedown flow; content moderation policy
-- [ ] Error monitoring and uptime alerts
-- [ ] Backups and a restore drill for Supabase
-- [ ] Load test around a viral spike (a WhatsApp forward can send thousands of visits in an hour)
+- [x] Rate limiting on create, upload, reply and report
+- [x] Abuse reporting and admin takedown; moderation rules in the Terms; runbook in `docs/OPERATIONS.md`
+- [~] `/api/health` and error boundaries are in; add the uptime monitor and (optionally) Sentry: see `docs/OPERATIONS.md`
+- [~] Procedure written (`docs/OPERATIONS.md`); the drill itself needs you
+- [~] `scripts/loadtest.js` (k6) is ready; run it against a Preview deployment
 - [ ] Physical iOS/Android device pass (audio, microphone, tilt, share sheets)
 
 ## Suggested order

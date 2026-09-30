@@ -20,6 +20,8 @@ export const EVENT_NAMES = [
   'sticky_cta_clicked',
   'price_strip_cta_clicked',
   'unlock_clicked',
+  // growth loop: a recipient choosing to make a gift of their own
+  'make_your_own_clicked',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

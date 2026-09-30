@@ -169,6 +169,8 @@ try {
   assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   const link = await page.inputValue('#giftLink');
+  const [qrFile] = await Promise.all([page.waitForEvent('download'), page.click('[data-v2="download-qr"]')]);
+  assert.equal(qrFile.suggestedFilename(), 'gift-qr.png', 'a QR code can be saved for a printed card');
   const shareButtons = await page.locator('#shareView button:visible').allInnerTexts();
   assert.equal(shareButtons.filter(t => /copy link|whatsapp|share artwork|recovery file/i.test(t)).length, 2, `one way per job on the share screen: ${shareButtons}`);
   assert.match(link, /\/g\/[a-f0-9]{24}$/);
@@ -182,6 +184,9 @@ try {
   await rp.goto(link, { waitUntil: 'load' }); await rp.waitForSelector('#experience:not([hidden])');
   assert.equal(await rp.locator('meta[name="robots"]').getAttribute('content'), 'noindex, nofollow');
   assert.equal(await rp.locator('meta[property="og:title"]').getAttribute('content'), 'A little gift for Sarah ♡');
+  // a recipient can report the gift without opening it
+  const reportHref = await rp.locator('#sealGate .report-link').getAttribute('href');
+  assert.equal(reportHref, `/report?gift=${link.split('/g/')[1]}`);
   // the envelope: addressed to the recipient, opened by holding the seal
   assert.match(await rp.locator('#sealGate .seal-address').innerText(), /Sarah/);
   assert.equal(await rp.locator('#storyScroll').evaluate(el => el.inert), true, 'nothing behind the envelope can be reached');
@@ -234,6 +239,48 @@ try {
   assert.match(await page.locator('.media-ask').innerText(), /words only/);
   await page.click('#askSkip'); await page.waitForTimeout(500); await contrast('step 3');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.getByText('My little gifts').first().click();
+
+  // 5b. Legal and report pages exist, say the right things, and the report form works end to end
+  for (const [path, heading] of [['/terms', /Terms of use/], ['/privacy', /Privacy policy/], ['/refund', /Refunds and cancellations/], ['/contact', /Contact/], ['/report', /Report a gift/]]) {
+    const r = await fetch(APP + path); assert.equal(r.status, 200, path); assert.match(await r.text(), heading);
+  }
+  assert.match(await (await fetch(APP + '/sitemap.xml')).text(), /\/terms/);
+  assert.equal((await fetch(APP + '/definitely-not-a-page')).status, 404);
+  { const idea = await (await fetch(APP + '/ideas/birthday-website-for-girlfriend')).text();
+    assert.match(idea, /<h1>A birthday website for your girlfriend/); assert.match(idea, /application\/ld\+json/); assert.match(idea, /href="\/#make=birthday"/);
+    assert.match(await (await fetch(APP + '/sitemap.xml')).text(), /\/ideas\/birthday-website-for-girlfriend/);
+    assert.match(await (await fetch(APP + '/for/birthday-wish')).text(), /Ideas and advice/);
+    assert.equal((await fetch(APP + '/ideas/not-a-real-idea')).status, 404); }
+  assert.equal((await (await fetch(APP + '/api/health')).json()).ok, true);
+  {
+    const gid = link.split('/g/')[1];
+    const rep = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); rep.setDefaultTimeout(15000);
+    await rep.goto(`${APP}/report?gift=${gid}`, { waitUntil: 'load' });
+    assert.match(await rep.inputValue('#rg'), new RegExp(gid));
+    await rep.click('button[type=submit]'); await rep.waitForSelector('.legal-error');
+    await rep.selectOption('#rr', 'harassment'); await rep.fill('#rd', 'e2e check');
+    await rep.click('button[type=submit]'); await rep.waitForSelector('.legal-done');
+    assert.equal((await state()).reports, 1, 'the report reached the database');
+  }
+
+  // 5c. Scheduled delivery: the link says "not yet", with the time and nothing else, until the moment
+  {
+    const sid = 'ab'.repeat(12), skey = 'cd'.repeat(32);
+    const opensAt = new Date(Date.now() + 3 * 3600e3).toISOString();
+    const made = await fetch(`${APP}/api/gifts`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: sid, editKey: skey, gift: { name: 'Zara', occasion: 'love', vibe: 'Romantic', photos: [] }, opensAt }) });
+    assert.equal(made.status, 200);
+    const pub = await (await fetch(`${APP}/api/gifts/${sid}`)).json();
+    assert.deepEqual(Object.keys(pub).sort(), ['opensAt', 'scheduled']);
+    const sp = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); sp.setDefaultTimeout(15000);
+    await sp.goto(`${APP}/g/${sid}`, { waitUntil: 'load' }); await sp.waitForSelector('#errorView:not([hidden])');
+    assert.match(await sp.locator('#errorView h1').innerText(), /Not quite yet/);
+    assert.match(await sp.locator('#errorMessage').innerText(), /opens on/);
+    assert.doesNotMatch(await sp.content(), /Zara/, 'the name is not revealed before it opens');
+    // and the creator has the field
+    await sp.goto(APP + '/#make=love', { waitUntil: 'load' }); await sp.waitForSelector('#recipientName');
+    assert.equal(await sp.locator('#opensAt').getAttribute('type'), 'datetime-local');
+    await fetch(`${APP}/api/gifts/${sid}`, { method: 'DELETE', headers: { authorization: `Bearer ${skey}` } });
+  }
 
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());

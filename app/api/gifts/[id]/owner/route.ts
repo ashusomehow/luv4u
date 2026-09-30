@@ -17,6 +17,7 @@ export const GET = handle(async (request: Request, { params }: { params: Promise
     revision: row.revision,
     url: `${new URL(request.url).origin}/g/${id}`,
     expiresAt: row.expires_at,
+    opensAt: row.opens_at ?? null,
     status: isUnlocked(row) ? 'paid' : 'preview',
   });
 });

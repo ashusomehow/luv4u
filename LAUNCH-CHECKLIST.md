@@ -38,7 +38,16 @@
 - [x] Server-side limits: field lengths, media types and sizes, files per gift, reply length and per-visitor cap
 - [ ] Physical iOS/Android checks: audio, microphone, tilt, sharing
 - [ ] Keyboard and screen-reader pass
-- [ ] Add rate limiting / bot protection before promoting publicly (see `docs/DEPLOYMENT.md`)
+- [x] Rate limiting on create, upload, reply and report (database-backed, fails open): see `docs/OPERATIONS.md`
+- [x] Abuse reporting (`/report`, link on every opening screen) and admin takedown; Terms, Privacy, Refund and Contact pages
+- [x] `/api/health` for uptime monitors; error pages in place
+- [ ] Run `supabase/migrations/0003`, `0004` and `0005` (all safe to run any time, in order)
+- [ ] Set `ADMIN_TOKEN`, `NEXT_PUBLIC_BUSINESS_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_GRIEVANCE_OFFICER` in Vercel
+- [ ] Have a lawyer read Terms, Privacy and Refunds before you take payments
+- [ ] Add an uptime monitor on `/api/health`; set Vercel and Supabase usage alerts
+- [ ] Take a manual database backup and do one restore drill (`docs/OPERATIONS.md`)
+- [ ] Run `scripts/loadtest.js` against a Preview deployment
+- [ ] Send yourself a test report and practise the takedown with `curl` on a throwaway gift
 
 ## 5. Distribution
 

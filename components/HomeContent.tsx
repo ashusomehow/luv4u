@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { JsonLd } from '@/components/JsonLd';
 import { siteUrl } from '@/lib/env';
 import { OCCASION_KEYS, OCCASIONS } from '@/lib/occasions';
@@ -74,6 +75,10 @@ export function HomeContent() {
           ))}
         </ul>
       </nav>
+
+      <p>
+        Not sure yet? <Link href="/examples">Open a sample gift</Link> to see it first, or <Link href="/ideas">browse ideas and example lines</Link> for birthdays, anniversaries, apologies, thank-yous and more.
+      </p>
 
       <section>
         <h2>Questions people ask</h2>

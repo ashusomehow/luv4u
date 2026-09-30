@@ -1,7 +1,7 @@
 // Local stand-in for the Supabase REST + Storage endpoints Luv4u calls, used by the e2e smoke test.
 // Not a full implementation: it supports exactly the queries the app issues.
 import http from 'node:http';
-const tables = { gifts: [], gift_views: [], gift_replies: [], events: [] };
+const tables = { gifts: [], gift_views: [], gift_replies: [], events: [], gift_reports: [], rate_hits: [] };
 const pk = { gifts: 'id' };
 const files = new Map();
 let seq = 1;
@@ -14,7 +14,7 @@ function matchRows(table, params) {
     if (['select', 'order', 'limit', 'on_conflict', 'columns'].includes(k)) continue;
     const [op, ...rest] = v.split('.'); const val = rest.join('.');
     rows = rows.filter(r => op === 'eq' ? String(r[k]) === val : op === 'neq' ? String(r[k]) !== val :
-      op === 'lt' ? String(r[k]) < val : op === 'in' ? val.slice(1, -1).split(',').includes(String(r[k])) : true);
+      op === 'lt' ? String(r[k]) < val : op === 'gte' ? String(r[k]) >= val : op === 'is' ? (val === 'null' ? r[k] == null : r[k] != null) : op === 'in' ? val.slice(1, -1).split(',').includes(String(r[k])) : true);
   }
   return rows;
 }
@@ -93,6 +93,6 @@ http.createServer(async (req, res) => {
     const { prefixes } = JSON.parse(raw.toString()); prefixes.forEach(x => files.delete(x));
     return send(res, 200, prefixes.map(name => ({ name })));
   }
-  if (p === '/__state') return send(res, 200, { gifts: tables.gifts.length, views: tables.gift_views.length, replies: tables.gift_replies.length, events: tables.events.map(e => e.name), files: [...files].map(([k, v]) => [k, v.type, v.bytes.length]) });
+  if (p === '/__state') return send(res, 200, { gifts: tables.gifts.length, views: tables.gift_views.length, replies: tables.gift_replies.length, reports: tables.gift_reports.length, rateHits: tables.rate_hits.length, events: tables.events.map(e => e.name), files: [...files].map(([k, v]) => [k, v.type, v.bytes.length]) });
   send(res, 404, { error: 'mock: unhandled ' + req.method + ' ' + p });
 }).listen(PORT, () => console.log('mock supabase on', PORT));
