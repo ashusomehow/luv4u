@@ -1,11 +1,19 @@
 /* Button and card effects. Colour changes only ever get darker (contrast stays above the tested minimum);
    movement is transform/opacity or a hover-only sheen; everything is off under reduced motion. */
 
-/* ---------- Hero call to action: the button, with "Free preview" underneath in a quieter voice ---------- */
-.hero-cta{align-items:flex-start}
-.cta-main{display:flex;flex-direction:column;align-items:center;gap:9px}
-.cta-free{font-family:var(--serif);font-style:italic;font-size:15px;letter-spacing:.01em;color:#6f5b60}
-@media(max-width:760px){.hero-cta{align-items:center}}
+/* ---------- Hero call to action: a confident button, with "Free preview" set under it between two hairlines ---------- */
+.hero-cta{align-items:flex-start;gap:14px 18px}
+.cta-main{display:flex;flex-direction:column;align-items:stretch;gap:10px;min-width:236px}
+.cta-main .btn{width:100%;min-height:60px;padding:16px 32px;font-size:17px;font-weight:600;letter-spacing:.005em}
+.cta-free{display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--serif);font-style:italic;font-size:16px;letter-spacing:.02em;color:#8d3f51}
+.cta-free::before,.cta-free::after{content:'';flex:1;max-width:44px;height:1px;background:linear-gradient(90deg,transparent,#c99aa4)}
+.cta-free::after{transform:scaleX(-1)}
+.hero-cta .hero-demo{align-self:flex-start;min-height:60px;padding:0 22px}
+@media(max-width:760px){
+  .hero-cta{align-items:center;width:100%}
+  .cta-main{width:100%;max-width:320px}
+  .hero-cta .hero-demo{align-self:center;min-height:48px}
+}
 
 /* ---------- Primary buttons: depth, a light sweep on hover, a soft glow ---------- */
 .btn-primary,.unlock-tray-btn{background:linear-gradient(180deg,#aa5265 0%,#95455a 100%);box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 10px 22px -12px rgba(141,63,81,.75);overflow:visible}
