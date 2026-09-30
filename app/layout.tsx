@@ -7,6 +7,7 @@ import './motion.css';
 import './effects.css';
 import './gift.css';
 import './seo.css';
+import './legal.css';
 
 const DESCRIPTION =
   'Create a little interactive gift for birthdays, love, proposals, apologies, anniversaries and more. Made in minutes, shared with one link.';

@@ -109,3 +109,7 @@
 .upload-zone .icon{width:30px;height:30px;color:#8d3f51}
 .upload-zone small{font-size:13px;font-weight:400;color:#5b4549}
 .or-line{font-size:13px;color:#5b4549}
+
+.footer-links{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px}
+.footer-links a{color:#5b4549;padding:10px 0;text-decoration:none}
+.footer-links a:hover{color:#8d3f51;text-decoration:underline}

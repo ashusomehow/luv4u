@@ -51,3 +51,8 @@
   .reel-item.on .reel-pan{animation:none}
   .fw{animation:none;opacity:1;transform:none}
 }
+
+.report-link{display:inline-block;margin-top:6px;padding:10px 6px;font-size:13px;color:#d9b9bf;text-decoration:underline;text-underline-offset:3px}
+.report-link:hover{color:#fff3e6}
+.report-line{margin:18px 0 0;text-align:center}
+.report-line .report-link{color:#6f5b60}

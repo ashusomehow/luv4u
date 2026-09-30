@@ -182,6 +182,9 @@ try {
   await rp.goto(link, { waitUntil: 'load' }); await rp.waitForSelector('#experience:not([hidden])');
   assert.equal(await rp.locator('meta[name="robots"]').getAttribute('content'), 'noindex, nofollow');
   assert.equal(await rp.locator('meta[property="og:title"]').getAttribute('content'), 'A little gift for Sarah ♡');
+  // a recipient can report the gift without opening it
+  const reportHref = await rp.locator('#sealGate .report-link').getAttribute('href');
+  assert.equal(reportHref, `/report?gift=${link.split('/g/')[1]}`);
   // the envelope: addressed to the recipient, opened by holding the seal
   assert.match(await rp.locator('#sealGate .seal-address').innerText(), /Sarah/);
   assert.equal(await rp.locator('#storyScroll').evaluate(el => el.inert), true, 'nothing behind the envelope can be reached');
@@ -234,6 +237,24 @@ try {
   assert.match(await page.locator('.media-ask').innerText(), /words only/);
   await page.click('#askSkip'); await page.waitForTimeout(500); await contrast('step 3');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.getByText('My little gifts').first().click();
+
+  // 5b. Legal and report pages exist, say the right things, and the report form works end to end
+  for (const [path, heading] of [['/terms', /Terms of use/], ['/privacy', /Privacy policy/], ['/refund', /Refunds and cancellations/], ['/contact', /Contact/], ['/report', /Report a gift/]]) {
+    const r = await fetch(APP + path); assert.equal(r.status, 200, path); assert.match(await r.text(), heading);
+  }
+  assert.match(await (await fetch(APP + '/sitemap.xml')).text(), /\/terms/);
+  assert.equal((await fetch(APP + '/definitely-not-a-page')).status, 404);
+  assert.equal((await (await fetch(APP + '/api/health')).json()).ok, true);
+  {
+    const gid = link.split('/g/')[1];
+    const rep = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); rep.setDefaultTimeout(15000);
+    await rep.goto(`${APP}/report?gift=${gid}`, { waitUntil: 'load' });
+    assert.match(await rep.inputValue('#rg'), new RegExp(gid));
+    await rep.click('button[type=submit]'); await rep.waitForSelector('.legal-error');
+    await rep.selectOption('#rr', 'harassment'); await rep.fill('#rd', 'e2e check');
+    await rep.click('button[type=submit]'); await rep.waitForSelector('.legal-done');
+    assert.equal((await state()).reports, 1, 'the report reached the database');
+  }
 
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());
