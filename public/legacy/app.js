@@ -32,7 +32,7 @@ const OCCASIONS = {
   path:['Light up the room','Make a wish','Open a gift','All the birthday love'],
   fallback:'',finish:'',noteLabel:'A birthday note',extras:'A lovely note, cake, candles and celebration are already included.',
   detailTitle:'A little more birthday magic',share:'a little birthday world',cta:'Make a birthday wish',
-  seo:'Create a personalized birthday wish website with fairy lights, an interactive cake, photos and editable messages. No login or payment.'
+  seo:'Create a personalized birthday wish website with fairy lights, an interactive cake, photos and editable messages.'
  },
  proposal: {
   slug:'romantic-proposal',label:'Romantic proposal',short:'Proposal',symbol:'♡',art:'envelope',vibe:'Romantic',group:'love',

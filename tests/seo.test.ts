@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { HomeContent } from '@/components/HomeContent';
 import { OccasionContent } from '@/components/OccasionContent';
+import { LEGACY_BODY_HTML } from '@/lib/legacy-body';
 import { bodyForOccasion } from '@/lib/legacy-hero';
 import { HERO } from '@/lib/occasion-copy';
 import { OCCASION_KEYS, OCCASIONS } from '@/lib/occasions';
@@ -55,6 +56,17 @@ describe('occasion pages are unique', () => {
   it('makes no claims the product will not keep (price, "free", "unlimited")', () => {
     const text = JSON.stringify(PAGES) + JSON.stringify(HERO);
     expect(text).not.toMatch(/\bfree\b|unlimited|no payment|₹|\$\d|\bINR\b/i);
+  });
+});
+
+describe('landing copy makes no free or no-payment promise', () => {
+  it('has none in the landing markup, the engine or the site description', () => {
+    const layout = fs.readFileSync(path.join(import.meta.dirname, '../app/layout.tsx'), 'utf8');
+    const promise = /no payment|no sign-?up|payment-free|no login or payment/i;
+    expect(LEGACY_BODY_HTML).not.toMatch(promise);
+    expect(engine).not.toMatch(promise);
+    expect(layout).not.toMatch(promise);
+    expect(LEGACY_BODY_HTML).not.toContain('hero-footnote');
   });
 });
 

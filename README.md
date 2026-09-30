@@ -4,7 +4,7 @@
 
 Luv4u turns a name and a feeling into a small, interactive gift website. Start from a warm, illustrated landing page, choose an occasion, and make something the recipient opens a little at a time.
 
-No creator or recipient account. No payment screen. **The recipient’s name is the only required detail.** Every journey works with that name alone; personal messages, photos, memories, audio and extra surprises remain optional.
+No creator or recipient account. **The recipient’s name is the only required detail.** Every journey works with that name alone; personal messages, photos, memories, audio and extra surprises remain optional.
 
 Luv4u is a **Next.js** app written in **TypeScript**, styled with CSS (plus Tailwind for new components), animated with CSS and lightweight JavaScript, storing gifts in **Supabase** (Postgres) and photos/audio in **Supabase Storage**, and hosted on **Vercel**. No external font service or generative API is required.
 
@@ -30,7 +30,7 @@ npm run dev                  # http://localhost:3000
 
 Without Supabase credentials the app still runs in **standalone mode**: you can create, preview, save local drafts and download a gift as a single HTML file. Hosted short links, uploaded media, editing, the private inbox and opening counts switch on automatically once `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set (the frontend reads `/api/config`).
 
-Deploy to Vercel and connect Supabase by following [Deployment](docs/DEPLOYMENT.md). Hosting accounts and any infrastructure charges are separate from the account-free, payment-free gift experience.
+Deploy to Vercel and connect Supabase by following [Deployment](docs/DEPLOYMENT.md). Hosting accounts and any infrastructure charges are separate from the gift experience itself.
 
 ## The eight gifts
 

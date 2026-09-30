@@ -30,7 +30,7 @@ export const OCCASIONS: Record<OccasionKey, Occasion> = {
     vibe: 'Cute',
     title: 'Who’s your birthday person?',
     description: 'A wish, a little cake, and their very own pocket-sized party.',
-    seo: 'Create a personalized birthday wish website with fairy lights, an interactive cake, photos and editable messages. No login or payment.',
+    seo: 'Create a personalized birthday wish website with fairy lights, an interactive cake, photos and editable messages.',
   },
   proposal: {
     slug: 'romantic-proposal',
