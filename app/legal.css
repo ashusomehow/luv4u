@@ -26,3 +26,16 @@
 .legal-center h1{font-family:var(--serif,Georgia,serif);font-weight:400;font-size:clamp(34px,7vw,46px);margin:0 0 10px}
 .legal-center p{color:#5b4549;margin:0 0 22px}
 .legal-center a.legal-cta,.legal-center button{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 26px;border-radius:999px;background:linear-gradient(180deg,#aa5265,#95455a);color:#fffaf5;font-size:16px;font-weight:600;text-decoration:none}
+
+/* Idea pages */
+.idea-crumbs{font-size:14px;color:#5b4549;margin:0 0 14px}
+.idea-cta{display:inline-flex;align-items:center;min-height:52px;padding:0 26px;border-radius:999px;background:linear-gradient(180deg,#aa5265,#95455a);color:#fffaf5!important;font-weight:600;text-decoration:none!important}
+.idea-cta:hover{background:linear-gradient(180deg,#9c4a5d,#853a4d)}
+.idea-grid{display:grid;gap:14px}
+@media(min-width:700px){.idea-grid{grid-template-columns:1fr 1fr}}
+.idea-grid>div{padding:16px 18px;border:1px solid var(--line,#e9dfd8);border-radius:16px;background:#fffdfa}
+.idea-grid h3{font-family:var(--serif,Georgia,serif);font-weight:400;font-size:19px;margin:0 0 6px}
+.idea-grid p{margin:0;font-size:15px;line-height:1.65}
+.idea-faq{display:grid;gap:14px;margin:0}
+.idea-faq dt{font-weight:600}
+.idea-faq dd{margin:4px 0 0}

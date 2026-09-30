@@ -244,6 +244,11 @@ try {
   }
   assert.match(await (await fetch(APP + '/sitemap.xml')).text(), /\/terms/);
   assert.equal((await fetch(APP + '/definitely-not-a-page')).status, 404);
+  { const idea = await (await fetch(APP + '/ideas/birthday-website-for-girlfriend')).text();
+    assert.match(idea, /<h1>A birthday website for your girlfriend/); assert.match(idea, /application\/ld\+json/); assert.match(idea, /href="\/#make=birthday"/);
+    assert.match(await (await fetch(APP + '/sitemap.xml')).text(), /\/ideas\/birthday-website-for-girlfriend/);
+    assert.match(await (await fetch(APP + '/for/birthday-wish')).text(), /Ideas and advice/);
+    assert.equal((await fetch(APP + '/ideas/not-a-real-idea')).status, 404); }
   assert.equal((await (await fetch(APP + '/api/health')).json()).ok, true);
   {
     const gid = link.split('/g/')[1];

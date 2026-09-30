@@ -1,5 +1,6 @@
 import { JsonLd } from '@/components/JsonLd';
 import { siteUrl } from '@/lib/env';
+import { ideasFor } from '@/lib/ideas';
 import { HERO } from '@/lib/occasion-copy';
 import { OCCASIONS, type OccasionKey } from '@/lib/occasions';
 import { PAGES } from '@/lib/seo-content';
@@ -98,6 +99,19 @@ export function OccasionContent({ occasion }: { occasion: OccasionKey }) {
           ))}
         </dl>
       </section>
+
+      {ideasFor(occasion).length > 0 && (
+        <nav aria-label="Ideas and advice">
+          <h2>Ideas and advice</h2>
+          <ul>
+            {ideasFor(occasion).map((idea) => (
+              <li key={idea.slug}>
+                <a href={`/ideas/${idea.slug}`}>{idea.h1}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       <nav aria-label="More little gifts" className="seo-related">
         <h2>More little gifts</h2>
