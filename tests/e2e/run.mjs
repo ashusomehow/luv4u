@@ -155,12 +155,12 @@ try {
   assert.equal(await page.locator('[data-wizard-step]').count(), 3, 'three steps');
   await page.fill('#recipientName', 'Sarah');
   assert.equal(await page.locator('#vibeGrid button:visible').count(), 6, 'mood is chosen on the same screen as the name');
-  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 2: words & photos (no add-or-skip screen)
+  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 2: words & photos (has photos, so nothing is asked)
   assert.equal(await page.locator('#noteDetail').evaluate(el => el.open), true, 'the note is open on arrival');
   assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), false, 'suggestions start collapsed');
   await page.locator('#giftForm .message-templates:not(.compact) .template-heading').first().click();
   assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), true, 'suggestions open on tap');
-  await page.locator('#photosDetail summary').click();
+  assert.equal(await page.locator('#photosDetail').evaluate(el => el.open), true, 'photos are open on arrival, not folded away');
   await page.setInputFiles('#photoUpload', photo); await page.waitForSelector('#photoList > *');
   await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 3: preview & send
   assert.equal(await page.locator('#moreOptions').evaluate(el => el.open), false, 'technical options are tucked away');
@@ -225,7 +225,14 @@ try {
   await contrast('landing');
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForSelector('#recipientName'); await contrast('step 1');
   await page.fill('#recipientName', 'Sarah'); await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 2');
-  await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 3');
+  // words only: leaving step 2 asks once, and skipping is an explicit choice
+  assert.match(await page.locator('#vibeLabel').innerText(), /Pick a look/, 'for a love note the mood only changes colours and sounds, and says so');
+  assert.match(await page.locator('#photosDetail .detail-status').innerText(), /1 photo/, 'the section says what is in it');
+  await page.locator('[data-remove-photo="0"]').click(); await page.waitForTimeout(400);
+  assert.match(await page.locator('#photosDetail .detail-status').innerText(), /Not added yet/, 'and says so when it is empty');
+  await page.click('#wizardNext'); await page.waitForSelector('.media-ask');
+  assert.match(await page.locator('.media-ask').innerText(), /words only/);
+  await page.click('#askSkip'); await page.waitForTimeout(500); await contrast('step 3');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.getByText('My little gifts').first().click();
 
   // 6. Delete removes the gift and its files
@@ -247,7 +254,7 @@ try {
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
   await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');
   await owner.fill('#recipientName', 'Noor');
-  await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.waitForTimeout(500);
+  await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.click('#askSkip'); await owner.waitForTimeout(500);
   assert.match(await owner.locator('#createGiftBtn').innerText(), /Save & continue/, 'the button says what happens next');
   assert.match(await owner.locator('#priceLine').innerText(), /Previewing is free\. You pay ₹99 once/, 'the price is stated before the buyer commits');
   await owner.locator('#moreOptions summary').click();

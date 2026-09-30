@@ -203,3 +203,11 @@ Rule applied: one screen, one way forward per job. Each duplicate found, and wha
 | Recipient reply (standalone file) | "Wrap up my reply", then share, WhatsApp and copy | One best send button (WhatsApp if the sender left a number, else Share, else Copy) and "or copy it instead" |
 
 Still open: the landing page offers the occasion three ways (hero chips, the eight cards lower down, the footer links). The cards and links exist for search engines, so they stay, but the hero picker is the main path.
+
+
+### Mood, and photos that get missed (third pass)
+
+- **Does mood matter?** Measured by opening the same gift with four moods and comparing every scene. For a **birthday** it rewrites every scene's wording. For love, proposal and anniversary it changes **no words**: only an accent colour, the room's little decorations and the music's pitch (anniversary shows no visible colour change either). So for every occasion except birthday it is now offered as a **look** ("Pick a look · Sets the colours and soft sounds") with colour swatches, instead of six cards implying different writing. Birthday keeps "Pick a mood · Sets the words, colours and music". Real per-occasion moods would need new writing for each of the six moods in seven occasions; that is a content project, not a UI fix.
+- **Photos and voice note were easy to miss.** They sat in folded sections. Now: the photo section is open when step 2 opens; the note, photos and voice rows each carry a plain status ("✓ 2 photos", "Not added yet"); and leaving step 2 with no photo and no voice note asks once, "Add something only you have?", with *Add a photo*, *Add a voice note*, or *Continue with words only*. Skipping is now a visible choice, and it is not asked twice.
+- **Bug found and fixed:** the earlier change meant to hide "Preview" on steps 1 and 2 was overridden by older code that re-showed it whenever a name existed. It now really appears only on step 3.
+- The photo upload box was 9–11px grey on cream (failing contrast, never tested while folded). It is now a clear, larger target.
