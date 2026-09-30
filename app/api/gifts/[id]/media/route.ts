@@ -1,5 +1,6 @@
 import { assertId, findGift, hashSecret, KEY_PATTERN, storeDataUri, type MediaKind } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, readJson, requireBackend } from '@/lib/http';
+import { LIMITS, rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,9 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
   const key = bearer(request);
   if (!key || !KEY_PATTERN.test(key)) throw new ApiError(401, 'Missing owner edit key.');
 
-  const existing = await findGift(id);
+  const existing = await findGift(id, { includeRemoved: true });
+  if (existing?.taken_down_at) throw new ApiError(403, 'That gift link is not available.');
+  await rateLimit(request, 'media', LIMITS.media.max, LIMITS.media.window);
   if (existing && existing.owner_hash !== hashSecret(key)) {
     throw new ApiError(403, 'Incorrect edit key or gift not found.');
   }

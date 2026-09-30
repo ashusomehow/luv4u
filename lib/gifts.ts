@@ -35,6 +35,9 @@ export interface GiftRow {
   status?: GiftStatus;
   live_days?: number | null;
   paid_at?: string | null;
+  /** Set when a report led to the gift being removed. The content and media are wiped at that time. */
+  taken_down_at?: string | null;
+  takedown_reason?: string | null;
 }
 
 export const LOCKED_MESSAGE =
@@ -77,11 +80,14 @@ export function isExpired(expiresAt: string | null): boolean {
 
 /* ---------------------------------------------------------------- database */
 
-export async function findGift(id: string): Promise<GiftRow | null> {
+export async function findGift(id: string, options: { includeRemoved?: boolean } = {}): Promise<GiftRow | null> {
   // select('*') keeps reads working even before the status migration has been applied.
   const { data, error } = await supabase().from('gifts').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
-  return data as GiftRow | null;
+  const row = data as GiftRow | null;
+  // A removed gift behaves as if it does not exist, except where a route wants to say "removed".
+  if (row?.taken_down_at && !options.includeRemoved) return null;
+  return row;
 }
 
 /**

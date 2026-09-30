@@ -1,5 +1,6 @@
 import { assertId, findGift, hashSecret, isExpired, isUnlocked } from '@/lib/gifts';
 import { ApiError, handle, json, readJson, requireBackend } from '@/lib/http';
+import { LIMITS, rateLimit } from '@/lib/rate-limit';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,7 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
   const { id } = await params;
   assertId(id);
 
+  await rateLimit(request, 'reply', LIMITS.reply.max, LIMITS.reply.window);
   const body = await readJson<{ visitor?: unknown; reaction?: unknown; message?: unknown }>(request);
   const reaction = String(body?.reaction ?? '').slice(0, 16);
   const message = String(body?.message ?? '').slice(0, 500);

@@ -30,8 +30,9 @@ export const GET = handle(async (_request: Request, { params }: Context) => {
   const { id } = await params;
   assertId(id);
 
-  const row = await findGift(id);
+  const row = await findGift(id, { includeRemoved: true });
   if (!row) throw new ApiError(404, 'Gift not found or has been removed.');
+  if (row.taken_down_at) throw new ApiError(410, 'This gift was removed.');
   if (isExpired(row.expires_at)) throw new ApiError(410, 'This gift has expired.');
   // A preview is visible to its owner only (through the private owner endpoint), never to the public.
   if (!isUnlocked(row)) throw new ApiError(402, LOCKED_MESSAGE);

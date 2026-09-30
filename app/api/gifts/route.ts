@@ -13,6 +13,7 @@ import {
   resolveCover,
 } from '@/lib/gifts';
 import { ApiError, handle, json, readJson, requireBackend } from '@/lib/http';
+import { LIMITS, rateLimit } from '@/lib/rate-limit';
 import { PAID_LINK_DAYS, paymentsRequired, previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
@@ -42,7 +43,8 @@ export const POST = handle(async (request: Request) => {
   const ownerHash = hashSecret(editKey);
 
   // The creator retries with the same id after a network failure; make that idempotent.
-  const existing = await findGift(id);
+  const existing = await findGift(id, { includeRemoved: true });
+  if (existing?.taken_down_at) throw new ApiError(409, 'That gift link is already taken.');
   if (existing) {
     if (existing.owner_hash !== ownerHash) throw new ApiError(409, 'That gift link is already taken.');
     return json({
@@ -55,6 +57,7 @@ export const POST = handle(async (request: Request) => {
     });
   }
 
+  await rateLimit(request, 'create', LIMITS.create.max, LIMITS.create.window);
   let gift = normalizeGift(body.gift, id);
   gift = await offloadEmbeddedMedia(id, gift);
   gift.coverUrl = await resolveCover(id, body, gift.sharePreview !== false);

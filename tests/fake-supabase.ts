@@ -30,6 +30,8 @@ class Query {
   delete() { this.op = 'delete'; return this; }
   eq(column: string, value: unknown) { this.filters.push((r) => r[column] === value); return this; }
   neq(column: string, value: unknown) { this.filters.push((r) => r[column] !== value); return this; }
+  is(column: string, value: null) { this.filters.push((r) => (r[column] ?? null) === value); return this; }
+  gte(column: string, value: string) { this.filters.push((r) => String(r[column]) >= value); return this; }
   lt(column: string, value: string) { this.filters.push((r) => String(r[column]) < value); return this; }
   in(column: string, values: unknown[]) { this.filters.push((r) => values.includes(r[column])); return this; }
   limit(n: number) { this.max = n; return this; }
