@@ -24,9 +24,9 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 
 ## Phase 1: UX research and audit
 
-- [ ] Heuristic review of the full flow on mobile and desktop (most gift traffic arrives from WhatsApp on phones)
-- [ ] Map the funnel and write hypotheses per drop-off point
-- [ ] Usability script and 5-user moderated tests (recruit people who recently gave a gift); record where they hesitate
+- [x] Heuristic review of the full flow on mobile and desktop: see `docs/UX-AUDIT.md`
+- [x] Map the funnel and write hypotheses per drop-off point (in `docs/UX-AUDIT.md`)
+- [ ] 5-user moderated tests: script and note sheet are ready in `docs/UX-AUDIT.md`; the sessions themselves need real people
 - [ ] Redesign the creator: live preview always visible, fewer steps, first preview in under 60 seconds with only a name
 - [ ] Copy pass: benefit-led headlines, remove jargon ("little touches", "vibe"), clear sample gifts
 - [ ] Accessibility pass: keyboard, screen reader, contrast, reduced motion
