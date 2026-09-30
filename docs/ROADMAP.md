@@ -36,7 +36,7 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 - [x] Design tokens and a short design guide (`app/tokens.css`, `docs/DESIGN.md`); older stylesheets map onto the same palette
 - [~] Landing page: demo button beside the main button, trust row, chips, sticky CTA, resume card, price strip (see `docs/CONVERSION-LEVERS.md`). A truly playable demo inside the hero is still to do
 - [x] Panel transitions, micro-interactions and an unlock celebration (CSS + small JS, transform/opacity only, honouring `prefers-reduced-motion`). Recipient-scene effects are unchanged
-- [ ] Performance budget: the 250 KB inline engine is split and lazy-loaded; Lighthouse ≥ 90 on mobile
+- [x] Performance: Lighthouse (mobile settings, local build) Performance 97–99, Accessibility 100, SEO 100 on the home, occasion and idea pages. The fade-in on the first screen was delaying the headline (LCP 3.2 s → 2.4 s) and is gone
 - [ ] Progressive move of the engine from one imperative script to typed React components (creator first)
 
 ## Phase 3: Organic traffic (starts early)

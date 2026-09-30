@@ -119,3 +119,6 @@
 .schedule-row .text-input{flex:1;min-height:48px}
 .schedule-clear{min-height:44px;padding:0 12px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:3px}
 .share-scheduled{margin:14px auto 0;max-width:520px;padding:12px 16px;border-radius:14px;background:#fff6dc;color:#5e4a12;font-size:14px;line-height:1.55;text-align:center}
+
+/* The landing view paints immediately: a fade-in on the first screen delays the headline (the largest paint). */
+main#homeView.view{animation:none}
