@@ -1,4 +1,4 @@
-import { findOwnedGift } from '@/lib/gifts';
+import { findOwnedGift, isUnlocked } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, requireBackend } from '@/lib/http';
 
 export const dynamic = 'force-dynamic';
@@ -17,5 +17,6 @@ export const GET = handle(async (request: Request, { params }: { params: Promise
     revision: row.revision,
     url: `${new URL(request.url).origin}/g/${id}`,
     expiresAt: row.expires_at,
+    status: isUnlocked(row) ? 'paid' : 'preview',
   });
 });

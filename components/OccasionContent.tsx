@@ -32,7 +32,7 @@ export function OccasionContent({ occasion }: { occasion: OccasionKey }) {
   ];
 
   return (
-    <article className="seo-content" aria-labelledby="seo-intro">
+    <section className="seo-content" aria-labelledby="seo-intro">
       <JsonLd data={schema} />
 
       <section>
@@ -112,6 +112,6 @@ export function OccasionContent({ occasion }: { occasion: OccasionKey }) {
           ))}
         </ul>
       </nav>
-    </article>
+    </section>
   );
 }

@@ -38,7 +38,7 @@ export function HomeContent() {
   ];
 
   return (
-    <article className="seo-content" aria-labelledby="seo-home">
+    <section className="seo-content" aria-labelledby="seo-home">
       <JsonLd data={schema} />
 
       <section>
@@ -86,6 +86,6 @@ export function HomeContent() {
           ))}
         </dl>
       </section>
-    </article>
+    </section>
   );
 }

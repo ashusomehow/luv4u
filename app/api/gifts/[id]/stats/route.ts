@@ -1,4 +1,4 @@
-import { findOwnedGift } from '@/lib/gifts';
+import { findOwnedGift, isUnlocked } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, requireBackend } from '@/lib/http';
 import { supabase } from '@/lib/supabase';
 
@@ -38,5 +38,6 @@ export const GET = handle(async (request: Request, { params }: { params: Promise
     reactions: [...totals].map(([reaction, count]) => ({ reaction, count })),
     replies: replies.data ?? [],
     expiresAt: row.expires_at,
+    status: isUnlocked(row) ? 'paid' : 'preview',
   });
 });

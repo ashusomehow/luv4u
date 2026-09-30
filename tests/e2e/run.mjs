@@ -11,6 +11,7 @@ import zlib from 'node:zlib';
 import { chromium } from 'playwright-core';
 
 const APP = 'http://localhost:3100';
+const LOCKED_APP = 'http://localhost:3101'; // same build and database, PAYMENTS_REQUIRED=true
 const MOCK = 'http://localhost:54321';
 const NORMAL_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const children = [];
@@ -48,8 +49,12 @@ try {
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100'], {
     SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP,
   });
+  start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3101'], {
+    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, PAYMENTS_REQUIRED: 'true',
+  });
   await waitFor(`${MOCK}/__state`, 'mock supabase');
   await waitFor(`${APP}/api/config`, 'next server');
+  await waitFor(`${LOCKED_APP}/api/config`, 'next server (payments required)');
 
   const photo = path.join(os.tmpdir(), 'luv4u-e2e.png'); solidPng(photo);
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--no-sandbox'] });
@@ -63,6 +68,15 @@ try {
   assert.equal(await page.locator('.occasion-card').count(), 8, 'eight gift cards');
   await page.goto(APP + '/for/miss-you', { waitUntil: 'load' }); await page.waitForTimeout(800);
   assert.match(await page.title(), /Miss You Website/);
+
+  // 1a. The landing page starts a gift from the first screen (no scrolling to a chooser)
+  await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('.hero-chip');
+  assert.equal(await page.locator('.hero-chip').count(), 8, 'eight occasion chips');
+  const chipBox = await page.locator('.hero-chip').first().boundingBox();
+  assert.ok(chipBox.y < 900, 'chips are in the first screen');
+  assert.doesNotMatch(await page.locator('body').innerText(), /No payment|No sign-up/i, 'no free / no-payment promise');
+  await page.locator('.hero-chip[data-choose-occasion="love"]').click(); await page.waitForSelector('#creatorView:not([hidden])');
+  assert.match(page.url(), /#make=love$/);
 
   // 1b. The raw HTML crawlers get: every /for page is different, with structured data and share image
   const raw = async (p) => (await fetch(APP + p, { headers: { 'user-agent': 'Googlebot/2.1' } })).text();
@@ -86,11 +100,21 @@ try {
   // 2. Create a gift with a photo (uploads go to Storage, then a small JSON publish)
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForTimeout(1000);
   assert.equal(await page.locator('.seo-content').isVisible(), false, 'seo content hidden inside the creator');
+  assert.equal(await page.locator('[data-wizard-step]').count(), 3, 'three steps');
   await page.fill('#recipientName', 'Sarah');
-  for (let i = 0; i < 3; i++) { await page.click('#wizardNext'); await page.waitForTimeout(400); }
+  assert.equal(await page.locator('#vibeGrid button:visible').count(), 6, 'mood is chosen on the same screen as the name');
+  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 2: words & photos (no add-or-skip screen)
+  assert.equal(await page.locator('#noteDetail').evaluate(el => el.open), true, 'the note is open on arrival');
+  assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), false, 'suggestions start collapsed');
+  await page.locator('#giftForm .message-templates:not(.compact) .template-heading').first().click();
+  assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), true, 'suggestions open on tap');
   await page.locator('#photosDetail summary').click();
   await page.setInputFiles('#photoUpload', photo); await page.waitForSelector('#photoList > *');
-  await page.click('#wizardNext'); await page.waitForTimeout(400);
+  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 3: preview & send
+  assert.equal(await page.locator('#moreOptions').evaluate(el => el.open), false, 'technical options are tucked away');
+  assert.equal(await page.locator('#replyPhone').isVisible(), false, 'reply phone number is not in the main flow');
+  assert.equal(await page.locator('#dockPreview').isVisible(), true, 'one preview button in the dock');
+  assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   const link = await page.inputValue('#giftLink');
   assert.match(link, /\/g\/[a-f0-9]{24}$/);
@@ -123,11 +147,74 @@ try {
     assert.ok(events.includes(name), `event ${name} recorded (got ${events.join(',')})`);
   }
 
+  // 5b. Accessibility: no colour-contrast failures on the landing page or any creator step
+  const axeSource = fs.readFileSync('node_modules/axe-core/axe.min.js', 'utf8');
+  const contrast = async (label) => {
+    await page.waitForTimeout(1300); // let entrance animations finish so final colours are measured
+    await page.evaluate(axeSource);
+    const bad = await page.evaluate(async () => (await axe.run(document, { runOnly: ['color-contrast'] })).violations.flatMap(v => v.nodes.map(n => n.target.join(' ').slice(0, 60))));
+    assert.deepEqual(bad, [], `colour contrast on ${label}: ${JSON.stringify(bad)}`);
+  };
+  await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('.hero-chip');
+  // Lower sections fade in as they scroll into view; let them settle so we measure the final colours.
+  for (let y = 0; y <= 7000; y += 700) { await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y); await page.waitForTimeout(120); }
+  await page.waitForTimeout(1200); await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' })); await page.waitForTimeout(300);
+  await contrast('landing');
+  await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForSelector('#recipientName'); await contrast('step 1');
+  await page.fill('#recipientName', 'Sarah'); await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 2');
+  await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 3');
+  await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.getByText('My little gifts').first().click();
+
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());
   await page.getByRole('button', { name: 'Remove gift' }).first().click(); await page.waitForTimeout(1200);
   s = await state();
   assert.equal(s.gifts, 0); assert.equal(s.files.length, 0);
+
+
+  // 7. Preview first, pay after: with payments required a new gift is a private preview
+  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true });
+  const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
+  const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
+  await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');
+  await owner.fill('#recipientName', 'Noor');
+  await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.waitForTimeout(500);
+  assert.match(await owner.locator('#createGiftBtn').innerText(), /Save & continue/, 'the button says what happens next');
+  await owner.locator('#moreOptions summary').click();
+  assert.equal(await owner.locator('#deliverySelect').isVisible(), false, 'no free offline copy is offered');
+  await owner.click('#createGiftBtn'); await owner.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
+  assert.equal(await owner.locator('#unlockPanel').isVisible(), true, 'unlock panel shown');
+  assert.equal(await owner.locator('#copyGiftLink').isDisabled(), true, 'cannot copy a link that does not work yet');
+  assert.equal(await owner.locator('#whatsappGift').isDisabled(), true);
+  assert.equal(await owner.locator('#downloadGift').isDisabled(), true, 'export is locked too');
+  assert.equal(await owner.locator('#previewPublished').isDisabled(), false, 'the owner can still preview');
+  assert.match(await owner.inputValue('#giftLink'), /once it is unlocked/);
+  const saved = await owner.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
+
+  // nobody else can open it, and nothing about it leaks
+  assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 402);
+  const stranger = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); stranger.setDefaultTimeout(15000);
+  await stranger.goto(`${LOCKED_APP}/g/${saved.id}`, { waitUntil: 'load' });
+  await stranger.waitForSelector('#errorView:not([hidden])');
+  assert.match(await stranger.locator('#errorMessage').innerText(), /not unlocked yet/);
+  assert.doesNotMatch(await stranger.title(), /Noor/);
+  assert.doesNotMatch((await stranger.locator('meta[property="og:title"]').getAttribute('content')) ?? '', /Noor/, 'no recipient name in the share preview of a locked gift');
+  assert.doesNotMatch((await stranger.locator('meta[property="og:image"]').getAttribute('content')) ?? '', /\/gifts\//, 'the gift\'s own cover image is not exposed while locked');
+
+  // unlocking is not possible by clicking: no payment provider is connected yet
+  await owner.click('[data-v3="unlock"]');
+  await owner.waitForFunction(() => /Payments are not set up yet/.test(document.querySelector('#toast')?.textContent || ''));
+  assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 402, 'still locked');
+
+  // a verified payment (simulated as the webhook would: the row is marked paid) opens the link
+  const paid = await fetch(`${MOCK}/rest/v1/gifts?id=eq.${saved.id}`, { method: 'PATCH', headers: { 'content-type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString() }) });
+  assert.equal((await paid.json()).length, 1);
+  assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 200, 'the link opens once paid');
+  await stranger.goto(`${LOCKED_APP}/g/${saved.id}`, { waitUntil: 'load' }); await stranger.waitForSelector('#experience:not([hidden])');
+  await owner.click('[data-v3="unlock"]');                                     // owner's screen catches up
+  await owner.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
+  assert.equal(await owner.locator('#copyGiftLink').isDisabled(), false, 'link tools are available after unlocking');
+  assert.match(await owner.inputValue('#giftLink'), /\/g\/[a-f0-9]{24}$/);
 
   assert.deepEqual(errors.filter(e => !/favicon/.test(e)), [], 'no browser errors');
   console.log('e2e smoke passed');

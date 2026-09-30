@@ -23,12 +23,26 @@ export type Gift = Record<string, unknown> & {
   musicSrc?: unknown;
 };
 
+export type GiftStatus = 'preview' | 'paid';
+
 export interface GiftRow {
   id: string;
   owner_hash: string;
   gift: Gift;
   revision: number;
   expires_at: string | null;
+  /** Missing on rows from before the status column existed: those are unlocked. */
+  status?: GiftStatus;
+  live_days?: number | null;
+  paid_at?: string | null;
+}
+
+export const LOCKED_MESSAGE =
+  'This gift is not unlocked yet. If it is for you, ask the sender to finish creating it.';
+
+/** A gift is public only once unlocked. Rows without a status predate payments and are unlocked. */
+export function isUnlocked(row: Pick<GiftRow, 'status'>): boolean {
+  return (row.status ?? 'paid') === 'paid';
 }
 
 export function hashSecret(secret: string): string {
@@ -45,9 +59,16 @@ export function assertId(id: string): void {
   if (!ID_PATTERN.test(id)) throw new ApiError(404, 'Gift not found or has been removed.');
 }
 
+export function daysFrom(days: unknown, fallback = 30): number {
+  return Math.min(Math.max(Math.trunc(Number(days)) || fallback, 1), 365);
+}
+
 export function expiryFrom(days: unknown, fallback = 30): string {
-  const n = Math.min(Math.max(Math.trunc(Number(days)) || fallback, 1), 365);
-  return new Date(Date.now() + n * DAY_MS).toISOString();
+  return new Date(Date.now() + daysFrom(days, fallback) * DAY_MS).toISOString();
+}
+
+export function inDays(days: number): string {
+  return new Date(Date.now() + days * DAY_MS).toISOString();
 }
 
 export function isExpired(expiresAt: string | null): boolean {
@@ -57,13 +78,28 @@ export function isExpired(expiresAt: string | null): boolean {
 /* ---------------------------------------------------------------- database */
 
 export async function findGift(id: string): Promise<GiftRow | null> {
-  const { data, error } = await supabase()
-    .from('gifts')
-    .select('id, owner_hash, gift, revision, expires_at')
-    .eq('id', id)
-    .maybeSingle();
+  // select('*') keeps reads working even before the status migration has been applied.
+  const { data, error } = await supabase().from('gifts').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   return data as GiftRow | null;
+}
+
+/**
+ * Unlocks a preview gift: the public link starts working and the link's lifetime starts now.
+ * Idempotent, so a webhook delivered twice is harmless. Returns the row, or null if unknown.
+ */
+export async function markPaid(id: string): Promise<GiftRow | null> {
+  const row = await findGift(id);
+  if (!row) return null;
+  if (isUnlocked(row)) return row;
+  const paidAt = new Date().toISOString();
+  const { error } = await supabase()
+    .from('gifts')
+    .update({ status: 'paid', paid_at: paidAt, expires_at: inDays(daysFrom(row.live_days)), updated_at: paidAt })
+    .eq('id', id)
+    .eq('status', 'preview');
+  if (error) throw error;
+  return findGift(id);
 }
 
 /** Loads a gift only if `key` is its edit key. Wrong key and missing gift look identical. */

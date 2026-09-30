@@ -1,7 +1,10 @@
 import {
   assertGiftSize,
+  daysFrom,
   expiryFrom,
   findGift,
+  inDays,
+  isUnlocked,
   hashSecret,
   ID_PATTERN,
   KEY_PATTERN,
@@ -10,6 +13,7 @@ import {
   resolveCover,
 } from '@/lib/gifts';
 import { ApiError, handle, json, readJson, requireBackend } from '@/lib/http';
+import { paymentsRequired, previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +51,7 @@ export const POST = handle(async (request: Request) => {
       url: `${origin}/g/${id}`,
       revision: existing.revision,
       expiresAt: existing.expires_at,
+      status: isUnlocked(existing) ? 'paid' : 'preview',
     });
   }
 
@@ -55,14 +60,20 @@ export const POST = handle(async (request: Request) => {
   gift.coverUrl = await resolveCover(id, body, gift.sharePreview !== false);
   assertGiftSize(gift);
 
-  const expiresAt = expiryFrom(body.expiresDays);
-  const { error } = await supabase()
-    .from('gifts')
-    .insert({ id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt });
+  // With payments on, a new gift starts as a private preview that expires if never unlocked, and
+  // remembers how long its link should live once it is. With payments off nothing new is written,
+  // so this also works before the status migration has been applied.
+  const locked = paymentsRequired();
+  const liveDays = daysFrom(body.expiresDays);
+  const expiresAt = locked ? inDays(previewTtlDays()) : expiryFrom(liveDays);
+  const row: Record<string, unknown> = locked
+    ? { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt, status: 'preview', live_days: liveDays }
+    : { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt };
+  const { error } = await supabase().from('gifts').insert(row);
   if (error) {
     if (error.code === '23505') throw new ApiError(409, 'That gift link is already taken.');
     throw error;
   }
 
-  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt });
+  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt, status: locked ? 'preview' : 'paid' });
 });
