@@ -64,6 +64,15 @@ try {
   await page.goto(APP + '/for/miss-you', { waitUntil: 'load' }); await page.waitForTimeout(800);
   assert.match(await page.title(), /Miss You Website/);
 
+  // 1a. The landing page starts a gift from the first screen (no scrolling to a chooser)
+  await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('.hero-chip');
+  assert.equal(await page.locator('.hero-chip').count(), 8, 'eight occasion chips');
+  const chipBox = await page.locator('.hero-chip').first().boundingBox();
+  assert.ok(chipBox.y < 900, 'chips are in the first screen');
+  assert.doesNotMatch(await page.locator('body').innerText(), /No payment|No sign-up/i, 'no free / no-payment promise');
+  await page.locator('.hero-chip[data-choose-occasion="love"]').click(); await page.waitForSelector('#creatorView:not([hidden])');
+  assert.match(page.url(), /#make=love$/);
+
   // 1b. The raw HTML crawlers get: every /for page is different, with structured data and share image
   const raw = async (p) => (await fetch(APP + p, { headers: { 'user-agent': 'Googlebot/2.1' } })).text();
   const [bday, missyou, home] = await Promise.all([raw('/for/birthday-wish'), raw('/for/miss-you'), raw('/')]);
@@ -86,11 +95,21 @@ try {
   // 2. Create a gift with a photo (uploads go to Storage, then a small JSON publish)
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForTimeout(1000);
   assert.equal(await page.locator('.seo-content').isVisible(), false, 'seo content hidden inside the creator');
+  assert.equal(await page.locator('[data-wizard-step]').count(), 3, 'three steps');
   await page.fill('#recipientName', 'Sarah');
-  for (let i = 0; i < 3; i++) { await page.click('#wizardNext'); await page.waitForTimeout(400); }
+  assert.equal(await page.locator('#vibeGrid button:visible').count(), 6, 'mood is chosen on the same screen as the name');
+  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 2: words & photos (no add-or-skip screen)
+  assert.equal(await page.locator('#noteDetail').evaluate(el => el.open), true, 'the note is open on arrival');
+  assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), false, 'suggestions start collapsed');
+  await page.locator('#giftForm .message-templates:not(.compact) .template-heading').first().click();
+  assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), true, 'suggestions open on tap');
   await page.locator('#photosDetail summary').click();
   await page.setInputFiles('#photoUpload', photo); await page.waitForSelector('#photoList > *');
-  await page.click('#wizardNext'); await page.waitForTimeout(400);
+  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 3: preview & send
+  assert.equal(await page.locator('#moreOptions').evaluate(el => el.open), false, 'technical options are tucked away');
+  assert.equal(await page.locator('#replyPhone').isVisible(), false, 'reply phone number is not in the main flow');
+  assert.equal(await page.locator('#dockPreview').isVisible(), true, 'one preview button in the dock');
+  assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   const link = await page.inputValue('#giftLink');
   assert.match(link, /\/g\/[a-f0-9]{24}$/);
@@ -122,6 +141,24 @@ try {
   for (const name of ['page_view', 'creator_opened', 'wizard_next', 'publish_clicked', 'gift_published', 'gift_opened']) {
     assert.ok(events.includes(name), `event ${name} recorded (got ${events.join(',')})`);
   }
+
+  // 5b. Accessibility: no colour-contrast failures on the landing page or any creator step
+  const axeSource = fs.readFileSync('node_modules/axe-core/axe.min.js', 'utf8');
+  const contrast = async (label) => {
+    await page.waitForTimeout(1300); // let entrance animations finish so final colours are measured
+    await page.evaluate(axeSource);
+    const bad = await page.evaluate(async () => (await axe.run(document, { runOnly: ['color-contrast'] })).violations.flatMap(v => v.nodes.map(n => n.target.join(' ').slice(0, 60))));
+    assert.deepEqual(bad, [], `colour contrast on ${label}: ${JSON.stringify(bad)}`);
+  };
+  await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('.hero-chip');
+  // Lower sections fade in as they scroll into view; let them settle so we measure the final colours.
+  for (let y = 0; y <= 7000; y += 700) { await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y); await page.waitForTimeout(120); }
+  await page.waitForTimeout(1200); await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' })); await page.waitForTimeout(300);
+  await contrast('landing');
+  await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForSelector('#recipientName'); await contrast('step 1');
+  await page.fill('#recipientName', 'Sarah'); await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 2');
+  await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 3');
+  await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.getByText('My little gifts').first().click();
 
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());

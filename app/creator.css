@@ -1,0 +1,100 @@
+/* Creator redesign (audit findings F1-F10).
+   Loaded after legacy.css. Rules here refine the gift engine's creator and landing UI:
+   three steps, 44px touch targets, calmer "words & photos" step, plain-language last step. */
+
+/* ---------- Landing: start with an occasion from the first screen (F1) ---------- */
+.hero-picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:22px 0 0;max-width:520px}
+.hero-picker-label{flex-basis:100%;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hero-chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:#fffdfa;color:var(--ink);font-size:14px;text-decoration:none;transition:border-color .2s,background .2s,transform .2s}
+.hero-chip:hover,.hero-chip:focus-visible{border-color:var(--rose);background:#f8ebe8;transform:translateY(-1px)}
+@media(max-width:760px){.hero-picker{justify-content:center;margin-top:20px}.hero-picker-label{text-align:center}}
+@media(prefers-reduced-motion:reduce){.hero-chip{transition:none}.hero-chip:hover,.hero-chip:focus-visible{transform:none}}
+
+/* ---------- Touch targets: at least 44px (F8) ---------- */
+.back-link,.nav-link,.occasion-ribbon button,.wizard-back,.clear-draft,.hero-demo,.btn-quiet,.btn-small,.remove-btn,.media-tools button,.template-heading,.more-options summary{min-height:44px}
+.back-link,.clear-draft,.occasion-ribbon button,.wizard-back{display:inline-flex;align-items:center}
+.wizard-steps button{min-height:44px}
+.round-control{width:44px;height:44px}
+.detail summary{min-height:56px}
+
+/* ---------- Step tracker: three steps, readable ---------- */
+.wizard-steps{font-size:13px}
+.wizard-steps [aria-current=step]{font-weight:600}
+/* On phones only the current step shows its name; the others are numbered (labels stay in aria-label). */
+@media(max-width:760px){
+  .wizard-steps{font-size:13px;gap:8px;max-width:100%}
+  .wizard-steps .step-rule{width:14px;flex:1 1 14px}
+  .wizard-steps button:not([aria-current=step]){font-size:0;gap:0}
+  .wizard-steps button:not([aria-current=step]) i{font-size:13px}
+}
+
+/* ---------- Live card on phones, where the side preview is hidden (F2) ---------- */
+.mini-preview{display:none}
+@media(max-width:760px){
+  .mini-preview:not([hidden]){display:flex;align-items:center;gap:12px;margin:0 0 22px;padding:10px 10px 10px 12px;background:#fffdfa;border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 26px -20px rgba(67,45,50,.55)}
+  .mini-art{flex:none;width:48px;height:48px;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:var(--blush);color:var(--rose);font-family:var(--serif);font-size:24px}
+  .mini-art img{width:100%;height:100%;object-fit:cover}
+  .mini-copy{flex:1;min-width:0;display:flex;flex-direction:column;font-size:13px;line-height:1.35;color:var(--muted)}
+  .mini-copy strong{color:var(--ink);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-copy span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+
+/* ---------- Step 1: name, then mood, on one screen (F5) ---------- */
+.wizard-panel[data-step="0"] .form-section+.form-section{margin-top:26px}
+.vibe-grid{gap:10px}
+
+/* ---------- Step 2: words and photos (F3) ---------- */
+#touchesEditor .personalization{margin-top:6px}
+/* Suggested wording stays out of the way until asked for. */
+#giftForm .message-templates:not(.compact) .template-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;border-radius:12px}
+#giftForm .message-templates:not(.compact) .template-heading:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+#giftForm .message-templates:not(.compact) .template-heading::after{content:'';flex:none;width:8px;height:8px;margin:0 4px 0 2px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+#giftForm .message-templates.open .template-heading::after{transform:rotate(-135deg)}
+#giftForm .message-templates:not(.compact):not(.open) .template-options,
+#giftForm .message-templates:not(.compact):not(.open) .template-hint{display:none}
+.more-touches>.detail-body{padding:0 0 4px 14px;border-left:2px solid var(--blush);margin-left:14px}
+.more-touches .detail{border-bottom:0}
+
+/* ---------- Step 3: preview and send, in plain language (F6) ---------- */
+.more-options{margin:22px 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.more-options summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:15px;color:var(--ink)}
+.more-options summary::-webkit-details-marker{display:none}
+.more-options[open] .detail-chevron{transform:rotate(180deg)}
+.more-options-body{padding:4px 0 18px}
+.more-options-body .quiet-field,.more-options-body .field-gap{margin-top:16px}
+.more-options select{min-height:48px}
+
+/* ---------- Full-screen preview: room for the controls (F9) ---------- */
+.preview-banner{font-size:12px}
+.preview-banner button{font-size:13px;min-height:44px;padding:0 14px}
+@media(max-width:760px){
+  .preview-banner{left:16px;transform:none;top:max(16px,env(safe-area-inset-top));padding:4px;font-size:0;gap:0}
+  .preview-banner button{font-size:13px}
+}
+
+/* ---------- Phones: get to the first field sooner (F7) ---------- */
+@media(max-width:760px){
+  .creator .creator-head .eyebrow{display:none}
+  .creator{margin-top:12px}
+  .back-link{margin-bottom:6px}
+  .occasion-ribbon{padding:2px 0 12px;margin-bottom:14px}
+  .wizard-steps{margin:0 0 18px}
+}
+/* The occasion name is already in the ribbon above; don't repeat it on the last step. */
+.v3-occasion-review{display:none}
+
+/* Suggestion heading: one line, label + chevron */
+#giftForm .message-templates:not(.compact) .template-heading strong{flex:1}
+#giftForm .message-templates:not(.compact) .template-vibe{display:none}
+
+/* One preview button per screen: the dock has it, so the side panel doesn't repeat it. */
+.preview-aside .btn-quiet{display:none}
+
+/* Remaining small touch targets */
+.site-header .nav-link,.site-header .pill-link,.nav-link,.pill-link{min-height:44px}
+.hero-art button{min-height:44px;padding-left:14px;padding-right:14px}
+footer a{display:inline-flex;align-items:center;min-height:44px}
+.choice-pill{min-height:44px}
+.wizard-steps button{min-width:44px;justify-content:center}
+.settings-line{min-height:44px}
+input[type=range]{min-height:44px}

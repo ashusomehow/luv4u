@@ -27,9 +27,9 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 - [x] Heuristic review of the full flow on mobile and desktop: see `docs/UX-AUDIT.md`
 - [x] Map the funnel and write hypotheses per drop-off point (in `docs/UX-AUDIT.md`)
 - [ ] 5-user moderated tests: script and note sheet are ready in `docs/UX-AUDIT.md`; the sessions themselves need real people
-- [ ] Redesign the creator: live preview always visible, fewer steps, first preview in under 60 seconds with only a name
-- [ ] Copy pass: benefit-led headlines, remove jargon ("little touches", "vibe"), clear sample gifts
-- [ ] Accessibility pass: keyboard, screen reader, contrast, reduced motion
+- [x] Redesign the creator: three steps, occasion chips on the first screen, compact live card on phones, first preview in about 12 seconds with only a name (scripted). Desktop side preview still generic: see `docs/UX-AUDIT.md`
+- [ ] Copy pass: step names and internal jargon done; benefit-led headlines and sample gifts still to do, then validate wording with real users
+- [ ] Accessibility pass: contrast and tap targets done and guarded by tests; keyboard, screen-reader and reduced-motion review still to do
 
 ## Phase 2: Visual polish and motion
 

@@ -147,3 +147,43 @@ Severity: **High** = likely costs completions; **Medium** = hurts clarity or tru
 **Success looks like:** at least 4 of 5 reach a preview without help in under 3 minutes, at least 4 of 5 say they would send it, and no screen produces the same confusion in 3 or more sessions. Any issue that hits 3 of 5 goes to the top of task 1b.
 
 **Recruiting tip:** pay participants with a coffee-voucher-sized thank-you and ask about their real gift plans; avoid asking leading questions such as "Did you like the animation?"
+
+## After the redesign (task 1b)
+
+Re-measured with the same scripts on the same phone (390×844). "Before" is the audit above.
+
+| Measure | Before | After |
+| --- | --- | --- |
+| Steps in the creator | 4, plus an extra "add or skip" screen | **3** (name + mood together; no add-or-skip screen) |
+| Occasions reachable from the first screen | 0 (main button only scrolled) | **8 chips in the first screen** |
+| Colour-contrast failures (axe) | 35 on landing, 7–24 per creator step | **0** on landing and every creator step, enforced in the e2e test |
+| Text under 12 px | 41 on landing, 16–86 per creator screen | **8 on landing, 2–15 per creator screen** (what remains is small print and art) |
+| Controls under 44 px | 9 landing, 7–16 per creator screen | **1 landing, 0–2 per creator screen** (the invisible skip link; two checkboxes whose whole label row is tappable; one 40 px text link) |
+| Words & photos step height | 2,372 px, 63 controls | **1,624 px, 52 controls** (with the note open) |
+| Horizontal scroll on phone | none | none (the new 3-step tracker was checked for overflow) |
+| Preview buttons on one screen | 2–3 | **1** |
+| Internal wording ("gift postbox", "stored on the gift server") | shown | **removed** |
+| Phone number field | inside the letter section | **under More options on the last step** |
+
+### What changed, by finding
+
+| Finding | What shipped |
+| --- | --- |
+| F1 main button only scrolls | Occasion chips in the first screen; one label ("Choose a gift" / "Make a gift") for the action |
+| F2 no live preview | Compact live card on phones (name, mood, note excerpt, first photo) on step 2; desktop keeps the side preview. **Not yet done:** the desktop side preview still shows a generic illustration that only reflects the name |
+| F3 touches overload | No add-or-skip screen; note open on arrival; suggestions collapsed; memories/soundtrack/games/final under "More"; phone number moved |
+| F4 contrast and text size | Darker muted colour and text greys (text only), 12 px minimum in the creator and landing UI, guarded by an automated check |
+| F5 four steps | Name and mood on one screen; three steps in total |
+| F6 jargon | "Link type", "Keep the link live for", "Show their name in link previews", all under a collapsed "More options" |
+| F7 crowded phone header | Eyebrow hidden and spacing tightened on phones; the step tracker shows only the current step's name |
+| F8 tap targets | 44 px minimum on links, buttons, steps, pills and the round preview controls |
+| F9 preview bar | "Back to editing" is a clear 44 px button on the left; controls no longer collide |
+| F10 vocabulary | "Name & mood", "Words & photos", "Preview & send", "Pick a mood". The warm phrasing stays in headings and captions. Still to validate with real users |
+| F13 landmark | SEO content is now a labelled region |
+
+### Still open
+
+- F11: the paywall moment (tasks 8 and 9). Step 3 is laid out to hold a price and pay button under the preview.
+- Desktop side preview: reflect the typed note and first photo.
+- The real usability sessions above, especially the "would you pay, and how much" questions.
+- Real-device checks (keyboard behaviour with the name field on small phones; performance on a budget Android phone).

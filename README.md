@@ -49,17 +49,17 @@ All retain the two-stage **“Click to light up”** opening, warm lighting, roo
 
 ## Creator journey
 
-**Landing → choose a gift → their name → the feeling → Little touches: add or skip → review/preview → create → share.**
+**Landing (pick an occasion from the first screen) → 1. Name & mood → 2. Words & photos → 3. Preview & send → create → share.**
 
-The landing’s main action introduces the occasion chooser before entering the builder. A small selected-gift ribbon, matching preview illustration and chapter outline keep the choice visible throughout creation. “Change gift” returns to the chooser; each occasion keeps its own local draft so changing direction does not mix one person’s words with another gift.
+The landing page shows eight occasion chips in its first screen; each starts that gift directly. A small selected-gift ribbon and (on desktop) a side preview keep the choice visible while creating. “Change gift” returns to the chooser; each occasion keeps its own local draft so changing direction does not mix one person’s words with another gift.
 
-The existing four-stage builder is retained. Six familiar vibes remain available: Romantic, Cute, Funny, Emotional, Crazy and Elegant. The apology flow offers only Emotional and Elegant and enforces that restriction when importing or publishing data.
+Creating takes three steps: **Name & mood** (six moods, with a sensible default per occasion; the apology flow offers only Emotional and Elegant and enforces that when importing or publishing data), **Words & photos** (everything optional), and **Preview & send**. On phones a compact live card on step 2 reflects the note and first photo. The audit behind this design is in [UX audit](docs/UX-AUDIT.md).
 
-### Little touches cannot disappear into the flow
+### Little touches stay optional, and easy to find
 
-The feeling step explicitly says **“Next: little touches.”** Before review or publishing, the creator sees what extras exist and chooses **Add little touches** or **Skip for now**. A direct shortcut opens a specific addition. Jumping ahead does not bypass the choice, and skipping does not erase already-added content.
+Step 2 opens on the note, followed by photos and voice; memories, a soundtrack, a playful surprise and a final surprise sit under **More little touches**. Suggested wording is collapsed behind a tap on its heading. Skipping never erases what was already added: “Preview & send” is always available.
 
-Every occasion has a complete name-only fallback. The additional proposal question, love reasons, gratitude flowers, anniversary date, milestone and reunion chapter are offered here rather than becoming required setup fields.
+Every occasion has a complete name-only fallback. The additional proposal question, love reasons, gratitude flowers, anniversary date, milestone and reunion chapter are offered here rather than becoming required setup fields. Technical choices (link type, expiry, name in link previews, WhatsApp reply number) are under **More options** on step 3.
 
 ### Editable words, without the blank-page problem
 
