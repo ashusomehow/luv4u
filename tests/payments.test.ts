@@ -70,14 +70,14 @@ describe('with payments required', () => {
   });
 
   it('advertises the requirement', async () => {
-    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 149, linkDays: 365 });
+    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 99, linkDays: 365 });
   });
 
   it('takes the price from PAYMENT_PRICE_INR and falls back to the default for nonsense', async () => {
     process.env.PAYMENT_PRICE_INR = '199';
     expect((await (await getConfig()).json()).payments.priceInr).toBe(199);
     process.env.PAYMENT_PRICE_INR = 'free';
-    expect((await (await getConfig()).json()).payments.priceInr).toBe(149);
+    expect((await (await getConfig()).json()).payments.priceInr).toBe(99);
     delete process.env.PAYMENT_PRICE_INR;
   });
 

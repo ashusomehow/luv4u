@@ -6,11 +6,11 @@ Decisions, evidence and design for turning a finished preview into a purchase.
 
 | | |
 | --- | --- |
-| **Price** | **₹149**, one time, for any of the eight gifts. No subscription. |
+| **Price** | **₹99**, one time, for any of the eight gifts. No subscription. |
 | **Included** | A private link only the recipient gets; the link stays live for a full year; their reply comes to you privately; you can edit the gift any time on the same link. |
 | **Free** | Building, editing and previewing as often as you like. The gift is saved for 7 days. |
 | **Refunds** | None once a gift is unlocked, stated before payment (see [Refund policy](#refund-policy)). |
-| **Config** | `PAYMENT_PRICE_INR` (default 149), `PAYMENTS_REQUIRED`, `PREVIEW_TTL_DAYS`. Nothing is charged yet: checkout arrives with the Razorpay task. |
+| **Config** | `PAYMENT_PRICE_INR` (default 99), `PAYMENTS_REQUIRED`, `PREVIEW_TTL_DAYS`. Nothing is charged yet: checkout arrives with the Razorpay task. |
 
 These are starting points to test, not permanent truths. See [Experiments](#experiments).
 
@@ -34,7 +34,11 @@ What this says:
 - Indian one-time prices cluster between **₹49 and ₹349**, with **₹99–₹199** the common middle. WishCupid already uses the same model we want (build free, pay to publish), so the model is proven, and so is the risk that free alternatives exist.
 - Cutiepage offers a link that never expires. Our one-year link is a real difference; we will need to say clearly why (see [Open decisions](#open-decisions)).
 
-## Why ₹149
+## Why ₹99 (lowered from ₹149)
+
+The owner's own reaction to ₹149 was "not worth it" for the gift as it stands, and said a much better gift would change that. So the price starts at ₹99 (inside the ₹49–₹199 cluster) while the gift itself gets a big quality upgrade; raise it later if conversion supports it.
+
+The points below were written for ₹149 and still hold at ₹99 except the margin figures.
 
 - **Above the "thin template" tier (₹19–₹79).** Ours has eight interactive journeys, voice notes, a private reply inbox and same-link editing. A very low price signals a very small gift.
 - **Level with Cutiepage's birthday pages (₹100–₹149) and below WishCupid's birthday (₹199).** No need to be the cheapest, and easy to justify.
@@ -72,7 +76,7 @@ The product already does the hardest part: people build the gift **before** payi
 | **Ownership (effort already spent)** | Their gift, named, with their photo and a list of what they made ("your own words · 2 photos · a voice note") at the top of the unlock panel | Yes |
 | **The gift is blocked, not absent** | "Sarah can't open it yet." | Yes |
 | **A real deadline** | "Your saved gift is kept for 7 more days. After that it is deleted." Every word is true: the daily cleanup deletes it | Yes |
-| **Peak-end timing** | A bar during the preview says "Preview · not sent yet · Unlock · ₹149"; at the ending scene it becomes "This is what Sarah will feel. Unlock it and send it." | Yes |
+| **Peak-end timing** | A bar during the preview says "Preview · not sent yet · Unlock · ₹99"; at the ending scene it becomes "This is what Sarah will feel. Unlock it and send it." | Yes |
 | **Price and terms up front** | Price stated on the last step before saving, on the unlock panel and on the button; "one-time · no subscription"; refund rule shown before payment | Yes |
 | **Low perceived risk** | "Previewing is free, so look as often as you like" | Yes |
 | **Less to decide** | One price, one link lifetime, no plans to compare | Yes |
@@ -101,9 +105,9 @@ My recommendation, for you to confirm: **no refunds for change of mind, but** re
 
 ## Experiments
 
-Start at ₹149, then test with real traffic. Measure **revenue per paywall view**, not conversion alone: a cheaper price converts more but may earn less.
+Start at ₹99, then test with real traffic. Measure **revenue per paywall view**, not conversion alone: a cheaper price converts more but may earn less.
 
-1. **Price:** ₹99 vs ₹149 vs ₹199 (about 300 paywall views each before deciding).
+1. **Price:** ₹79 vs ₹99 vs ₹149 (about 300 paywall views each before deciding).
 2. **Seasonal:** ₹199 or a themed price in the days before Valentine's Day, Raksha Bandhan and Diwali.
 3. **Panel copy:** "Sarah can't open it yet" vs a neutral headline.
 4. **Deadline framing:** "7 more days" vs a date.

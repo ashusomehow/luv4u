@@ -84,7 +84,7 @@ Set `PAYMENTS_REQUIRED=true` (after applying migration `0003`) and new gifts bec
 
 - The owner keeps editing a preview as often as they like; each edit keeps the preview alive a little longer. With payments on, the link lifetime after unlock is fixed at one year (`PAID_LINK_DAYS` in `lib/payments.ts`) and a lifetime sent by the browser is ignored.
 - With payments required the offline "standalone" option is not offered, and the link, copy, WhatsApp and download buttons stay disabled until the gift is unlocked.
-- The price shown to buyers is `PAYMENT_PRICE_INR` (default 149). The reasoning, the paywall design and the ethical rules are in [Pricing and conversion](PRICING-AND-CONVERSION.md).
+- The price shown to buyers is `PAYMENT_PRICE_INR` (default 99). The reasoning, the paywall design and the ethical rules are in [Pricing and conversion](PRICING-AND-CONVERSION.md).
 - **Unlocking is only possible from the server.** `markPaid()` in `lib/gifts.ts` is the single unlock function and is idempotent. Nothing on the public API calls it yet: `POST /api/gifts/:id/checkout` answers 503 ("Payments are not set up yet") until the Razorpay integration replaces it, so turning `PAYMENTS_REQUIRED` on before that ships would leave new gifts locked.
 - Existing gifts are untouched. Rows created before the migration have no status and count as unlocked. With the flag off, nothing new is written to the database, so the code also runs before the migration is applied.
 - **Honest limits:** the gift engine runs in the browser, so a determined person can still read the JavaScript or rebuild a gift by hand. The paywall protects hosting, the link and the convenience tools, not the code. Media files sit in a public bucket under unguessable paths, as before.
