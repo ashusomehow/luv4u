@@ -54,7 +54,7 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 
 Order in the product: make gift → full preview → pay → get shareable link.
 
-- [ ] Gift status model: `draft → preview → paid → expired`, enforced server-side (an unpaid gift never gets a public recipient link)
+- [x] Gift status model: `preview → paid → expired`, enforced server-side (an unpaid gift never gets a public recipient link). Behind `PAYMENTS_REQUIRED`, off by default; see `docs/DEPLOYMENT.md`
 - [ ] Pricing decision (single price vs tiers; INR first) and a clear "what you get" screen
 - [ ] Razorpay Orders API: create order server-side, verify the payment signature server-side, handle webhooks idempotently
 - [ ] Paywall UX: preview shown with a soft lock, not a wall; UPI-first on mobile

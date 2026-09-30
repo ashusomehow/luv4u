@@ -2,8 +2,12 @@ import {
   assertGiftSize,
   assertId,
   deleteAllMedia,
+  daysFrom,
   expiryFrom,
   findGift,
+  inDays,
+  isUnlocked,
+  LOCKED_MESSAGE,
   findOwnedGift,
   normalizeGift,
   offloadEmbeddedMedia,
@@ -12,6 +16,7 @@ import {
   isExpired,
 } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, readJson, requireBackend } from '@/lib/http';
+import { previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +33,8 @@ export const GET = handle(async (_request: Request, { params }: Context) => {
   const row = await findGift(id);
   if (!row) throw new ApiError(404, 'Gift not found or has been removed.');
   if (isExpired(row.expires_at)) throw new ApiError(410, 'This gift has expired.');
+  // A preview is visible to its owner only (through the private owner endpoint), never to the public.
+  if (!isUnlocked(row)) throw new ApiError(402, LOCKED_MESSAGE);
   return json({ gift: row.gift });
 });
 
@@ -56,13 +63,23 @@ export const PATCH = handle(async (request: Request, { params }: Context) => {
   gift.coverUrl = (await resolveCover(id, body, sharePreview)) || (sharePreview ? previousCover : '');
   assertGiftSize(gift);
 
-  const expiresAt = body.expiresDays ? expiryFrom(body.expiresDays) : row.expires_at;
+  // Unlocked gifts: a changed "keep live for" applies from now. Previews: it is remembered for
+  // when the gift is unlocked, and every edit keeps the preview alive a little longer.
+  const unlocked = isUnlocked(row);
+  const changes: Record<string, unknown> = {};
+  let expiresAt = row.expires_at;
+  if (unlocked) {
+    if (body.expiresDays) expiresAt = expiryFrom(body.expiresDays);
+  } else {
+    expiresAt = inDays(previewTtlDays());
+    if (body.expiresDays) changes.live_days = daysFrom(body.expiresDays);
+  }
   const revision = row.revision + 1;
 
   // Optimistic concurrency: only update if nobody else saved since we read the row.
   const { data, error } = await supabase()
     .from('gifts')
-    .update({ gift, revision, expires_at: expiresAt, updated_at: new Date().toISOString() })
+    .update({ gift, revision, expires_at: expiresAt, updated_at: new Date().toISOString(), ...changes })
     .eq('id', id)
     .eq('revision', row.revision)
     .select('id');
@@ -70,7 +87,7 @@ export const PATCH = handle(async (request: Request, { params }: Context) => {
   if (!data?.length) throw new ApiError(409, 'This gift was changed somewhere else. Reload it and try again.');
 
   await pruneMedia(id, gift, String(gift.coverUrl ?? '')).catch((err) => console.error('Media prune failed:', err));
-  return json({ ok: true, gift, url: `${new URL(request.url).origin}/g/${id}`, revision, expiresAt });
+  return json({ ok: true, gift, url: `${new URL(request.url).origin}/g/${id}`, revision, expiresAt, status: unlocked ? 'paid' : 'preview' });
 });
 
 export const DELETE = handle(async (request: Request, { params }: Context) => {

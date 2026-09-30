@@ -98,3 +98,11 @@ footer a{display:inline-flex;align-items:center;min-height:44px}
 .wizard-steps button{min-width:44px;justify-content:center}
 .settings-line{min-height:44px}
 input[type=range]{min-height:44px}
+
+/* ---------- Share screen for a gift that is saved but not unlocked yet ---------- */
+.unlock-panel{margin:0 0 22px;padding:20px 22px;border:1px solid var(--line);border-radius:20px;background:#fffdfa;text-align:left;box-shadow:0 12px 30px -24px rgba(67,45,50,.55)}
+.unlock-panel[hidden]{display:none}
+.unlock-panel h2{margin:0 0 8px;font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.2;color:var(--ink)}
+.unlock-panel p{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.6}
+.unlock-panel .unlock-actions{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 12px}
+.unlock-panel .unlock-note{margin:0;font-size:13px}

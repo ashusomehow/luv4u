@@ -470,7 +470,7 @@ const THEMES = {
  Crazy:{symbol:'✷',caption:'Confetti, plot twists & zero chill',line:'Birthday rules? Absolutely not.',motifs:['✷','↝','✦','!'],speed:.7,transpose:1.19,opening:'The party is loading.<br><em>You’re the main event.</em>',birthday:'A certified legend was born today.',cake:'Make a wish.<br><em>Make it ridiculous.</em>',cakeNote:'World domination? A pet dragon? We’re not judging.',gift:'Warning: contains<br><em>birthday chaos.</em>',ending:'More wild stories. More terrible dancing. More “we actually did that” moments. Go be gloriously you.',finalTitle:'Maximum cake.<br><em>Minimum chill.</em>'},
  Elegant:{symbol:'✧',caption:'Champagne details & quiet joy',line:'A beautiful day, made more beautiful by you.',motifs:['✧','❦','·','✦'],speed:1.15,transpose:.84,opening:'A moment, set aside<br><em>just for you.</em>',birthday:'A beautiful reason to pause and celebrate.',cake:'A candle.<br><em>A beautiful possibility.</em>',cakeNote:'For the things you hope for. And the joys you haven’t met yet.',gift:'Thoughtfully chosen.<br><em>Entirely yours.</em>',ending:'To a year of meaningful moments, quiet joys, and wonderful things unfolding in their own time.',finalTitle:'To your next<br><em>beautiful chapter.</em>'}
 };
-let mediaBase='',wizardStep=0,backendReady=false,backendChecked=false,delivery='portable',editing=null,publishing=false,previewAudio=null,previewMelody=null,previewGain=null,lightStage=0,tiltEnabled=true,tiltHandler=null,finaleTimer=null,libraryCache=[],coverData='',draftDB=null,saveGeneration=0,cropContext=null,publishAttempt=null;
+let mediaBase='',paymentsRequired=false,publishedStatus='paid',wizardStep=0,backendReady=false,backendChecked=false,delivery='portable',editing=null,publishing=false,previewAudio=null,previewMelody=null,previewGain=null,lightStage=0,tiltEnabled=true,tiltHandler=null,finaleTimer=null,libraryCache=[],coverData='',draftDB=null,saveGeneration=0,cropContext=null,publishAttempt=null;
 const LIBRARY_KEY='luv4u.library.v2';
 const hexToken=n=>{const bytes=new Uint8Array(n);crypto.getRandomValues(bytes);return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');};
 const clamp=(v,min,max,fallback)=>Number.isFinite(Number(v))?Math.min(max,Math.max(min,Number(v))):fallback;
@@ -495,7 +495,7 @@ async function restoreDraft(){let saved;try{saved=await store('draft');}catch{}i
 function saveLibrary(){try{localStorage.setItem(LIBRARY_KEY,JSON.stringify(libraryCache));return true;}catch{toast('Save your private recovery link now. This browser cannot remember your gifts.');return false;}}
 function rememberGift(entry){libraryCache=libraryCache.filter(v=>v.id!==entry.id);libraryCache.unshift({...entry,at:new Date().toISOString()});libraryCache=libraryCache.slice(0,100);saveLibrary();}
 async function api(path,options={}){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),options.timeout||45000);try{const r=await fetch(path,{method:options.method||'GET',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.key?{Authorization:'Bearer '+options.key}:{})},body:options.body?JSON.stringify(options.body):undefined,signal:controller.signal,cache:'no-store',credentials:'omit'});let data;try{data=await r.json();}catch{throw new Error('The gift server returned an unexpected response. Your draft is still safe.');}if(!r.ok){const err=new Error(data.error||'The gift could not be saved.');err.status=r.status;throw err;}return data;}catch(err){if(err.name==='AbortError')throw new Error('The gift server is taking too long. Try again; your draft is still here.');throw err;}finally{clearTimeout(timeout);}}
-async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
+async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
 function clearGiftHash(){try{const p=/^\/(g|for)\//.test(location.pathname)?'/':location.pathname;history.replaceState(null,'',p+location.search);}catch{}}
 function showView(view){if($('.skip-link'))$('.skip-link').hidden=view!=='home';stopPreviewAudio();showViewV1(view);$('#myGiftsView').hidden=view!=='library';if(view==='library')$('#myGiftsView').hidden=false;const right=$('#headerRight');if(!right.querySelector('.my-gifts-link'))right.insertAdjacentHTML('afterbegin','<button class="nav-link my-gifts-link" data-v2="library">My little gifts</button>');if(view==='creator')setStep(wizardStep,false);if(view==='library'){document.title='Your little gifts · Luv4u';right.innerHTML='<button class="nav-link pill-link" data-action="create">Make another little gift ♡</button>';}}
 async function openCreator(key='birthday'){
@@ -517,6 +517,8 @@ async function openCreator(key='birthday'){
 /* Three steps: 1 name + mood, 2 words + photos (all optional), 3 preview + get the link. */
 const STEP_COUNT=3;
 let noteOpenedOnce=false;
+/* "Create" becomes "Save & continue" when the gift is unlocked afterwards. */
+const createLabel=()=>editing?.mode==='hosted'?'Save gift changes '+icon('heart'):paymentsRequired?'Save & continue '+icon('arrow'):'Create My Gift '+icon('spark');
 function setStep(step,focus=true){
  if(step>0&&!draft.name.trim())step=0;
  wizardStep=Math.max(0,Math.min(STEP_COUNT-1,step));
@@ -532,7 +534,7 @@ function setStep(step,focus=true){
  $('.creator-head h1').innerHTML=titles[wizardStep][0];$('.creator-head>p').textContent=titles[wizardStep][1];
  $('#wizardBack').hidden=wizardStep===0;$('#wizardNext').hidden=last;
  $('#wizardNext').innerHTML=(wizardStep===0?'Next: your words':'Preview & send')+' '+icon('arrow');
- $('#createGiftBtn').hidden=!last;$('#createGiftBtn').innerHTML=editing?.mode==='hosted'?'Save gift changes '+icon('heart'):'Create My Gift '+icon('spark');
+ $('#createGiftBtn').hidden=!last;$('#createGiftBtn').innerHTML=createLabel();
  $('#dockPreview').hidden=!draft.name.trim();
  $('#wizardNext').classList.add('wizard-next');
  if(last)renderReview();
@@ -563,7 +565,7 @@ function updateMiniPreview(){
 function validateForm(){if(!draft.name.trim())setStep(0,false);for(const id of ['voiceUrl','musicUrl','finalUrl']){const input=$('#'+id);if(input.value.trim()&&!safeWebURL(input.value)){setStep(1,false);}}return validateFormV1();}
 function updatePreview(){updatePreviewV1();if(!$('#wizardNext'))return;$('#vibePreviewLine').textContent=THEMES[draft.vibe].line;$('#editorRoom').dataset.vibe=draft.vibe;$('#editorRoom').style.filter=draft.vibe==='Elegant'?'saturate(.55)':draft.vibe==='Crazy'?'saturate(1.15)':'';$$('[data-wizard-step]').forEach((b,i)=>b.disabled=i>0&&!draft.name.trim());$('#quizFields').hidden=draft.fun!=='quiz';if(wizardStep===2&&currentView==='creator')renderReview();updateMiniPreview();updateOccasionUI();}
 function populateForm(){populateFormV1();if(!$('#musicVolume'))return;$('#musicVolume').value=Math.round((draft.volume??.24)*100);$('#volumeReadout').textContent=Math.round((draft.volume??.24)*100)+'%';$('#replyPhone').value=draft.replyPhone||'';$('#branchToggle').checked=draft.branch!==false;$('#motionToggle').checked=draft.motion!==false;$('#sharePreviewToggle').checked=draft.sharePreview!==false;$('#quizQuestion').value=draft.quizQuestion||'';$('#quizAnswer').value=draft.quizAnswer||'';for(let i=0;i<2;i++)$('#quizDecoy'+i).value=draft.quizOptions?.[i]||'';updateOccasionUI();renderOccasionDetails(true);installMessageTemplates();refreshMessageTemplates();updateDelivery();}
-function updateDelivery(){if(!$('#deliverySelect'))return;$('#hostedOption').disabled=!backendReady;$('#deliverySelect').value=editing?.mode==='hosted'?'hosted':delivery;$('#deliverySelect').disabled=editing?.mode==='hosted';$('#expiryField').hidden=(editing?.mode==='hosted'?'hosted':delivery)!=='hosted';$('#deliveryStatus').hidden=backendReady;$('#deliveryStatus').classList.toggle('offline',!backendReady);$('#deliveryStatus').textContent=backendReady?'':'Short links are not available right now, so your gift will be a file or a long link you can send.';$('#backendPublishNote').textContent=delivery==='hosted'?'Photos and audio are uploaded when you create your gift. Anyone with the link can open it.':'Large media gifts are shared as a downloadable HTML file. Short, text-only gifts can travel in a link.';}
+function updateDelivery(){if(!$('#deliverySelect'))return;$('#deliverySelect').closest('.quiet-field').hidden=paymentsRequired;$('#hostedOption').disabled=!backendReady;$('#deliverySelect').value=editing?.mode==='hosted'?'hosted':delivery;$('#deliverySelect').disabled=editing?.mode==='hosted';$('#expiryField').hidden=(editing?.mode==='hosted'?'hosted':delivery)!=='hosted';$('#deliveryStatus').hidden=backendReady;$('#deliveryStatus').classList.toggle('offline',!backendReady);$('#deliveryStatus').textContent=backendReady?'':'Short links are not available right now, so your gift will be a file or a long link you can send.';$('#backendPublishNote').textContent=delivery==='hosted'?'Photos and audio are uploaded when you create your gift. Anyone with the link can open it.':'Large media gifts are shared as a downloadable HTML file. Short, text-only gifts can travel in a link.';}
 function renderReview(){renderOccasionReview();}
 function installWizard(){
  if($('#giftForm').dataset.v2Installed==='true'){ $('#vibeGrid').innerHTML=VIBES.map(v=>`<button type="button" class="vibe-btn" data-vibe="${v.name}" aria-pressed="false"><span class="vibe-icon" aria-hidden="true">${v.symbol}</span><strong>${v.name}</strong><span class="vibe-caption">${THEMES[v.name].caption}</span></button>`).join(''); return; }
@@ -713,13 +715,13 @@ async function offloadMedia(id,key,g,cover){
 async function publishGift(){
  if(publishing||!validateForm())return;publishing=true;stopPreviewAudio();const btn=$('#createGiftBtn');btn.disabled=true;btn.textContent='Tying the little ribbon…';
  try{
- const g=collectGift();g.version=3;const mode=editing?.mode==='hosted'?'hosted':delivery;coverData=makeCover(g);
+ const g=collectGift();g.version=3;const mode=editing?.mode==='hosted'?'hosted':paymentsRequired?'hosted':delivery;coverData=makeCover(g);
  if(mode==='hosted'){
- if(!backendReady)throw new Error('The gift server is not connected. Choose standalone mode to make a gift file.');if(!backendOccasions.includes(g.occasion))throw new Error('This gift server needs the v3 update for '+occasionOf(g).label.toLowerCase()+'. Choose standalone to export this gift, or update the server.');
+ if(!backendReady)throw new Error(paymentsRequired?'Gifts are created online. Check your connection and try again.':'The gift server is not connected. Choose standalone mode to make a gift file.');if(!backendOccasions.includes(g.occasion))throw new Error('This gift server needs the v3 update for '+occasionOf(g).label.toLowerCase()+'. Choose standalone to export this gift, or update the server.');
  if(editing?.mode==='hosted'){
  const media=await offloadMedia(editing.id,editing.key,g,g.sharePreview?coverData:'');
  const data=await api('/api/gifts/'+editing.id,{method:'PATCH',key:editing.key,body:{gift:media.gift,coverUrl:media.coverUrl,revision:editing.revision,...($('#expiryDays').dataset.changed==='true'?{expiresDays:+$('#expiryDays').value}:{})}});
- publishedGift=sanitizeGift(data.gift);publishedURL=data.url;editing.revision=data.revision;
+ publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';editing.revision=data.revision;
  rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt});
  }else{
  // Keep these values after a network failure, so retrying does not duplicate gifts.
@@ -727,15 +729,15 @@ async function publishGift(){
  await store('pending-create',{...publishAttempt,gift:g}).catch(()=>{});
  const media=await offloadMedia(publishAttempt.id,publishAttempt.key,g,g.sharePreview?coverData:'');
  const data=await api('/api/gifts',{method:'POST',body:{id:publishAttempt.id,editKey:publishAttempt.key,gift:media.gift,coverUrl:media.coverUrl,expiresDays:+$('#expiryDays').value}});
- publishedGift=sanitizeGift(data.gift);publishedURL=data.url;editing={id:publishedGift.id,key:publishAttempt.key,revision:data.revision,mode:'hosted'};
+ publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';editing={id:publishedGift.id,key:publishAttempt.key,revision:data.revision,mode:'hosted'};
  rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt});publishAttempt=null;await removeStored('pending-create').catch(()=>{});
  }
  }else{
- publishedGift={...g,id:hexToken(12),server:false};const encoded=await encodeGift(publishedGift);const candidate=buildGiftURL(encoded);publishedURL=candidate.length<=8000?candidate:'';
+ publishedStatus='paid';publishedGift={...g,id:hexToken(12),server:false};const encoded=await encodeGift(publishedGift);const candidate=buildGiftURL(encoded);publishedURL=candidate.length<=8000?candidate:'';
  await store('gift:'+publishedGift.id,publishedGift).catch(()=>{toast('This browser cannot keep this gift. Download its HTML before closing.');});editing={mode:'portable',id:publishedGift.id};rememberGift({id:publishedGift.id,name:g.name,vibe:g.vibe,occasion:g.occasion,mode:'portable',url:publishedURL});
  }
  await store('lastGift',publishedGift).catch(()=>{});showShare();saveDraft();
- }catch(err){toast(err.message||'The ribbon got tangled. Your draft is still here.');}finally{publishing=false;btn.disabled=false;btn.innerHTML=editing?.mode==='hosted'?'Save gift changes '+icon('heart'):'Create My Gift '+icon('spark');}
+ }catch(err){toast(err.message||'The ribbon got tangled. Your draft is still here.');}finally{publishing=false;btn.disabled=false;btn.innerHTML=createLabel();}
 }
 function showShare(){
  if(!publishedGift)return;showShareV1();const isHosted=publishedGift.server,tooLarge=!publishedURL;
@@ -751,6 +753,36 @@ function showShare(){
  coverData=makeCover(publishedGift);$('#shareCover').src=coverData;$('#shareCover').hidden=!coverData;
  const entry=libraryCache.find(v=>v.id===publishedGift.id);
  $('#ownerNote').innerHTML=isHosted&&entry?`<strong>Keep a little key, just for you.</strong><br>Your recipient link opens the surprise. Your private recovery link lets you edit it, see replies, or remove it. Don’t send the private link to the recipient.<br><button data-v2="copy-recovery" data-id="${entry.id}">Copy private recovery link</button><button data-v2="save-recovery" data-id="${entry.id}">Save recovery file</button><button data-v2="library">My little gifts</button>`:'<strong>Beautifully portable.</strong><br>Your gift file opens without this website. Uploaded photos and audio go with it. External media links still need the internet.<br><button data-v2="library">Back to my little gifts</button>';
+ applyShareLock();
+}
+/* A preview gift is saved and editable but its link does not open yet: show what is missing and how to get it. */
+function applyShareLock(){
+ const locked=!!publishedGift?.server&&publishedStatus==='preview';
+ let panel=$('#unlockPanel');
+ if(!panel){$('.link-wrap').insertAdjacentHTML('beforebegin','<section class="unlock-panel" id="unlockPanel" aria-labelledby="unlockTitle" hidden><h2 id="unlockTitle">One last step: unlock your link</h2><p id="unlockText"></p><div class="unlock-actions"><button type="button" class="btn btn-primary" data-v3="unlock">Unlock & get link</button></div><p class="unlock-note">Not ready yet? Your saved gift stays under “My little gifts” for a few days, and you can keep editing it.</p></section>');panel=$('#unlockPanel');}
+ panel.hidden=!locked;
+ if(!locked)return;
+ $('#unlockText').textContent='Your gift is saved and only you can see it. Unlock it to get the link you can send to '+publishedGift.name+'. Until then nobody else can open it.';
+ $('#giftLink').value='Your link appears here once it is unlocked';
+ for(const id of ['giftLink','copyGiftLink','whatsappGift','downloadGift','nativeShareGift'])if($('#'+id))$('#'+id).disabled=true;
+ for(const b of $$('[data-v2="native-share"],[data-v2="share-cover"]'))b.disabled=true;
+ $('#linkSize').textContent='Locked until unlocked';
+ $('.share-privacy').innerHTML='Your gift is saved privately. Keep your private recovery link to edit it or come back to unlock it.';
+}
+async function unlockGift(){
+ if(!editing?.key||!publishedGift?.server)return;
+ const btn=$('[data-v3="unlock"]');if(btn)btn.disabled=true;
+ try{
+  const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
+  if(r.status==='paid'){const o=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});publishedStatus='paid';publishedURL=o.url;showShare();toast('Unlocked. Send it with love. ♡');}
+ }catch(err){toast(err.message||'We could not unlock your gift. It is still saved.');}
+ finally{if(btn)btn.disabled=false;}
+}
+/* Open a saved gift's share screen (used for gifts still waiting to be unlocked). */
+async function openSavedShare(id){
+ const entry=libraryCache.find(v=>v.id===id);if(!entry)return;
+ try{const r=await api('/api/gifts/'+id+'/owner',{key:entry.key});publishedGift=sanitizeGift(r.gift);publishedURL=r.url;publishedStatus=r.status||'paid';editing={id,key:entry.key,mode:'hosted',revision:r.revision};showShare();}
+ catch(err){toast(err.message);}
 }
 async function portableGift(){const g=sanitizeGift(publishedGift);g.server=false;const clone=JSON.parse(JSON.stringify(g));const fields=clone.photos.map(p=>({object:p,key:'src'}));if(clone.voice)fields.push({object:clone,key:'voice'});if(clone.musicSrc)fields.push({object:clone,key:'musicSrc'});for(const f of fields){const src=f.object[f.key];if(!src.startsWith('http'))continue;let u;try{u=new URL(src);}catch{continue;}if(!mediaBase||!src.startsWith(mediaBase))continue;const r=await fetch(src,{cache:'no-store'});if(!r.ok)throw new Error('One uploaded file could not be packed. Please try again.');const blob=await r.blob();if(blob.size>3*1024*1024)throw new Error('One uploaded file is too large to pack safely.');f.object[f.key]=await readDataURL(blob);}return clone;}
 /* Next.js hosts this app: a downloaded gift must not depend on /_next chunks, so we
@@ -784,8 +816,8 @@ async function downloadGiftHTML(){
 async function nativeShare(){if(!publishedURL||!publicHosting())return;const data={title:occasionOf(publishedGift).label+(publishedGift.sharePreview===false?' for you':' for '+publishedGift.name),text:'Psst… open this when you have a quiet moment. ♡',url:publishedURL};try{if(navigator.share)await navigator.share(data);else await copyText(publishedURL);}catch(err){if(err.name!=='AbortError')toast('Sharing is unavailable here. Copy the little link instead.');}}
 async function shareCover(){if(!coverData)return;const blob=await (await fetch(coverData)).blob();const file=new File([blob],'a-little-gift.png',{type:'image/png'});try{if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:occasionOf(publishedGift).label,text:publishedURL||'A little world, made just for you.'});else{downloadBlob(blob,'a-little-gift.png');toast('Artwork saved. Attach it with the gift link in your message.');}}catch(err){if(err.name!=='AbortError')toast('This browser cannot share artwork directly. Use Save the little artwork.');}}
 async function showLibrary(){clearGiftHash();showView('library');$('#savedGiftList').innerHTML=libraryCache.length?libraryCache.map(entry=>`<article class="saved-gift"><span aria-hidden="true">${THEMES[entry.vibe]?.symbol||'♡'}</span><div><h2>For ${e(entry.name||'your person')}.</h2><p>${e(occasionOf(entry).short)} · ${e(entry.vibe||'A little')} · ${entry.mode==='hosted'?'A live little world':'A standalone keepsake'}${entry.at?' · '+e(new Date(entry.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</p><div class="saved-actions"><button data-v2="edit-saved" data-id="${e(entry.id)}">Open & edit</button><button data-v2="copy-saved" data-id="${e(entry.id)}">${entry.url?'Copy gift link':'Open gift file options'}</button>${entry.mode==='hosted'?`<button data-v2="stats" data-id="${e(entry.id)}">Little replies</button><button data-v2="copy-recovery" data-id="${e(entry.id)}">Private recovery link</button>`:''}<button class="danger" data-v2="delete-saved" data-id="${e(entry.id)}">${entry.mode==='hosted'?'Remove gift':'Forget here'}</button></div><div class="saved-stats" id="stats-${e(entry.id)}" hidden></div></div></article>`).join(''):'<p class="empty-shelf">No ribbons tied just yet.<br>Your first little gift belongs right here.</p>';}
-async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
-async function showStats(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const root=$('#stats-'+id);root.hidden=false;root.textContent='Opening the little postbox…';try{const stats=await api('/api/gifts/'+id+'/stats',{key:entry.key});const counts=stats.reactions.map(r=>`${e(r.reaction)} ${r.count}`).join(' · ')||'No emoji replies yet';root.innerHTML=`<p>${stats.opens} ${stats.opens===1?'opening':'openings'} · ${counts}</p><p class="privacy-small">Approximate openings, deduplicated per browser session. Replies are anonymous; we don’t verify who sends them.</p>${stats.replies.length?stats.replies.map(r=>`<blockquote>${e(r.reaction)} ${e(r.message||'A little feeling, sent back with love.')}</blockquote>`).join(''):'<p>Nothing here yet. Give them a little room to smile.</p>'}${stats.expiresAt?'<p>Expires '+e(new Date(stats.expiresAt).toLocaleString())+'</p>':''}`;}catch(err){root.textContent=err.message;}}
+async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);publishedStatus=result.status||'paid';editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
+async function showStats(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const root=$('#stats-'+id);root.hidden=false;root.textContent='Opening the little postbox…';try{const stats=await api('/api/gifts/'+id+'/stats',{key:entry.key});const counts=stats.reactions.map(r=>`${e(r.reaction)} ${r.count}`).join(' · ')||'No emoji replies yet';root.innerHTML=`${stats.status==='preview'?`<p><strong>Waiting to be unlocked.</strong> Only you can see this gift until then. <button type="button" data-v3="unlock-saved" data-id="${e(id)}">Unlock & get link</button></p>`:''}<p>${stats.opens} ${stats.opens===1?'opening':'openings'} · ${counts}</p><p class="privacy-small">Approximate openings, deduplicated per browser session. Replies are anonymous; we don’t verify who sends them.</p>${stats.replies.length?stats.replies.map(r=>`<blockquote>${e(r.reaction)} ${e(r.message||'A little feeling, sent back with love.')}</blockquote>`).join(''):'<p>Nothing here yet. Give them a little room to smile.</p>'}${stats.expiresAt?'<p>Expires '+e(new Date(stats.expiresAt).toLocaleString())+'</p>':''}`;}catch(err){root.textContent=err.message;}}
 async function deleteSaved(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const message=entry.mode==='hosted'?'Remove this gift? Its live link, uploaded media and replies will stop being available. Downloaded copies cannot be recalled.':'Forget this gift in this browser? Links and already-downloaded copies will still work.';if(!window.confirm(message))return;try{if(entry.mode==='hosted')await api('/api/gifts/'+id,{method:'DELETE',key:entry.key});await removeStored('gift:'+id).catch(()=>{});libraryCache=libraryCache.filter(v=>v.id!==id);saveLibrary();if(editing?.id===id)editing=null;showLibrary();toast('A little space on the shelf.');}catch(err){toast(err.message);}}
 function visitorToken(){const k='luv4u.visitor.'+gift.id;try{let value=sessionStorage.getItem(k);if(!/^[a-f0-9]{32}$/.test(value||'')){value=hexToken(16);sessionStorage.setItem(k,value);}return value;}catch{if(!window.__luvVisitor)window.__luvVisitor=hexToken(16);return window.__luvVisitor;}}
 async function countOpening(){try{await api('/api/gifts/'+gift.id+'/views',{method:'POST',body:{visitor:visitorToken()}});}catch{/* Opening the birthday must not depend on counting it. */}}
@@ -1283,6 +1315,8 @@ function installOccasions(){
   const b=event.target.closest('[data-v3]');if(!b)return;event.preventDefault();
   switch(b.dataset.v3){
    case'change-gift':browseGifts();break;
+   case'unlock':unlockGift();break;
+   case'unlock-saved':openSavedShare(b.dataset.id);break;
    case'home-demo':previewOccasion();break;
    case'open-note':openOccasionNote(b);break;
    case'heart-note':openHeartNote(b);break;

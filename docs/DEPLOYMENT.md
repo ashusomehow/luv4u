@@ -5,12 +5,12 @@ Luv4u needs one Supabase project (database + storage) and one Vercel project. Ev
 ## 1. Supabase
 
 1. Create a project.
-2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), then [`0002_events.sql`](../supabase/migrations/0002_events.sql). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
+2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), [`0002_events.sql`](../supabase/migrations/0002_events.sql), then [`0003_gift_status.sql`](../supabase/migrations/0003_gift_status.sql). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
    - `gifts`, `gift_views`, `gift_replies` with Row Level Security **enabled and no policies**: the browser can never read or write them directly; only the server can, using the service-role key.
    - a public Storage bucket `gift-media` (4 MiB per file; image and audio MIME types only).
 3. From the project's API settings, copy the **Project URL** and the **service_role** key.
 
-`0002` adds the `events` table for funnel analytics (see [Analytics](#analytics)).
+`0002` adds the `events` table for funnel analytics (see [Analytics](#analytics)). `0003` adds the gift lifecycle used by [Preview first, pay after](#preview-first-pay-after); every existing gift stays unlocked.
 
 The service-role key bypasses Row Level Security. Keep it server-side only: never give it a `NEXT_PUBLIC_` prefix and never commit it.
 
@@ -71,6 +71,22 @@ The app records anonymous funnel events in the `events` table, with no third-par
 - **Reading it:** run the queries in [`supabase/queries/funnel.sql`](../supabase/queries/funnel.sql) in the SQL editor.
 
 If the `events` table is missing, the app keeps working: `/api/events` always answers `204`.
+
+## Preview first, pay after
+
+Set `PAYMENTS_REQUIRED=true` (after applying migration `0003`) and new gifts become **private previews**:
+
+| State | Who can see it | Link |
+| --- | --- | --- |
+| `preview` | only the owner, with the private edit key | the public `/g/<id>` link answers "not unlocked yet" (HTTP 402) and reveals nothing: no name, no cover image; openings and replies are not accepted |
+| `paid` | anyone with the link | works; its lifetime starts at unlock |
+| expired | nobody | an unlocked gift past `expires_at`, or a preview never unlocked within `PREVIEW_TTL_DAYS` (default 7); the daily cleanup deletes it and its files |
+
+- The owner keeps editing a preview as often as they like; each edit keeps the preview alive a little longer, and the "keep the link live for" choice is remembered until unlock.
+- With payments required the offline "standalone" option is not offered, and the link, copy, WhatsApp and download buttons stay disabled until the gift is unlocked.
+- **Unlocking is only possible from the server.** `markPaid()` in `lib/gifts.ts` is the single unlock function and is idempotent. Nothing on the public API calls it yet: `POST /api/gifts/:id/checkout` answers 503 ("Payments are not set up yet") until the Razorpay integration replaces it, so turning `PAYMENTS_REQUIRED` on before that ships would leave new gifts locked.
+- Existing gifts are untouched. Rows created before the migration have no status and count as unlocked. With the flag off, nothing new is written to the database, so the code also runs before the migration is applied.
+- **Honest limits:** the gift engine runs in the browser, so a determined person can still read the JavaScript or rebuild a gift by hand. The paywall protects hosting, the link and the convenience tools, not the code. Media files sit in a public bucket under unguessable paths, as before.
 
 ## Separate Preview environment
 

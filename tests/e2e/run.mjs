@@ -11,6 +11,7 @@ import zlib from 'node:zlib';
 import { chromium } from 'playwright-core';
 
 const APP = 'http://localhost:3100';
+const LOCKED_APP = 'http://localhost:3101'; // same build and database, PAYMENTS_REQUIRED=true
 const MOCK = 'http://localhost:54321';
 const NORMAL_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const children = [];
@@ -48,8 +49,12 @@ try {
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100'], {
     SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP,
   });
+  start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3101'], {
+    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, PAYMENTS_REQUIRED: 'true',
+  });
   await waitFor(`${MOCK}/__state`, 'mock supabase');
   await waitFor(`${APP}/api/config`, 'next server');
+  await waitFor(`${LOCKED_APP}/api/config`, 'next server (payments required)');
 
   const photo = path.join(os.tmpdir(), 'luv4u-e2e.png'); solidPng(photo);
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--no-sandbox'] });
@@ -165,6 +170,51 @@ try {
   await page.getByRole('button', { name: 'Remove gift' }).first().click(); await page.waitForTimeout(1200);
   s = await state();
   assert.equal(s.gifts, 0); assert.equal(s.files.length, 0);
+
+
+  // 7. Preview first, pay after: with payments required a new gift is a private preview
+  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true });
+  const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
+  const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
+  await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');
+  await owner.fill('#recipientName', 'Noor');
+  await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.waitForTimeout(500);
+  assert.match(await owner.locator('#createGiftBtn').innerText(), /Save & continue/, 'the button says what happens next');
+  await owner.locator('#moreOptions summary').click();
+  assert.equal(await owner.locator('#deliverySelect').isVisible(), false, 'no free offline copy is offered');
+  await owner.click('#createGiftBtn'); await owner.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
+  assert.equal(await owner.locator('#unlockPanel').isVisible(), true, 'unlock panel shown');
+  assert.equal(await owner.locator('#copyGiftLink').isDisabled(), true, 'cannot copy a link that does not work yet');
+  assert.equal(await owner.locator('#whatsappGift').isDisabled(), true);
+  assert.equal(await owner.locator('#downloadGift').isDisabled(), true, 'export is locked too');
+  assert.equal(await owner.locator('#previewPublished').isDisabled(), false, 'the owner can still preview');
+  assert.match(await owner.inputValue('#giftLink'), /once it is unlocked/);
+  const saved = await owner.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
+
+  // nobody else can open it, and nothing about it leaks
+  assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 402);
+  const stranger = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); stranger.setDefaultTimeout(15000);
+  await stranger.goto(`${LOCKED_APP}/g/${saved.id}`, { waitUntil: 'load' });
+  await stranger.waitForSelector('#errorView:not([hidden])');
+  assert.match(await stranger.locator('#errorMessage').innerText(), /not unlocked yet/);
+  assert.doesNotMatch(await stranger.title(), /Noor/);
+  assert.doesNotMatch((await stranger.locator('meta[property="og:title"]').getAttribute('content')) ?? '', /Noor/, 'no recipient name in the share preview of a locked gift');
+  assert.doesNotMatch((await stranger.locator('meta[property="og:image"]').getAttribute('content')) ?? '', /\/gifts\//, 'the gift\'s own cover image is not exposed while locked');
+
+  // unlocking is not possible by clicking: no payment provider is connected yet
+  await owner.click('[data-v3="unlock"]');
+  await owner.waitForFunction(() => /Payments are not set up yet/.test(document.querySelector('#toast')?.textContent || ''));
+  assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 402, 'still locked');
+
+  // a verified payment (simulated as the webhook would: the row is marked paid) opens the link
+  const paid = await fetch(`${MOCK}/rest/v1/gifts?id=eq.${saved.id}`, { method: 'PATCH', headers: { 'content-type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString() }) });
+  assert.equal((await paid.json()).length, 1);
+  assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 200, 'the link opens once paid');
+  await stranger.goto(`${LOCKED_APP}/g/${saved.id}`, { waitUntil: 'load' }); await stranger.waitForSelector('#experience:not([hidden])');
+  await owner.click('[data-v3="unlock"]');                                     // owner's screen catches up
+  await owner.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
+  assert.equal(await owner.locator('#copyGiftLink').isDisabled(), false, 'link tools are available after unlocking');
+  assert.match(await owner.inputValue('#giftLink'), /\/g\/[a-f0-9]{24}$/);
 
   assert.deepEqual(errors.filter(e => !/favicon/.test(e)), [], 'no browser errors');
   console.log('e2e smoke passed');
