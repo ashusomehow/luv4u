@@ -4,6 +4,7 @@ import './globals.css';
 import './legacy.css';
 import './creator.css';
 import './motion.css';
+import './effects.css';
 import './seo.css';
 
 const DESCRIPTION =

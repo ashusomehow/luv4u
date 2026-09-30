@@ -70,14 +70,14 @@ describe('with payments required', () => {
   });
 
   it('advertises the requirement', async () => {
-    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 149, linkDays: 365 });
+    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 99, linkDays: 365 });
   });
 
   it('takes the price from PAYMENT_PRICE_INR and falls back to the default for nonsense', async () => {
     process.env.PAYMENT_PRICE_INR = '199';
     expect((await (await getConfig()).json()).payments.priceInr).toBe(199);
     process.env.PAYMENT_PRICE_INR = 'free';
-    expect((await (await getConfig()).json()).payments.priceInr).toBe(149);
+    expect((await (await getConfig()).json()).payments.priceInr).toBe(99);
     delete process.env.PAYMENT_PRICE_INR;
   });
 
@@ -200,6 +200,21 @@ describe('checkout placeholder', () => {
     const res = await checkoutPost(req('/x', 'POST', undefined, KEY), ctx());
     expect(res.status).toBe(503);
     expect((await findGift(ID))?.status).toBe('preview');
+  });
+
+  it('unlocks without charging in test mode, but never on the production deployment', async () => {
+    await create();
+    process.env.PAYMENT_SIMULATE = 'true';
+    process.env.VERCEL_ENV = 'production';
+    expect((await checkoutPost(req('/x', 'POST', undefined, KEY), ctx())).status).toBe(503);
+    expect((await findGift(ID))?.status).toBe('preview');
+    process.env.VERCEL_ENV = 'preview';
+    expect((await (await getConfig()).json()).payments.simulated).toBe(true);
+    const res = await checkoutPost(req('/x', 'POST', undefined, KEY), ctx());
+    expect(await res.json()).toMatchObject({ ok: true, status: 'paid', simulated: true });
+    expect((await findGift(ID))?.status).toBe('paid');
+    delete process.env.PAYMENT_SIMULATE;
+    delete process.env.VERCEL_ENV;
   });
 
   it('answers ok for a gift that is already unlocked', async () => {

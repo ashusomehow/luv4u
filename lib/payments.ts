@@ -13,11 +13,19 @@ export const PAID_LINK_DAYS = 365;
 /** One-time price shown to buyers, in whole rupees. Override with PAYMENT_PRICE_INR. */
 export function priceInr(): number {
   const n = Number(process.env.PAYMENT_PRICE_INR);
-  return Number.isFinite(n) && n >= 1 && n <= 100000 ? Math.round(n) : 149;
+  return Number.isFinite(n) && n >= 1 && n <= 100000 ? Math.round(n) : 99;
 }
 
 /** How long an unpaid preview is kept before the daily cleanup removes it. */
 export function previewTtlDays(): number {
   const n = Number(process.env.PREVIEW_TTL_DAYS);
   return Number.isFinite(n) && n >= 1 && n <= 30 ? Math.trunc(n) : 7;
+}
+
+/**
+ * Test mode: the checkout marks the gift paid without charging anything, so the whole flow can be tried
+ * before a payment provider is connected. Refused on the Vercel production deployment whatever the setting.
+ */
+export function simulatePayments(): boolean {
+  return process.env.PAYMENT_SIMULATE === 'true' && process.env.VERCEL_ENV !== 'production';
 }
