@@ -70,15 +70,23 @@ describe('with payments required', () => {
   });
 
   it('advertises the requirement', async () => {
-    expect((await (await getConfig()).json()).payments).toEqual({ required: true });
+    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 149, linkDays: 365 });
   });
 
-  it('creates a private preview that expires soon and remembers the chosen link lifetime', async () => {
+  it('takes the price from PAYMENT_PRICE_INR and falls back to the default for nonsense', async () => {
+    process.env.PAYMENT_PRICE_INR = '199';
+    expect((await (await getConfig()).json()).payments.priceInr).toBe(199);
+    process.env.PAYMENT_PRICE_INR = 'free';
+    expect((await (await getConfig()).json()).payments.priceInr).toBe(149);
+    delete process.env.PAYMENT_PRICE_INR;
+  });
+
+  it('creates a private preview that expires soon with a fixed one-year link once unlocked', async () => {
     const data = await (await create()).json();
     expect(data.status).toBe('preview');
     const row = fake.tables.gifts[0];
     expect(row.status).toBe('preview');
-    expect(row.live_days).toBe(90);
+    expect(row.live_days).toBe(365); // the client's 90 is ignored: paid links have one fixed lifetime
     expect(daysUntil(row.expires_at as string)).toBe(7);
   });
 
@@ -113,13 +121,13 @@ describe('with payments required', () => {
     expect(fake.tables.gift_replies ?? []).toHaveLength(0);
   });
 
-  it('lets the owner keep editing a preview, extending its life and remembering a new link lifetime', async () => {
+  it('lets the owner keep editing a preview, extending its life; a client-sent lifetime is ignored', async () => {
     await create();
     fake.tables.gifts[0].expires_at = new Date(Date.now() + DAY).toISOString();
     const edited = await (await PATCH(req('/x', 'PATCH', { gift: gift({ name: 'Sara' }), expiresDays: 30 }, KEY), ctx())).json();
     expect(edited.status).toBe('preview');
     expect(edited.gift.name).toBe('Sara');
-    expect(fake.tables.gifts[0].live_days).toBe(30);
+    expect(fake.tables.gifts[0].live_days).toBe(365);
     expect(daysUntil(fake.tables.gifts[0].expires_at as string)).toBe(7);
   });
 
@@ -128,7 +136,7 @@ describe('with payments required', () => {
     const row = await markPaid(ID);
     expect(row?.status).toBe('paid');
     expect(row?.paid_at).toBeTruthy();
-    expect(daysUntil(row?.expires_at as string)).toBe(90);
+    expect(daysUntil(row?.expires_at as string)).toBe(365);
 
     const opened = await readGift(req('/x', 'GET'), ctx());
     expect(opened.status).toBe(200);
@@ -147,12 +155,13 @@ describe('with payments required', () => {
     expect(await markPaid('0'.repeat(24))).toBeNull();
   });
 
-  it('applies an edited link lifetime to an unlocked gift immediately', async () => {
+  it('does not let an unlocked gift shorten or extend its paid lifetime by editing', async () => {
     await create();
     await markPaid(ID);
+    const before = fake.tables.gifts[0].expires_at;
     const edited = await (await PATCH(req('/x', 'PATCH', { gift: gift(), expiresDays: 7 }, KEY), ctx())).json();
     expect(edited.status).toBe('paid');
-    expect(daysUntil(edited.expiresAt)).toBe(7);
+    expect(edited.expiresAt).toBe(before);
   });
 
   it('retrying a create answers with the stored status', async () => {

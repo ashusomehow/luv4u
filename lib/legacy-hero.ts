@@ -23,8 +23,8 @@ export function bodyForOccasion(key: OccasionKey): string {
   html = replaceOnce(html, /<p class="hero-desc" id="landingLead">[\s\S]*?<\/p>/, () => `<p class="hero-desc" id="landingLead">${escapeHtml(hero.lead)}</p>`);
   html = replaceOnce(
     html,
-    /<button class="btn btn-primary" id="primaryCreate" data-action="create">Choose a gift (<svg[\s\S]*?<\/svg>)<\/button>/,
-    (m) => `<button class="btn btn-primary" id="primaryCreate" data-choose-occasion="${key}">${escapeHtml(hero.cta)} ${m[1]}</button>`,
+    /<button class="btn btn-primary pulse-cta" id="primaryCreate" data-action="create">Make a gift, free preview (<svg[\s\S]*?<\/svg>)<\/button>/,
+    (m) => `<button class="btn btn-primary pulse-cta" id="primaryCreate" data-choose-occasion="${key}">${escapeHtml(hero.cta)} ${m[1]}</button>`,
   );
   return html;
 }

@@ -99,10 +99,41 @@ footer a{display:inline-flex;align-items:center;min-height:44px}
 .settings-line{min-height:44px}
 input[type=range]{min-height:44px}
 
-/* ---------- Share screen for a gift that is saved but not unlocked yet ---------- */
-.unlock-panel{margin:0 0 22px;padding:20px 22px;border:1px solid var(--line);border-radius:20px;background:#fffdfa;text-align:left;box-shadow:0 12px 30px -24px rgba(67,45,50,.55)}
+/* ---------- Saved but not unlocked: what is at stake, the price, the terms ---------- */
+.unlock-panel{margin:0 0 22px;padding:20px 22px 22px;border:1px solid var(--line);border-radius:22px;background:#fffdfa;text-align:left;box-shadow:0 14px 34px -26px rgba(67,45,50,.6)}
 .unlock-panel[hidden]{display:none}
-.unlock-panel h2{margin:0 0 8px;font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.2;color:var(--ink)}
+.unlock-gift{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:10px 12px;border-radius:16px;background:#f8ede9}
+.unlock-art{flex:none;width:52px;height:52px;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:#fff;color:var(--rose);font-family:var(--serif);font-size:26px}
+.unlock-art img{width:100%;height:100%;object-fit:cover}
+.unlock-gift-copy{display:flex;flex-direction:column;min-width:0;font-size:13px;color:var(--muted);line-height:1.4}
+.unlock-gift-copy strong{color:var(--ink);font-size:15px;font-weight:600}
+.unlock-panel h2{margin:0 0 8px;font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.2;color:var(--ink)}
 .unlock-panel p{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.6}
-.unlock-panel .unlock-actions{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 12px}
+.unlock-price{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
+.unlock-price strong{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1;color:var(--ink)}
+.unlock-price span{font-size:14px;color:var(--muted)}
+.unlock-list{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;color:var(--ink)}
+.unlock-list li::before{content:'✓';margin-right:10px;color:var(--rose);font-weight:700}
+.unlock-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 12px}
+.unlock-actions .btn{width:100%;min-height:54px;font-size:16px}
+.unlock-panel .unlock-loss{margin:0 0 8px;color:#8d3f51;font-weight:600;font-size:14px}
 .unlock-panel .unlock-note{margin:0;font-size:13px}
+@media(min-width:761px){.unlock-actions .btn{width:auto;min-width:280px}}
+
+/* ---------- Last step: the price, said plainly ---------- */
+.price-line{margin:16px 0 0;padding:12px 14px;border-radius:14px;background:#f8ede9;color:var(--ink);font-size:14px;line-height:1.5}
+.price-line[hidden]{display:none}
+
+/* ---------- Preview of an unsent gift: the way forward stays in view, biggest at the last scene ---------- */
+.unlock-tray{position:absolute;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 16px;border-radius:20px;background:#fffbf0f2;color:#5b4549;box-shadow:0 16px 36px -14px rgba(0,0,0,.75);font-size:13px;transition:padding .3s}
+.unlock-tray-copy{display:flex;flex-direction:column;min-width:0;line-height:1.35}
+.unlock-tray-copy strong{font-size:15px;color:#432d32}
+.unlock-tray-btn{flex:none;min-height:44px;padding:0 18px;border-radius:999px;background:#aa5265;color:#fff;font-size:14px;font-weight:600}
+.unlock-tray-btn:hover,.unlock-tray-btn:focus-visible{background:#8d3f51}
+.unlock-tray.is-final{flex-direction:column;align-items:stretch;text-align:center;padding:16px}
+.unlock-tray.is-final .unlock-tray-btn{min-height:52px;font-size:16px}
+@media(min-width:761px){.unlock-tray{left:50%;right:auto;width:min(520px,calc(100% - 32px));transform:translateX(-50%)}}
+/* keep the scene's own buttons clear of the bar */
+#experience:has(.unlock-tray) .story-scroll{padding-bottom:96px}
+#experience:has(.unlock-tray.is-final) .story-scroll{padding-bottom:170px}
+@media(prefers-reduced-motion:reduce){.unlock-tray{transition:none}}

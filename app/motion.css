@@ -1,0 +1,77 @@
+/* Motion and conversion styling: landing trust row, resume card, sticky CTA, price strip, and the
+   micro-interactions that make the next step feel obvious. Timing follows NN/g guidance: ~100 ms for
+   feedback, 200-320 ms for panels, nothing near 500 ms. Only transform and opacity animate. */
+
+/* ---------- Hero ---------- */
+.trust-row{display:flex;flex-wrap:wrap;gap:6px 16px;margin:16px 0 0;padding:0;list-style:none;font-size:13px;line-height:1.5;color:#5b4549;min-height:2.9em}
+.trust-row li::before{content:'✓';margin-right:6px;color:var(--rose);font-weight:700}
+.trust-row li[hidden]{display:none}
+@media(max-width:760px){.trust-row{justify-content:center}}
+@keyframes chipIn{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+.hero-chip{animation:chipIn .34s cubic-bezier(.2,.7,.2,1) backwards;animation-delay:calc(160ms + var(--n,0) * 45ms)}
+
+/* ---------- The main buttons breathe: a soft ring, compositor-only, calm enough to ignore ---------- */
+.pulse-cta,#wizardNext.is-ready,.unlock-tray-btn{position:relative}
+.pulse-cta::after,#wizardNext.is-ready::after{content:'';position:absolute;inset:0;border-radius:inherit;border:2px solid #aa5265;opacity:0;pointer-events:none;animation:ctaRing 3.2s ease-out 1.4s infinite}
+@keyframes ctaRing{0%{transform:scale(1);opacity:.5}55%,100%{transform:scale(1.1,1.32);opacity:0}}
+.btn:active,.hero-chip:active,.resume-btn:active,.unlock-tray-btn:active{transform:translateY(1px) scale(.985);transition-duration:.1s}
+
+/* ---------- Reveal on scroll (added by motion.js; content is visible without it) ---------- */
+.js-motion .reveal:not(.in){opacity:0;transform:translateY(16px)}
+.reveal{transition:opacity .42s cubic-bezier(.2,.7,.2,1) calc(var(--i,0) * 70ms),transform .42s cubic-bezier(.2,.7,.2,1) calc(var(--i,0) * 70ms)}
+
+/* ---------- Sticky call to action (phones) ---------- */
+.sticky-cta{display:none}
+@media(max-width:760px){
+  .sticky-cta{display:block;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:35;transform:translateY(160%);transition:transform .28s cubic-bezier(.2,.7,.2,1)}
+  .sticky-cta.show{transform:none}
+  .sticky-cta .btn{width:100%;min-height:54px;font-size:16px;box-shadow:0 16px 32px -14px rgba(67,45,50,.6)}
+}
+
+/* ---------- Resume card: a fixed card, so appearing never moves the page ---------- */
+.resume-banner{position:fixed;z-index:36;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;padding:10px 6px 10px 16px;background:#fffdfa;border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 38px -16px rgba(67,45,50,.6);visibility:hidden;transform:translateY(160%);transition:transform .3s cubic-bezier(.2,.7,.2,1),visibility 0s .3s}
+.resume-banner.show{visibility:visible;transform:none;transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.resume-copy{flex:1;min-width:0;display:flex;flex-direction:column;font-size:13px;line-height:1.4;color:var(--muted)}
+.resume-copy strong{color:var(--ink);font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resume-btn{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:#aa5265;color:#fff;font-size:14px;font-weight:600;text-decoration:none}
+.resume-btn:hover,.resume-btn:focus-visible{background:#8d3f51}
+.resume-close{flex:none;width:44px;height:44px;border-radius:50%;color:var(--muted);font-size:22px;line-height:1}
+@media(min-width:761px){.resume-banner{left:auto;right:24px;width:min(440px,calc(100% - 48px))}}
+
+/* ---------- Honest price strip (only when payments are on) ---------- */
+.price-strip{max-width:1152px;margin:48px auto;padding:28px 32px;display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:center;border:1px solid var(--line);border-radius:28px;background:linear-gradient(135deg,#f8ede9,#fbf4e6)}
+.price-strip h2{margin:0 0 8px;font-family:var(--serif);font-weight:400;font-size:34px;line-height:1.15;letter-spacing:-.4px;color:var(--ink)}
+.price-strip p{margin:0 0 12px;color:var(--muted);font-size:15px}
+.price-strip ul{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px;color:var(--ink)}
+.price-strip li::before{content:'✓';margin-right:10px;color:var(--rose);font-weight:700}
+.price-strip-cta{text-align:center}
+.price-strip-cta .btn{width:100%;min-height:54px;font-size:16px}
+.price-strip-cta small{display:block;margin-top:10px;font-size:12px;line-height:1.5;color:var(--muted)}
+@media(max-width:760px){.price-strip{grid-template-columns:1fr;margin:36px 22px;padding:22px}.price-strip h2{font-size:28px}}
+
+/* ---------- Creator and paywall micro-interactions ---------- */
+@keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.wizard-panel:not([hidden]){animation:panelIn .26s cubic-bezier(.2,.7,.2,1)}
+.unlock-panel:not([hidden]){animation:panelIn .32s cubic-bezier(.2,.7,.2,1)}
+@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+.vibe-btn[aria-pressed=true]{animation:pop .28s ease-out}
+@keyframes pricePop{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+.unlock-price strong{animation:pricePop .5s cubic-bezier(.2,.7,.2,1) .12s backwards}
+.unlock-tray-btn.pulse-cta::after{border-radius:999px}
+
+/* ---------- Reduced motion: no ring, no entrances, no slides ---------- */
+@media(prefers-reduced-motion:reduce){
+  .pulse-cta::after,#wizardNext.is-ready::after{display:none}
+  .hero-chip,.wizard-panel,.unlock-panel,.vibe-btn,.unlock-price strong{animation:none}
+  .reveal,.sticky-cta,.resume-banner{transition:none}
+  .js-motion .reveal:not(.in){opacity:1;transform:none}
+}
+
+/* ---------- "Try it before you decide": the demo is a real button next to the main one ---------- */
+.hero-demo{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:12px 0 0;padding:0 18px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font-size:14px;transition:border-color .2s,background .2s}
+.hero-demo:hover,.hero-demo:focus-visible{border-color:var(--rose);background:#f8ebe8}
+.hero-demo .icon{width:16px;height:16px;color:var(--rose)}
+/* the main button and the demo share one row (stacked and centred on phones) */
+.hero-cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.hero-cta .hero-demo{margin:0}
+@media(max-width:760px){.hero-cta{flex-direction:column;justify-content:center}}
