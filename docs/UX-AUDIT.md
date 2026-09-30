@@ -187,3 +187,19 @@ Re-measured with the same scripts on the same phone (390×844). "Before" is the 
 - Desktop side preview: reflect the typed note and first photo.
 - The real usability sessions above, especially the "would you pay, and how much" questions.
 - Real-device checks (keyboard behaviour with the name field on small phones; performance on a budget Android phone).
+
+
+## Journey audit: duplicate actions (second pass)
+
+Rule applied: one screen, one way forward per job. Each duplicate found, and what replaced it:
+
+| Screen | Was | Now |
+| --- | --- | --- |
+| Creator dock, steps 1–2 | "Preview" next to "Preview & send" (which was really "next step") | Only "Next: …". "Preview" appears on step 3, where previewing is the job |
+| Creator, mood | "No special date…" repeated under the moods, in the journey box and in the heading | Said once. The mood label now says what it does: "Sets the colours, words and music" |
+| Share screen, sending | Copy link, WhatsApp, "Share the surprise", "Share artwork" | Copy link and WhatsApp; one "More apps" for other apps; one "Save this picture" with a line saying what it is |
+| Share screen, private key | "Copy private recovery link", "Save recovery file", "My little gifts" (also in the header) | One "Copy my private edit link" |
+| Recipient reply (hosted gifts) | "Wrap up my reply", then WhatsApp, Copy, "Send directly", plus a native Share | One "Send my reply", then a calm "Sent" state |
+| Recipient reply (standalone file) | "Wrap up my reply", then share, WhatsApp and copy | One best send button (WhatsApp if the sender left a number, else Share, else Copy) and "or copy it instead" |
+
+Still open: the landing page offers the occasion three ways (hero chips, the eight cards lower down, the footer links). The cards and links exist for search engines, so they stay, but the hero picker is the main path.

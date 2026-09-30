@@ -79,3 +79,10 @@
   .pay-backdrop,.pay-modal,.pay-check{animation:none}
   .btn-primary.is-busy::after{animation-duration:2s}
 }
+
+/* ---------- Journey clean-up ---------- */
+.field-hint{margin-left:8px;font-weight:400;font-size:13px;color:#5b4549}
+.reply-share-panel{display:flex;flex-direction:column;align-items:center;gap:8px}
+.reply-alt{min-height:44px;padding:0 10px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:4px}
+.reply-alt:hover{color:#8d3f51}
+.share-cover-note{margin:10px 0 0;text-align:center;font-size:13px;color:#5b4549}

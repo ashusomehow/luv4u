@@ -169,6 +169,8 @@ try {
   assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   const link = await page.inputValue('#giftLink');
+  const shareButtons = await page.locator('#shareView button:visible').allInnerTexts();
+  assert.equal(shareButtons.filter(t => /copy link|whatsapp|share artwork|recovery file/i.test(t)).length, 2, `one way per job on the share screen: ${shareButtons}`);
   assert.match(link, /\/g\/[a-f0-9]{24}$/);
   let s = await state();
   assert.equal(s.gifts, 1);
