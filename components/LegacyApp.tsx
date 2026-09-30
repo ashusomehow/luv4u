@@ -15,6 +15,7 @@ export function LegacyApp() {
     <>
       <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: LEGACY_BODY_HTML }} />
       <script id="giftPayload" type="application/json" dangerouslySetInnerHTML={{ __html: 'null' }} />
+      <Script src="/legacy/track.js" strategy="afterInteractive" />
       <Script src="/legacy/app.js" strategy="afterInteractive" data-luv4u-legacy="" />
     </>
   );
