@@ -202,6 +202,21 @@ describe('checkout placeholder', () => {
     expect((await findGift(ID))?.status).toBe('preview');
   });
 
+  it('unlocks without charging in test mode, but never on the production deployment', async () => {
+    await create();
+    process.env.PAYMENT_SIMULATE = 'true';
+    process.env.VERCEL_ENV = 'production';
+    expect((await checkoutPost(req('/x', 'POST', undefined, KEY), ctx())).status).toBe(503);
+    expect((await findGift(ID))?.status).toBe('preview');
+    process.env.VERCEL_ENV = 'preview';
+    expect((await (await getConfig()).json()).payments.simulated).toBe(true);
+    const res = await checkoutPost(req('/x', 'POST', undefined, KEY), ctx());
+    expect(await res.json()).toMatchObject({ ok: true, status: 'paid', simulated: true });
+    expect((await findGift(ID))?.status).toBe('paid');
+    delete process.env.PAYMENT_SIMULATE;
+    delete process.env.VERCEL_ENV;
+  });
+
   it('answers ok for a gift that is already unlocked', async () => {
     await create();
     await markPaid(ID);

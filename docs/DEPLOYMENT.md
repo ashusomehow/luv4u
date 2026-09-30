@@ -100,3 +100,8 @@ Vercel builds every non-production branch as a Preview deployment. By default it
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every pull request and every push to `main`: typecheck, lint, unit/API tests, production build, and an end-to-end browser smoke test (`npm run test:e2e`) that creates, opens, replies to and deletes a gift against a local Supabase-compatible mock. Run it locally with `NEXT_PUBLIC_SITE_URL=http://localhost:3100 npm run build && npm run test:e2e` (the site URL is fixed into static pages at build time); set `CHROMIUM_EXECUTABLE` if Playwright's browser isn't installed.
+
+
+## Trying the payment flow before Razorpay
+
+Set `PAYMENTS_REQUIRED=true` and `PAYMENT_SIMULATE=true` on a **Preview** deployment (or locally). The unlock button opens the payment modal, and its button unlocks the gift without charging anything; the modal says "Test mode". `PAYMENT_SIMULATE` is ignored on the Vercel Production deployment, so it cannot give away free unlocks there. The Razorpay task replaces the simulated branch in `app/api/gifts/[id]/checkout/route.ts` with a real order.

@@ -21,3 +21,11 @@ export function previewTtlDays(): number {
   const n = Number(process.env.PREVIEW_TTL_DAYS);
   return Number.isFinite(n) && n >= 1 && n <= 30 ? Math.trunc(n) : 7;
 }
+
+/**
+ * Test mode: the checkout marks the gift paid without charging anything, so the whole flow can be tried
+ * before a payment provider is connected. Refused on the Vercel production deployment whatever the setting.
+ */
+export function simulatePayments(): boolean {
+  return process.env.PAYMENT_SIMULATE === 'true' && process.env.VERCEL_ENV !== 'production';
+}

@@ -79,7 +79,7 @@ try {
   assert.match(page.url(), /#make=love$/);
 
   // 1c. Conversion pieces on the landing page
-  assert.match(await page.locator('#primaryCreate').innerText(), /Make a gift, free preview/, 'the main button says what the visitor gets');
+  assert.match(await page.locator('#primaryCreate').innerText(), /^Make a gift\s*$/, 'the main button is plain');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('.trust-row');
   assert.equal(await page.locator('.trust-row li:visible').count(), 3, 'three promises are visible when payments are off');
   assert.equal(await page.locator('[data-pay-only]').first().isVisible(), false, 'no pay-only promise while everything is free');
@@ -225,11 +225,12 @@ try {
 
 
   // 7. Preview first, pay after: with payments required a new gift is a private preview
-  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 149, linkDays: 365 });
+  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 99, linkDays: 365 });
   const lp = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA })).newPage(); lp.setDefaultTimeout(15000);
   await lp.goto(LOCKED_APP + '/', { waitUntil: 'load' }); await lp.waitForSelector('#priceStrip');
   const strip = await lp.locator('#priceStrip').innerText();
   assert.match(strip, /Free to build\. ₹99 to send\./); assert.match(strip, /One-time, no subscription/); assert.match(strip, /not refundable/);
+  assert.equal((await lp.locator('.cta-free').innerText()).trim(), 'Free preview', 'the free preview note sits under the button');
   assert.equal(await lp.locator('[data-pay-only]').first().isVisible(), true, 'the pay-only promise appears once payments are on');
   const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
@@ -275,17 +276,25 @@ try {
   assert.doesNotMatch((await stranger.locator('meta[property="og:title"]').getAttribute('content')) ?? '', /Noor/, 'no recipient name in the share preview of a locked gift');
   assert.doesNotMatch((await stranger.locator('meta[property="og:image"]').getAttribute('content')) ?? '', /\/gifts\//, 'the gift\'s own cover image is not exposed while locked');
 
-  // unlocking is not possible by clicking: no payment provider is connected yet
+  // the payment modal opens, states the terms, and cannot unlock anything without a payment provider
   await owner.click('[data-v3="unlock"]');
-  await owner.waitForFunction(() => /Payments are not set up yet/.test(document.querySelector('#toast')?.textContent || ''));
+  await owner.waitForSelector('.pay-modal');
+  const modalText = await owner.locator('.pay-modal').innerText();
+  assert.match(modalText, /Unlock Noor’s gift/); assert.match(modalText, /₹99/); assert.match(modalText, /not refundable/);
+  assert.equal(await owner.locator('#payGo').innerText(), 'Pay ₹99');
+  await owner.click('#payGo');
+  await owner.waitForFunction(() => /Payments are not set up yet/.test(document.querySelector('#payError')?.textContent || ''));
   assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 402, 'still locked');
+  assert.equal(await owner.locator('#unlockPanel').isVisible(), true, 'the gift stays locked after a failed payment');
+  await owner.keyboard.press('Escape'); await owner.waitForSelector('.pay-modal', { state: 'detached' });
 
   // a verified payment (simulated as the webhook would: the row is marked paid) opens the link
   const paid = await fetch(`${MOCK}/rest/v1/gifts?id=eq.${saved.id}`, { method: 'PATCH', headers: { 'content-type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString() }) });
   assert.equal((await paid.json()).length, 1);
   assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 200, 'the link opens once paid');
   await stranger.goto(`${LOCKED_APP}/g/${saved.id}`, { waitUntil: 'load' }); await stranger.waitForSelector('#experience:not([hidden])');
-  await owner.click('[data-v3="unlock"]');                                     // owner's screen catches up
+  await owner.click('[data-v3="unlock"]'); await owner.click('#payGo');          // owner's screen catches up
+  await owner.waitForSelector('#payDone'); await owner.click('#payDone');
   await owner.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
   assert.equal(await owner.locator('#copyGiftLink').isDisabled(), false, 'link tools are available after unlocking');
   assert.match(await owner.inputValue('#giftLink'), /\/g\/[a-f0-9]{24}$/);

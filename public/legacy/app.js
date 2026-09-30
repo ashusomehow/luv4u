@@ -495,7 +495,7 @@ async function restoreDraft(){let saved;try{saved=await store('draft');}catch{}i
 function saveLibrary(){try{localStorage.setItem(LIBRARY_KEY,JSON.stringify(libraryCache));return true;}catch{toast('Save your private recovery link now. This browser cannot remember your gifts.');return false;}}
 function rememberGift(entry){libraryCache=libraryCache.filter(v=>v.id!==entry.id);libraryCache.unshift({...entry,at:new Date().toISOString()});libraryCache=libraryCache.slice(0,100);saveLibrary();}
 async function api(path,options={}){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),options.timeout||45000);try{const r=await fetch(path,{method:options.method||'GET',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.key?{Authorization:'Bearer '+options.key}:{})},body:options.body?JSON.stringify(options.body):undefined,signal:controller.signal,cache:'no-store',credentials:'omit'});let data;try{data=await r.json();}catch{throw new Error('The gift server returned an unexpected response. Your draft is still safe.');}if(!r.ok){const err=new Error(data.error||'The gift could not be saved.');err.status=r.status;throw err;}return data;}catch(err){if(err.name==='AbortError')throw new Error('The gift server is taking too long. Try again; your draft is still here.');throw err;}finally{clearTimeout(timeout);}}
-async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;payLinkDays=Number(c.payments?.linkDays)||365;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
+async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;paySimulated=paymentsRequired&&c.payments.simulated===true;payLinkDays=Number(c.payments?.linkDays)||365;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
 function clearGiftHash(){try{const p=/^\/(g|for)\//.test(location.pathname)?'/':location.pathname;history.replaceState(null,'',p+location.search);}catch{}}
 function showView(view){if($('.skip-link'))$('.skip-link').hidden=view!=='home';stopPreviewAudio();showViewV1(view);updateResumeBanner();$('#myGiftsView').hidden=view!=='library';if(view==='library')$('#myGiftsView').hidden=false;const right=$('#headerRight');if(!right.querySelector('.my-gifts-link'))right.insertAdjacentHTML('afterbegin','<button class="nav-link my-gifts-link" data-v2="library">My little gifts</button>');if(view==='creator')setStep(wizardStep,false);if(view==='library'){document.title='Your little gifts · Luv4u';right.innerHTML='<button class="nav-link pill-link" data-action="create">Make another little gift ♡</button>';}}
 async function openCreator(key='birthday'){
@@ -762,7 +762,7 @@ function updatePaymentsUI(){
  let strip=$('#priceStrip');
  if(!paymentsRequired||!priceText()){strip?.remove();return;}
  if(!strip){$('#how-it-works').insertAdjacentHTML('beforebegin','<section class="price-strip" id="priceStrip" aria-labelledby="priceStripTitle"></section>');strip=$('#priceStrip');}
- strip.innerHTML=`<div class="price-strip-copy"><h2 id="priceStripTitle">Free to build. ${e(priceText())} to send.</h2><p>Make it, preview it and change it as often as you like. You pay once, only when you are ready to send it.</p><ul><li>One-time, no subscription</li><li>The link stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li></ul></div><div class="price-strip-cta"><button type="button" class="btn btn-primary pulse-cta" data-action="create">Make a gift, free preview</button><small>Once a gift is unlocked the payment is not refundable, which is why previewing is free.</small></div>`;
+ strip.innerHTML=`<div class="price-strip-copy"><h2 id="priceStripTitle">Free to build. ${e(priceText())} to send.</h2><p>Make it, preview it and change it as often as you like. You pay once, only when you are ready to send it.</p><ul><li>One-time, no subscription</li><li>The link stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li></ul></div><div class="price-strip-cta"><button type="button" class="btn btn-primary pulse-cta" data-action="create">Make a gift</button><small>Once a gift is unlocked the payment is not refundable, which is why previewing is free.</small></div>`;
 }
 /* Someone who started a gift and left finds it waiting: a fixed card (so it never shifts the page). */
 function updateResumeBanner(){
@@ -819,14 +819,46 @@ function updateUnlockTray(){
  const btn=$('.unlock-tray-btn',tray);btn.dataset.story=saved?'preview-unlock':'preview-save';
  btn.textContent=saved?(last?'Unlock & send':'Unlock')+(price?' · '+price:''):(last?'Save & continue':'Save');
 }
-async function unlockGift(){
+let paySimulated=false;
+/* The payment modal. It states the price, what is included and the refund rule, then takes the buyer to checkout. */
+function unlockGift(){
  if(!editing?.key||!publishedGift?.server)return;
- const btn=$('[data-v3="unlock"]');if(btn)btn.disabled=true;
- try{
-  const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
-  if(r.status==='paid'){const o=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});publishedStatus='paid';publishedURL=o.url;showShare();toast('Unlocked. Send it with love. ♡');confetti(110);}
- }catch(err){toast(err.message||'We could not unlock your gift. It is still saved.');}
- finally{if(btn)btn.disabled=false;}
+ const previous=document.activeElement,root=$('#modalRoot'),name=e(publishedGift.name),price=priceText(),o=occasionOf(publishedGift);
+ root.innerHTML=`<div class="modal-backdrop pay-backdrop"><section class="modal pay-modal" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+<button type="button" class="pay-close" id="payClose" aria-label="Close">×</button>
+<div class="pay-body" id="payBody">
+<div class="pay-gift"><span class="pay-gift-art" aria-hidden="true">${e(o.symbol)}</span><span><strong>${e(o.short)} for ${name}</strong><small>${e(madeSummary(publishedGift))}</small></span></div>
+<h2 id="payTitle">Unlock ${name}’s gift</h2>
+<div class="pay-price"><strong>${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
+<ul class="pay-list"><li>Your private link, ready to send the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li></ul>
+${paySimulated?'<p class="pay-test"><strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.</p>':'<p class="pay-methods" aria-label="Payment methods">UPI · Cards · Netbanking</p>'}
+<p class="pay-error" id="payError" role="alert" hidden></p>
+<button type="button" class="btn btn-primary pay-btn" id="payGo">${paySimulated?'Continue (test mode)':'Pay '+e(price)}</button>
+<button type="button" class="pay-later" id="payLater">Not yet, keep it saved</button>
+<p class="pay-terms">Once a gift is unlocked, the payment is not refundable. Previewing stays free, so look as often as you like.</p>
+</div></section></div>`;
+ const close=()=>{root.innerHTML='';document.removeEventListener('keydown',trap);previous?.focus?.();};
+ const trap=event=>{if(event.key==='Escape'&&!$('#payGo')?.disabled)close();if(event.key==='Tab'){const bs=$$('button:not([disabled])',root),first=bs[0],last=bs[bs.length-1];if(!first)return;if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}};
+ document.addEventListener('keydown',trap);
+ $('#payClose').onclick=close;$('#payLater').onclick=close;
+ $('.pay-backdrop',root).addEventListener('click',ev=>{if(ev.target.classList.contains('pay-backdrop')&&!$('#payGo')?.disabled)close();});
+ $('#payGo').onclick=async()=>{
+  const go=$('#payGo'),err=$('#payError'),label=go.textContent;
+  go.disabled=true;go.classList.add('is-busy');go.textContent='Processing…';err.hidden=true;$('#payLater').disabled=true;
+  try{
+   const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
+   if(r.status!=='paid')throw new Error('We could not confirm the payment. Nothing was unlocked.');
+   const owner=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});
+   publishedStatus='paid';publishedURL=owner.url;
+   $('#payBody').innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="payTitle">Unlocked. ${name} can open it now.</h2><p>Your private link is ready. Send it whenever you like.</p><button type="button" class="btn btn-primary pay-btn" id="payDone">Get my link</button></div>`;
+   $('#payClose').hidden=true;confetti(140);$('#payDone').focus();
+   $('#payDone').onclick=()=>{close();showShare();toast('Unlocked. Send it with love. ♡');};
+  }catch(ex){
+   go.disabled=false;go.classList.remove('is-busy');go.textContent=label;$('#payLater').disabled=false;
+   err.textContent=ex.message||'We could not take the payment. Your gift is still saved.';err.hidden=false;
+  }
+ };
+ $('#payGo').focus();
 }
 /* Open a saved gift's share screen (used for gifts still waiting to be unlocked). */
 async function openSavedShare(id){
@@ -1532,7 +1564,7 @@ function applyCampaign(key,keepTitle=false){
 }
 function resetLanding(){
  if(!$('#landingTitle'))return;$('#landingTitle').innerHTML='Some feelings<br>deserve a little<br><em>magic.</em>';$('#landingLead').innerHTML='More than a message. A little world they get to<br>open, feel, and keep. Made by you, just for them.';
- const b=$('#primaryCreate');delete b.dataset.chooseOccasion;b.dataset.action='create';b.innerHTML='Make a gift, free preview '+icon('spark');setHomeOccasion(homeOccasion);
+ const b=$('#primaryCreate');delete b.dataset.chooseOccasion;b.dataset.action='create';b.innerHTML='Make a gift '+icon('spark');setHomeOccasion(homeOccasion);
 }
 
 function openCampaign(key){
