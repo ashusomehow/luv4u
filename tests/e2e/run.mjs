@@ -180,6 +180,15 @@ try {
   await rp.goto(link, { waitUntil: 'load' }); await rp.waitForSelector('#experience:not([hidden])');
   assert.equal(await rp.locator('meta[name="robots"]').getAttribute('content'), 'noindex, nofollow');
   assert.equal(await rp.locator('meta[property="og:title"]').getAttribute('content'), 'A little gift for Sarah ♡');
+  // the envelope: addressed to the recipient, opened by holding the seal
+  assert.match(await rp.locator('#sealGate .seal-address').innerText(), /Sarah/);
+  assert.equal(await rp.locator('#storyScroll').evaluate(el => el.inert), true, 'nothing behind the envelope can be reached');
+  const seal = await rp.locator('#sealBtn').boundingBox();
+  await rp.mouse.move(seal.x + seal.width / 2, seal.y + seal.height / 2); await rp.mouse.down(); await rp.waitForTimeout(250); await rp.mouse.up();
+  assert.equal(await rp.locator('#sealGate').count(), 1, 'letting go early does not open it');
+  await rp.mouse.move(seal.x + seal.width / 2, seal.y + seal.height / 2); await rp.mouse.down();
+  await rp.waitForSelector('#sealGate', { state: 'detached', timeout: 6000 }); await rp.mouse.up();
+  assert.equal(await rp.locator('#storyScroll').evaluate(el => el.inert), false);
   await rp.waitForTimeout(600);
   s = await state();
   assert.equal(s.views, 1, 'opening counted');
@@ -261,6 +270,7 @@ try {
   assert.deepEqual(lockedBad, [], `colour contrast on the locked share screen: ${JSON.stringify(lockedBad)}`);
   // previewing the saved gift keeps the way forward in view
   await owner.click('#previewPublished'); await owner.waitForSelector('#experience:not([hidden]) .unlock-tray');
+  await owner.click('#sealSkip'); await owner.waitForSelector('#sealGate', { state: 'detached' });
   assert.match(await owner.locator('.unlock-tray').innerText(), /Unlock · ₹99/);
   assert.match(await owner.locator('.unlock-tray').innerText(), /not sent yet/);
   await owner.click('[data-story="exit-preview"]'); await owner.waitForSelector('#shareView:not([hidden])');
