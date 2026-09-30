@@ -5,6 +5,7 @@ import './legacy.css';
 import './creator.css';
 import './motion.css';
 import './effects.css';
+import './gift.css';
 import './seo.css';
 
 const DESCRIPTION =

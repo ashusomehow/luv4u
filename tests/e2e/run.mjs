@@ -155,12 +155,12 @@ try {
   assert.equal(await page.locator('[data-wizard-step]').count(), 3, 'three steps');
   await page.fill('#recipientName', 'Sarah');
   assert.equal(await page.locator('#vibeGrid button:visible').count(), 6, 'mood is chosen on the same screen as the name');
-  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 2: words & photos (no add-or-skip screen)
+  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 2: words & photos (has photos, so nothing is asked)
   assert.equal(await page.locator('#noteDetail').evaluate(el => el.open), true, 'the note is open on arrival');
   assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), false, 'suggestions start collapsed');
   await page.locator('#giftForm .message-templates:not(.compact) .template-heading').first().click();
   assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), true, 'suggestions open on tap');
-  await page.locator('#photosDetail summary').click();
+  assert.equal(await page.locator('#photosDetail').evaluate(el => el.open), true, 'photos are open on arrival, not folded away');
   await page.setInputFiles('#photoUpload', photo); await page.waitForSelector('#photoList > *');
   await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 3: preview & send
   assert.equal(await page.locator('#moreOptions').evaluate(el => el.open), false, 'technical options are tucked away');
@@ -169,6 +169,8 @@ try {
   assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   const link = await page.inputValue('#giftLink');
+  const shareButtons = await page.locator('#shareView button:visible').allInnerTexts();
+  assert.equal(shareButtons.filter(t => /copy link|whatsapp|share artwork|recovery file/i.test(t)).length, 2, `one way per job on the share screen: ${shareButtons}`);
   assert.match(link, /\/g\/[a-f0-9]{24}$/);
   let s = await state();
   assert.equal(s.gifts, 1);
@@ -180,6 +182,15 @@ try {
   await rp.goto(link, { waitUntil: 'load' }); await rp.waitForSelector('#experience:not([hidden])');
   assert.equal(await rp.locator('meta[name="robots"]').getAttribute('content'), 'noindex, nofollow');
   assert.equal(await rp.locator('meta[property="og:title"]').getAttribute('content'), 'A little gift for Sarah ♡');
+  // the envelope: addressed to the recipient, opened by holding the seal
+  assert.match(await rp.locator('#sealGate .seal-address').innerText(), /Sarah/);
+  assert.equal(await rp.locator('#storyScroll').evaluate(el => el.inert), true, 'nothing behind the envelope can be reached');
+  const seal = await rp.locator('#sealBtn').boundingBox();
+  await rp.mouse.move(seal.x + seal.width / 2, seal.y + seal.height / 2); await rp.mouse.down(); await rp.waitForTimeout(250); await rp.mouse.up();
+  assert.equal(await rp.locator('#sealGate').count(), 1, 'letting go early does not open it');
+  await rp.mouse.move(seal.x + seal.width / 2, seal.y + seal.height / 2); await rp.mouse.down();
+  await rp.waitForSelector('#sealGate', { state: 'detached', timeout: 6000 }); await rp.mouse.up();
+  assert.equal(await rp.locator('#storyScroll').evaluate(el => el.inert), false);
   await rp.waitForTimeout(600);
   s = await state();
   assert.equal(s.views, 1, 'opening counted');
@@ -214,7 +225,14 @@ try {
   await contrast('landing');
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForSelector('#recipientName'); await contrast('step 1');
   await page.fill('#recipientName', 'Sarah'); await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 2');
-  await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 3');
+  // words only: leaving step 2 asks once, and skipping is an explicit choice
+  assert.match(await page.locator('#vibeLabel').innerText(), /Pick a look/, 'for a love note the mood only changes colours and sounds, and says so');
+  assert.match(await page.locator('#photosDetail .detail-status').innerText(), /1 photo/, 'the section says what is in it');
+  await page.locator('[data-remove-photo="0"]').click(); await page.waitForTimeout(400);
+  assert.match(await page.locator('#photosDetail .detail-status').innerText(), /Not added yet/, 'and says so when it is empty');
+  await page.click('#wizardNext'); await page.waitForSelector('.media-ask');
+  assert.match(await page.locator('.media-ask').innerText(), /words only/);
+  await page.click('#askSkip'); await page.waitForTimeout(500); await contrast('step 3');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.getByText('My little gifts').first().click();
 
   // 6. Delete removes the gift and its files
@@ -236,7 +254,7 @@ try {
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
   await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');
   await owner.fill('#recipientName', 'Noor');
-  await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.waitForTimeout(500);
+  await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.click('#askSkip'); await owner.waitForTimeout(500);
   assert.match(await owner.locator('#createGiftBtn').innerText(), /Save & continue/, 'the button says what happens next');
   assert.match(await owner.locator('#priceLine').innerText(), /Previewing is free\. You pay ₹99 once/, 'the price is stated before the buyer commits');
   await owner.locator('#moreOptions summary').click();
@@ -261,6 +279,7 @@ try {
   assert.deepEqual(lockedBad, [], `colour contrast on the locked share screen: ${JSON.stringify(lockedBad)}`);
   // previewing the saved gift keeps the way forward in view
   await owner.click('#previewPublished'); await owner.waitForSelector('#experience:not([hidden]) .unlock-tray');
+  await owner.click('#sealSkip'); await owner.waitForSelector('#sealGate', { state: 'detached' });
   assert.match(await owner.locator('.unlock-tray').innerText(), /Unlock · ₹99/);
   assert.match(await owner.locator('.unlock-tray').innerText(), /not sent yet/);
   await owner.click('[data-story="exit-preview"]'); await owner.waitForSelector('#shareView:not([hidden])');

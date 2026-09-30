@@ -79,3 +79,33 @@
   .pay-backdrop,.pay-modal,.pay-check{animation:none}
   .btn-primary.is-busy::after{animation-duration:2s}
 }
+
+/* ---------- Journey clean-up ---------- */
+.field-hint{margin-left:8px;font-weight:400;font-size:13px;color:#5b4549}
+.reply-share-panel{display:flex;flex-direction:column;align-items:center;gap:8px}
+.reply-alt{min-height:44px;padding:0 10px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:4px}
+.reply-alt:hover{color:#8d3f51}
+.share-cover-note{margin:10px 0 0;text-align:center;font-size:13px;color:#5b4549}
+
+/* ---------- Look picker, media status, and the "add something only you have" prompt ---------- */
+.vibe-grid.is-look{grid-template-columns:repeat(3,1fr)}
+.vibe-grid.is-look .vibe-btn{flex-direction:column;gap:4px;min-height:64px;padding:10px 6px;text-align:center}
+.vibe-grid.is-look .vibe-icon{display:none}
+.vibe-grid.is-look .vibe-btn::before{content:'';width:22px;height:22px;border-radius:50%;background:var(--sw,#aa5265);box-shadow:0 0 0 2px #fff inset,0 0 0 1px rgba(67,45,50,.18)}
+.vibe-grid.is-look .vibe-caption{display:block;max-width:none;font-size:12px}
+.vibe-btn[data-vibe=Romantic]{--sw:#aa5265}.vibe-btn[data-vibe=Cute]{--sw:#ad6879}.vibe-btn[data-vibe=Funny]{--sw:#ae773f}.vibe-btn[data-vibe=Emotional]{--sw:#8e716f}.vibe-btn[data-vibe=Crazy]{--sw:#ae6050}.vibe-btn[data-vibe=Elegant]{--sw:#8d7954}
+.detail-status{margin:0 10px 0 auto;padding:3px 10px;border-radius:999px;background:#f3e8e4;color:#5b4549;font-size:12px;white-space:nowrap}
+.detail-status.done{background:#e3efe2;color:#2b5530}
+.media-ask{width:min(100%,420px);padding:26px;border-radius:22px}
+.media-ask h2{margin:0 0 10px;font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.2}
+.media-ask p{margin:0 0 18px;font-size:15px;color:#5b4549;line-height:1.6}
+.media-ask-actions{display:grid;gap:10px}
+.media-skip{display:block;width:100%;min-height:44px;margin-top:8px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:4px}
+.media-skip:hover{color:#8d3f51}
+
+/* ---------- Photo upload is the front door to a more personal gift: readable and obvious ---------- */
+.upload-zone{padding:28px 16px;font-size:16px;font-weight:600;color:#5b4549;border-color:#c99aa4;background:#fbf0e9}
+.upload-zone:hover{background:#f4e3dc}
+.upload-zone .icon{width:30px;height:30px;color:#8d3f51}
+.upload-zone small{font-size:13px;font-weight:400;color:#5b4549}
+.or-line{font-size:13px;color:#5b4549}

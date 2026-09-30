@@ -187,3 +187,27 @@ Re-measured with the same scripts on the same phone (390×844). "Before" is the 
 - Desktop side preview: reflect the typed note and first photo.
 - The real usability sessions above, especially the "would you pay, and how much" questions.
 - Real-device checks (keyboard behaviour with the name field on small phones; performance on a budget Android phone).
+
+
+## Journey audit: duplicate actions (second pass)
+
+Rule applied: one screen, one way forward per job. Each duplicate found, and what replaced it:
+
+| Screen | Was | Now |
+| --- | --- | --- |
+| Creator dock, steps 1–2 | "Preview" next to "Preview & send" (which was really "next step") | Only "Next: …". "Preview" appears on step 3, where previewing is the job |
+| Creator, mood | "No special date…" repeated under the moods, in the journey box and in the heading | Said once. The mood label now says what it does: "Sets the colours, words and music" |
+| Share screen, sending | Copy link, WhatsApp, "Share the surprise", "Share artwork" | Copy link and WhatsApp; one "More apps" for other apps; one "Save this picture" with a line saying what it is |
+| Share screen, private key | "Copy private recovery link", "Save recovery file", "My little gifts" (also in the header) | One "Copy my private edit link" |
+| Recipient reply (hosted gifts) | "Wrap up my reply", then WhatsApp, Copy, "Send directly", plus a native Share | One "Send my reply", then a calm "Sent" state |
+| Recipient reply (standalone file) | "Wrap up my reply", then share, WhatsApp and copy | One best send button (WhatsApp if the sender left a number, else Share, else Copy) and "or copy it instead" |
+
+Still open: the landing page offers the occasion three ways (hero chips, the eight cards lower down, the footer links). The cards and links exist for search engines, so they stay, but the hero picker is the main path.
+
+
+### Mood, and photos that get missed (third pass)
+
+- **Does mood matter?** Measured by opening the same gift with four moods and comparing every scene. For a **birthday** it rewrites every scene's wording. For love, proposal and anniversary it changes **no words**: only an accent colour, the room's little decorations and the music's pitch (anniversary shows no visible colour change either). So for every occasion except birthday it is now offered as a **look** ("Pick a look · Sets the colours and soft sounds") with colour swatches, instead of six cards implying different writing. Birthday keeps "Pick a mood · Sets the words, colours and music". Real per-occasion moods would need new writing for each of the six moods in seven occasions; that is a content project, not a UI fix.
+- **Photos and voice note were easy to miss.** They sat in folded sections. Now: the photo section is open when step 2 opens; the note, photos and voice rows each carry a plain status ("✓ 2 photos", "Not added yet"); and leaving step 2 with no photo and no voice note asks once, "Add something only you have?", with *Add a photo*, *Add a voice note*, or *Continue with words only*. Skipping is now a visible choice, and it is not asked twice.
+- **Bug found and fixed:** the earlier change meant to hide "Preview" on steps 1 and 2 was overridden by older code that re-showed it whenever a name existed. It now really appears only on step 3.
+- The photo upload box was 9–11px grey on cream (failing contrast, never tested while folded). It is now a clear, larger target.
