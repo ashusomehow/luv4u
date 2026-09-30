@@ -1,5 +1,8 @@
 # Luv4u — deployment and launch plan
 
+> **Stack update (v4).** The app now runs on Next.js, TypeScript, Supabase and Vercel. Sections 2 (account gate), 3 (deployment gate) and 9 (budget) below describe the previous Cloudflare Workers / D1 / R2 stack, including its pricing figures, and are **superseded by [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and [`LAUNCH-CHECKLIST.md`](LAUNCH-CHECKLIST.md)**. The safety, device-testing, measurement, distribution and search sections still apply.
+
+
 Prepared: 10 September 2026
 Status: planning document, not a record of a completed deployment.
 

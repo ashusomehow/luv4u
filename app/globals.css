@@ -1,0 +1,4 @@
+/* Tailwind without Preflight: the v3 gift engine ships its own reset and must not be overridden. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);

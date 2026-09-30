@@ -1,4 +1,4 @@
-# Luv4u v3 ♡
+# Luv4u v4 ♡
 
 **Eight little ways to say it.**
 
@@ -6,33 +6,31 @@ Luv4u turns a name and a feeling into a small, interactive gift website. Start f
 
 No creator or recipient account. No payment screen. **The recipient’s name is the only required detail.** Every journey works with that name alone; personal messages, photos, memories, audio and extra surprises remain optional.
 
-The frontend is one HTML file with embedded CSS, JavaScript and original inline SVG artwork. The companion backend adds short gift links, media storage, account-free editing and private replies. No frontend build step, UI framework, external font service or generative API is required.
+Luv4u is a **Next.js** app written in **TypeScript**, styled with CSS (plus Tailwind for new components), animated with CSS and lightweight JavaScript, storing gifts in **Supabase** (Postgres) and photos/audio in **Supabase Storage**, and hosted on **Vercel**. No external font service or generative API is required.
+
+| Layer | Choice |
+| --- | --- |
+| Framework | Next.js (App Router) |
+| Language | TypeScript |
+| Styling | Hand-written CSS for the gift engine; Tailwind CSS v4 (utilities only, no Preflight) for new UI |
+| Animation | CSS animations + a small imperative JS engine |
+| Database | Supabase Postgres |
+| Images and audio | Supabase Storage |
+| Hosting | Vercel (with a daily Vercel Cron cleanup job) |
 
 ## Start here
 
-### Open the single-file version
-
-Open `public/index.html` in a current browser, or open the separately distributed `luv4u-v3.html`. They are the same file.
-
-You can create, preview, save local drafts and download standalone gift HTML without a backend. A `file://` address cannot become a public cross-device link merely by copying it. Export the gift as a file, or put the frontend on a public static host to use encoded-state links. Large gifts are offered as HTML downloads rather than oversized links.
-
-### Run the complete local application
-
-Use **Node.js 22.16 or newer**:
+Use **Node.js 22 or newer**.
 
 ```sh
-npm run dev
+npm install
+cp .env.example .env.local   # then fill in the Supabase values, see docs/DEPLOYMENT.md
+npm run dev                  # http://localhost:3000
 ```
 
-Open `http://localhost:8787`. The included Node adapter runs the production request handler with local SQLite and filesystem media. No `npm install` is required for this command or `npm test`.
+Without Supabase credentials the app still runs in **standalone mode**: you can create, preview, save local drafts and download a gift as a single HTML file. Hosted short links, uploaded media, editing, the private inbox and opening counts switch on automatically once `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set (the frontend reads `/api/config`).
 
-Local data is written to `.local/`. Keep that directory private; do not publish it with the app. A localhost gift is only in your local database and does not work on another person’s device.
-
-### Deploy public short links
-
-Follow [Deployment](docs/DEPLOYMENT.md) to deploy the included Cloudflare Worker, D1 database, private R2 bucket and frontend on the same origin. The frontend detects `/api/config` automatically. Hosting configuration, a hosting account and possible infrastructure charges are separate from the account-free, payment-free gift experience.
-
-**This package is not already deployed to a public domain.**
+Deploy to Vercel and connect Supabase by following [Deployment](docs/DEPLOYMENT.md). Hosting accounts and any infrastructure charges are separate from the account-free, payment-free gift experience.
 
 ## The eight gifts
 
@@ -48,8 +46,6 @@ Follow [Deployment](docs/DEPLOYMENT.md) to deploy the included Cloudflare Worker
 | Miss you | Send a paper hug across a little illustrated route, then read a note from afar. | An extra “until the next hello” message. |
 
 All retain the two-stage **“Click to light up”** opening, warm lighting, room-like full-screen scenes and an optional reply. These are different interactions and story orders, not just different page titles.
-
-See [Journey and UX specification](docs/JOURNEYS.md) for the complete implemented sequence, default behavior, response branches and sensitive-occasion decisions.
 
 ## Creator journey
 
@@ -81,7 +77,7 @@ Quiz presets insert a complete compatible question/answer set. Date inputs stay 
 
 **All replies:** Emoji selection and template selection do not transmit a reaction. In hosted mode, the recipient explicitly sends the chosen words to the creator. Otherwise they prepare, copy or share a reply themselves. Opening counts are a separate approximate hosted feature; they are not evidence of acceptance or agreement.
 
-## What continues to work from v2.1
+## What continues to work from v2.1 and v3
 
 Photo compression and framing; photo/memory reordering with button alternatives to dragging; browser voice recording; uploaded or directly linked audio; music preview/volume; tap-to-extinguish candles and optional microphone blowing; reduced-motion support; optional phone tilt; birthday story-order choices; balloons, scratch reveal, quizzes and mystery gifts; final notes and optional real-world surprise links; downloadable artwork; WhatsApp/native sharing; same-link hosted editing, expiry, deletion and a private creator inbox.
 
@@ -89,23 +85,23 @@ Games are intentionally excluded from apology gifts. New occasions use their own
 
 ## Standalone versus connected
 
-| Capability | Single HTML / static hosting | Included backend deployed |
+| Capability | Standalone (no Supabase) | Connected (Supabase configured) |
 | --- | --- | --- |
 | All eight creator and recipient journeys | Yes | Yes |
 | Local drafts, preview, editable templates | Yes, subject to browser storage | Yes, subject to browser storage |
 | Download gift HTML | Yes | Yes; own hosted uploads are packed into the export |
-| Encoded gift links | Public static origin; payload size limits apply | Available as standalone alternative |
-| Short `/g/<id>` links and remote uploaded media | No | Yes |
+| Encoded gift links | Yes; payload size limits apply | Available as standalone alternative |
+| Short `/g/<id>` links and uploaded media | No | Yes |
 | Same-link edits, expiry and deletion | No; downloaded copies cannot be revoked | Yes for the hosted original |
 | Direct creator inbox and opening counts | No | Yes |
 | Recipient-specific social metadata | No for fragment-only links | Yes, with a discreet-preview option |
-| Curated `/for/<occasion>` routes, sitemap and server-rendered metadata | Not supplied by a generic file host | Yes |
+| Curated `/for/<occasion>` routes, sitemap and server-rendered metadata | Yes | Yes |
 
 External photo/audio URLs remain external in either mode. If those resources require authentication, disappear, have incompatible codecs or reject requests, they may not work for the recipient. Their failure does not prevent the remaining gift scenes from continuing.
 
 ## Public pages, private gifts
 
-The Worker provides eight curated public entry routes:
+Next.js serves eight curated public entry routes:
 
 ```text
 /for/birthday-wish
@@ -124,7 +120,7 @@ Gift pages, gift API responses and media are marked `noindex`; recipient names, 
 
 **Noindex is not access control.** A gift link grants bearer access: anyone holding it can read the gift. The content is not end-to-end encrypted.
 
-[Occasion and growth plan](docs/OCCASIONS_AND_GROWTH.md) explains the extra categories and a measurement plan. There are no asserted search-volume figures, ranking promises or new analytics trackers in this build.
+There are no asserted search-volume figures, ranking promises or analytics trackers in this build.
 
 ## Data, limits and ownership
 
@@ -135,77 +131,70 @@ The common payload now includes `version: 3` and an allowlisted `occasion`. Opti
 | Recipient / sender names | 40 characters each |
 | Main note / final note | 1,200 / 500 characters |
 | Photos | 4; JPG/PNG/WebP input; browser resizing to a 960px longest edge |
-| Photo source uploads | Up to 15 MiB before processing; server raster limit 1,000,000 bytes per processed file |
+| Photo source uploads | Up to 15 MiB before processing; the server accepts processed images up to 1,000,000 bytes |
 | Memories | 3; 40-character label and 200-character text |
 | Voice / custom music | Up to 3 MiB each; direct browser recording has a 60-second limit |
 | Proposal question / each reason | 140 / 160 characters; up to 3 reasons |
 | Apology commitment / reunion thought | 300 / 200 characters |
 | Achievement label | 80 characters |
-| Hosted publish request | 9 MiB total |
+| Hosted media upload | One request per file, each under Vercel’s 4.5 MB request-body limit; images ≤ 1,000,000 bytes and audio ≤ 3.2 MiB after decoding |
+| Hosted gift JSON (after media moves to Storage) | 64 KiB |
+| Media files per gift | 12 |
 | Recipient reply | 500 characters |
 | Portable-link UI threshold | 8,000 characters; not a guarantee that every messaging app accepts that length |
 
 A separate random **256-bit edit secret** controls updating, deletion and viewing the inbox. Save the private recovery link/file. Public recipient URLs and gift exports exclude the secret. No account-based password reset or secret-recovery bypass exists. Losing both local storage and the recovery secret means losing editing access.
 
-Read [Security and privacy](docs/SECURITY.md) before using real personal media or launching publicly.
+Read the security notes in [Deployment](docs/DEPLOYMENT.md#security-notes) before using real personal media or launching publicly.
 
-## Upgrade from v2 / v2.1
+## Migrating from the Cloudflare version (v3.0)
 
-Deploy **both** the v3 frontend and the v3 backend. The API capability response is now version 3 and lists the supported occasions. A v3 frontend can still use a birthday-only v2 server for birthdays, but explicitly refuses to silently publish a new occasion to it. Standalone export remains available.
+v4 replaces the Cloudflare Worker, D1 and R2 backend with Next.js route handlers, Supabase and Vercel. The gift experience, API paths and payload shape are unchanged, so existing frontend behaviour carries over.
 
-**No database migration is required for existing installations.** The existing JSON gift column stores the new optional fields. Retain your existing D1/R2 resources, domain and `RATE_SALT`. Missing `occasion` in old gifts is interpreted as `birthday`; existing birthday URLs remain valid.
-
-Previously downloaded HTML gifts are independent files and do not change retroactively. New exports include the current journey and recipient templates, start in the dark, remove creator template pickers/private edit controls from serialized state, and can return to the eight-gift chooser without duplicate controls.
-
-Do not change a local link’s hostname and expect its database record to move. Back up real data and keep the old origin serving during any domain migration; stored media URLs include their publishing origin.
+- **No automatic data migration.** Gifts and media created on the old `luv4u.pages.dev` deployment stay in D1/R2 and do not appear in Supabase. Keep the old deployment serving until you have decided what to do with its data; stored media URLs include their publishing origin.
+- **Edit keys are salted with `RATE_SALT`.** If you ever import old rows, keep the same salt the old Worker used, otherwise owners' recovery links will stop working.
+- **Previously downloaded gift HTML files** are independent and keep working.
+- **Media now lives in Supabase Storage.** The browser uploads each photo, voice note and share cover through `POST /api/gifts/:id/media` before publishing, which keeps every request under Vercel's body limit.
 
 ## Project layout
 
 ```text
-public/index.html          Single-file frontend, illustrations, styles and journeys
-server/worker.mjs         Production same-origin API, media, metadata and public routes
-server/occasions.mjs      Server occasion registry and safe public copy
-server/dev.mjs           Local Node HTTP adapter
-server/local-adapter.mjs Local SQLite/filesystem adapters for D1/R2/ASSETS
-migrations/0001_init.sql  Existing schema; unchanged for v3
-wrangler.jsonc           Cloudflare resources and static-assets routing
-.dev.vars.example        Local Worker secret example, not a production secret
-TASKS.md                 Completed implementation checklist and remaining launch checks
-docs/                    Journeys, deployment, privacy, growth and QA scope
-tests/                   API, creator-template, birthday and occasion regressions
-qa/v3/                   Recorded results and reviewed screenshots
+app/                       Next.js App Router: pages, metadata, API route handlers
+  page.tsx                 Landing + creator (hosts the gift engine)
+  for/[slug]/page.tsx      Eight public occasion pages (static, with SEO metadata)
+  g/[id]/page.tsx          Recipient gift page (noindex, per-gift social preview)
+  api/                     config, gifts CRUD, media upload, views, reactions, stats, cron cleanup
+  legacy.css               Gift engine styles
+  globals.css              Tailwind (theme + utilities only)
+components/LegacyApp.tsx   Server-rendered markup + loader for the gift engine
+lib/                       Occasion registry, gift validation, Supabase + Storage helpers
+lib/legacy-body.ts         Markup (icons, views, dialogs) the engine binds to
+public/legacy/app.js       The v3 gift engine: creator wizard and the eight journeys
+supabase/migrations/       Postgres schema, RLS and the Storage bucket
+tests/                     API tests with an in-memory Supabase fake
+docs/DEPLOYMENT.md         Supabase + Vercel setup and security notes
+vercel.json                Framework and cron schedule
 ```
 
+The gift engine is deliberately kept as one imperative script for now: it is the verified v3 experience, and it is served from `public/legacy/app.js` so downloaded gift files can inline it. Moving individual scenes to typed React components is possible piece by piece without changing the API.
 
 ## Tests and verification
 
 ```sh
-npm test
-
-# Optional browser development tools:
-python -m pip install playwright pillow
-python -m playwright install chromium
-
-python tests/browser_smoke.py
-python tests/creator_templates.py
-python tests/occasions.py
-
-# Start npm run dev in another terminal before connected runs:
-python tests/browser_smoke.py --connected
-python tests/creator_templates.py --connected
-python tests/occasions.py --connected
+npm run typecheck
+npm run lint
+npm test          # API behaviour against an in-memory Supabase fake
+npm run build
 ```
 
-`LUV4U_TEST_URL` changes the local API origin. `LUV4U_QA_DIR` changes the result directory. `CHROMIUM_EXECUTABLE` can select an installed Chromium binary.
-
-See [QA record](docs/QA.md) for the actual counts, reproducible commands and limitations. Browser checks render the real HTML in an inline Chromium document with isolated storage/URL doubles; connected calls are bridged to the real local API. This is not represented as physical-device, cloud-deployment, real IndexedDB or complete cross-browser verification.
+The API tests cover creation, idempotent retries, validation, media offloading, ownership checks, optimistic-concurrency updates, deletion, views, replies and the cleanup cron. They do not talk to a real Supabase project. Before launch, run a manual pass against your own Supabase project and a physical iOS/Android device (audio, microphone and tilt).
 
 ## Customization and launch boundaries
 
-In the embedded script, `OCCASIONS` defines the frontend occasion copy and defaults; `buildScenes()` defines inclusion/order; `renderOccasionScene()` implements the new interactions; `occasionArt()` draws the original SVG objects; `renderOccasionDetails()` and the template banks define optional fields. `THEMES` retains the six visual personalities. The CSS contains labeled occasion styles and the gift first-paint guard.
+In `public/legacy/app.js`, `OCCASIONS` defines the frontend occasion copy and defaults; `buildScenes()` defines inclusion/order; `renderOccasionScene()` implements the new interactions; `occasionArt()` draws the original SVG objects; `renderOccasionDetails()` and the template banks define optional fields. `THEMES` retains the six visual personalities.
 
-Update both `OCCASIONS` and `server/occasions.mjs` when adding a type. Extend client/server validation, templates, public routing and tests together. Never use unescaped user text as HTML or add arbitrary server-side media fetching to work around broken third-party links.
+Update both `OCCASIONS` in `public/legacy/app.js` and `lib/occasions.ts` when adding a type. Extend client/server validation, templates, public routing and tests together. Never use unescaped user text as HTML or add arbitrary server-side media fetching to work around broken third-party links.
 
-Before a public launch, finish HTTPS deployment, live social-preview verification, physical iOS/Android audio/microphone/tilt checks, keyboard/screen-reader review, monitoring, abuse handling and storage-budget planning. The package includes implementation and automated regression coverage, not a compliance certification or a guarantee of free hosting or search traffic.
+Before a public launch, finish HTTPS deployment, live social-preview verification, physical iOS/Android audio/microphone/tilt checks, keyboard/screen-reader review, monitoring, abuse handling and storage-budget planning. The repository includes implementation and automated API coverage, not a compliance certification or a guarantee of free hosting or search traffic.
 
 Made for the people who make your world brighter. ♡
