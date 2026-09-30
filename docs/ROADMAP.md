@@ -16,11 +16,11 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 
 ## Phase 0: Foundations
 
-- [ ] Privacy-friendly analytics with funnel events (landing → occasion chosen → name typed → preview → paywall → paid → shared → recipient opened → recipient clicked "make one")
-- [ ] CI on GitHub Actions: typecheck, lint, tests, build on every PR
-- [ ] Separate Supabase project for Preview deployments; production keys only on Production
+- [x] Privacy-friendly analytics with funnel events (landing → occasion chosen → name typed → preview → paywall → paid → shared → recipient opened → recipient clicked "make one")
+- [x] CI on GitHub Actions: typecheck, lint, tests, build on every PR
+- [ ] Separate Supabase project for Preview deployments; production keys only on Production (documented in `docs/DEPLOYMENT.md`; needs you to create the project)
 - [ ] Set `NEXT_PUBLIC_SITE_URL`, rotate the Supabase service key, back up `RATE_SALT` (owner actions)
-- [ ] Playwright end-to-end smoke test in CI (create → open → reply → delete)
+- [x] Playwright end-to-end smoke test in CI (create → open → reply → delete)
 
 ## Phase 1: UX research and audit
 
