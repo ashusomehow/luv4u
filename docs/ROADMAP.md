@@ -41,7 +41,7 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 
 ## Phase 3: Organic traffic (starts early)
 
-- [ ] **Fix duplicate content**: each `/for/<occasion>` page gets its own server-rendered H1, copy, FAQ, examples and internal links (today all eight share one body)
+- [x] **Fix duplicate content**: each `/for/<occasion>` page gets its own server-rendered H1, lead, button, intro, journey, tips, example lines, FAQ (with FAQPage/Breadcrumb structured data), internal links and share image
 - [ ] Programmatic long-tail pages: occasion × relationship × intent (for example "birthday website for girlfriend", "apology message for friend", "anniversary gift ideas for husband")
 - [ ] Public example gallery: real demos people can open, each indexable
 - [ ] Structured data (Product/FAQ/HowTo), per-page Open Graph images, clean sitemap

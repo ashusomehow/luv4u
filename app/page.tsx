@@ -1,5 +1,10 @@
+import { HomeContent } from '@/components/HomeContent';
 import { LegacyApp } from '@/components/LegacyApp';
 
 export default function HomePage() {
-  return <LegacyApp />;
+  return (
+    <LegacyApp>
+      <HomeContent />
+    </LegacyApp>
+  );
 }

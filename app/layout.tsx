@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { siteUrl } from '@/lib/env';
 import './globals.css';
 import './legacy.css';
+import './seo.css';
 
 const DESCRIPTION =
   'Create a little interactive gift for birthdays, love, proposals, apologies, anniversaries and more. No login. No payment. Just a little heart.';

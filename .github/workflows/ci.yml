@@ -23,7 +23,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      # The e2e test serves on :3100 and checks canonical URLs, which are fixed at build time.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: http://localhost:3100
       # Real browser against the production build and a local Supabase-compatible mock.
       - run: npx playwright-core install --with-deps chromium
       - run: npm run test:e2e
