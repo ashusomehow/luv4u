@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { siteUrl } from '@/lib/env';
+import './tokens.css';
 import './globals.css';
 import './legacy.css';
 import './creator.css';

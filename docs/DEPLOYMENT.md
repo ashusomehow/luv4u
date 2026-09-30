@@ -5,12 +5,12 @@ Luv4u needs one Supabase project (database + storage) and one Vercel project. Ev
 ## 1. Supabase
 
 1. Create a project.
-2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), [`0002_events.sql`](../supabase/migrations/0002_events.sql), then [`0003_gift_status.sql`](../supabase/migrations/0003_gift_status.sql). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
+2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), [`0002_events.sql`](../supabase/migrations/0002_events.sql), then [`0003_gift_status.sql`](../supabase/migrations/0003_gift_status.sql), [`0004_safety.sql`](../supabase/migrations/0004_safety.sql) and [`0005_scheduled_delivery.sql`](../supabase/migrations/0005_scheduled_delivery.sql). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
    - `gifts`, `gift_views`, `gift_replies` with Row Level Security **enabled and no policies**: the browser can never read or write them directly; only the server can, using the service-role key.
    - a public Storage bucket `gift-media` (4 MiB per file; image and audio MIME types only).
 3. From the project's API settings, copy the **Project URL** and the **service_role** key.
 
-`0002` adds the `events` table for funnel analytics (see [Analytics](#analytics)). `0003` adds the gift lifecycle used by [Preview first, pay after](#preview-first-pay-after); every existing gift stays unlocked.
+`0002` adds the `events` table for funnel analytics (see [Analytics](#analytics)). `0003` adds the gift lifecycle used by [Preview first, pay after](#preview-first-pay-after); every existing gift stays unlocked. `0004` adds abuse reports, takedowns and rate limiting (run it before launch: rate limits fail open until the table exists, and reports need it). `0005` adds scheduled delivery; a gift with no opening time opens immediately, as before. Day-to-day handling of reports is in [Operations](OPERATIONS.md).
 
 The service-role key bypasses Row Level Security. Keep it server-side only: never give it a `NEXT_PUBLIC_` prefix and never commit it.
 
