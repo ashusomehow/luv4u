@@ -45,8 +45,17 @@
   // Clicks (delegated, so they work for markup the engine re-renders).
   document.addEventListener('click', event => {
     const el = event.target instanceof Element ? event.target : null; if (!el) return;
+    // Which lever brought them here is recorded as a single word; nothing typed is ever sent.
+    if (el.closest('.resume-btn')) { const k = el.closest('.resume-btn').dataset.chooseOccasion; if (k) occasion = k; send('resume_clicked'); return; }
+    if (el.closest('#stickyCta')) { send('sticky_cta_clicked'); return; }
+    if (el.closest('.price-strip .btn')) { send('price_strip_cta_clicked'); return; }
+    if (el.closest('[data-v3="home-demo"]')) { send('demo_opened'); return; }
+    if (el.closest('[data-v3="unlock"]')) { send('unlock_clicked', { kind: 'panel' }); return; }
+    if (el.closest('.unlock-tray-btn')) { send('unlock_clicked', { kind: 'preview_bar' }); return; }
+    const pick = el.closest('[data-choose-occasion]');
+    if (pick) { occasion = pick.dataset.chooseOccasion || occasion; send('occasion_selected', { kind: pick.classList.contains('hero-chip') ? 'chip' : pick.classList.contains('occasion-card') ? 'card' : 'other' }); return; }
     const campaign = el.closest('[data-campaign]');
-    if (campaign) { occasion = campaign.dataset.campaign || occasion; send('occasion_selected'); return; }
+    if (campaign) { occasion = campaign.dataset.campaign || occasion; send('occasion_selected', { kind: 'page_link' }); return; }
     if (el.closest('#wizardNext')) send('wizard_next', { label: el.closest('#wizardNext').textContent.trim().slice(0, 40) });
     else if (el.closest('#createGiftBtn')) send('publish_clicked');
     else if (el.closest('#copyGiftLink')) send('link_copied');

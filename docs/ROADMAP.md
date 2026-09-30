@@ -34,8 +34,8 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 ## Phase 2: Visual polish and motion
 
 - [ ] UI review and design tokens (type scale, spacing, colour, radius) so new screens stay consistent
-- [ ] Landing page redesign with a live, playable demo above the fold
-- [ ] Page and scene transitions, micro-interactions, celebratory finales (CSS + small JS, GPU-friendly, honouring `prefers-reduced-motion`)
+- [~] Landing page: demo button beside the main button, trust row, chips, sticky CTA, resume card, price strip (see `docs/CONVERSION-LEVERS.md`). A truly playable demo inside the hero is still to do
+- [x] Panel transitions, micro-interactions and an unlock celebration (CSS + small JS, transform/opacity only, honouring `prefers-reduced-motion`). Recipient-scene effects are unchanged
 - [ ] Performance budget: the 250 KB inline engine is split and lazy-loaded; Lighthouse ≥ 90 on mobile
 - [ ] Progressive move of the engine from one imperative script to typed React components (creator first)
 
@@ -61,7 +61,7 @@ Order in the product: make gift → full preview → pay → get shareable link.
 - [ ] Payment success: unlock link, receipt/invoice email, edit-key recovery email
 - [ ] Refund and failed-payment handling; test mode → live mode checklist
 - [ ] Legal pages Razorpay needs for activation: Terms, Privacy, Refund/Cancellation, Contact; GST invoice details
-- [ ] Update all "no payment" copy across landing pages, metadata and README
+- [x] Update all "no payment" copy across landing pages, metadata and README (done, and a test guards it)
 
 ## Phase 5: Growth and retention
 

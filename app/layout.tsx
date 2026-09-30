@@ -3,6 +3,7 @@ import { siteUrl } from '@/lib/env';
 import './globals.css';
 import './legacy.css';
 import './creator.css';
+import './motion.css';
 import './seo.css';
 
 const DESCRIPTION =

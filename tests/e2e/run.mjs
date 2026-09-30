@@ -78,6 +78,58 @@ try {
   await page.locator('.hero-chip[data-choose-occasion="love"]').click(); await page.waitForSelector('#creatorView:not([hidden])');
   assert.match(page.url(), /#make=love$/);
 
+  // 1c. Conversion pieces on the landing page
+  assert.match(await page.locator('#primaryCreate').innerText(), /Make a gift, free preview/, 'the main button says what the visitor gets');
+  await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('.trust-row');
+  assert.equal(await page.locator('.trust-row li:visible').count(), 3, 'three promises are visible when payments are off');
+  assert.equal(await page.locator('[data-pay-only]').first().isVisible(), false, 'no pay-only promise while everything is free');
+  assert.equal(await page.locator('#priceStrip').count(), 0, 'no price strip while everything is free');
+  assert.equal(await page.locator('.hero-cta .hero-demo').isVisible(), true, 'the try-it demo sits next to the main button');
+
+  // sticky call to action (phones): only after the hero button is gone, and not while the chooser is on screen
+  const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
+  const mobile = await mctx.newPage(); mobile.setDefaultTimeout(15000);
+  const jump = async (sel) => { await mobile.evaluate((q) => { const el = document.querySelector(q); window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - 60, behavior: 'instant' }); }, sel); await mobile.waitForTimeout(700); };
+  await mobile.goto(APP + '/', { waitUntil: 'load' }); await mobile.waitForSelector('.hero-chip'); await mobile.waitForTimeout(600);
+  assert.equal(await mobile.locator('#stickyCta.show').count(), 0, 'no sticky bar while the hero button is on screen');
+  await jump('.occasion-footer');
+  assert.equal(await mobile.locator('#stickyCta.show').count(), 1, 'sticky bar appears further down the page');
+  await jump('#gifts');
+  assert.equal(await mobile.locator('#stickyCta.show').count(), 0, 'and steps aside while the gift chooser is on screen');
+
+  // resume card: a gift someone started is waiting for them, without moving the page
+  const rctx0 = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
+  const back = await rctx0.newPage(); back.setDefaultTimeout(15000);
+  await back.goto(APP + '/', { waitUntil: 'load' }); await back.waitForTimeout(800);
+  assert.equal(await back.locator('#resumeBanner.show').count(), 0, 'nothing to resume on a first visit');
+  await back.goto(APP + '/#make=love', { waitUntil: 'load' }); await back.waitForSelector('#recipientName');
+  await back.fill('#recipientName', 'Sarah'); await back.waitForTimeout(700);
+  await back.goto(APP + '/', { waitUntil: 'load' }); await back.waitForSelector('#resumeBanner.show');
+  assert.match(await back.locator('#resumeBanner').innerText(), /Love note for Sarah/);
+  await back.click('#resumeBanner .resume-btn'); await back.waitForSelector('#creatorView:not([hidden])');
+  assert.equal(await back.inputValue('#recipientName'), 'Sarah', 'the saved name is back');
+  await back.goto(APP + '/', { waitUntil: 'load' }); await back.waitForSelector('#resumeBanner.show');
+  await back.click('#resumeBanner .resume-close'); await back.waitForTimeout(500);
+  assert.equal(await back.locator('#resumeBanner.show').count(), 0, 'it can be dismissed');
+
+  // layout stays put: cumulative layout shift on a phone, scrolling the whole page
+  const shiftCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
+  await shiftCtx.addInitScript(() => { window.__cls = 0; new PerformanceObserver((list) => { for (const e of list.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); });
+  const shifty = await shiftCtx.newPage(); shifty.setDefaultTimeout(15000);
+  for (const [name, url] of [['payments off', APP], ['payments on', LOCKED_APP]]) {
+    await shifty.goto(url + '/', { waitUntil: 'load' }); await shifty.waitForTimeout(1500);
+    for (let y = 0; y <= 7000; y += 700) { await shifty.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y); await shifty.waitForTimeout(100); }
+    const cls = await shifty.evaluate(() => window.__cls);
+    assert.ok(cls < 0.1, `cumulative layout shift ${cls.toFixed(3)} on the landing page (${name}) should stay under 0.1`);
+  }
+
+  // reduced motion: nothing hides, nothing pulses, nothing slides in
+  const calm = await (await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, reducedMotion: 'reduce' })).newPage(); calm.setDefaultTimeout(15000);
+  await calm.goto(APP + '/', { waitUntil: 'load' }); await calm.waitForSelector('.hero-chip'); await calm.waitForTimeout(500);
+  assert.equal(await calm.evaluate(() => document.documentElement.classList.contains('js-motion')), false, 'no reveal-on-scroll for people who prefer reduced motion');
+  assert.equal(await calm.evaluate(() => getComputedStyle(document.querySelector('.hero-chip')).animationName), 'none');
+  assert.equal(await calm.evaluate(() => getComputedStyle(document.querySelector('#primaryCreate'), '::after').display), 'none', 'the button ring is off');
+
   // 1b. The raw HTML crawlers get: every /for page is different, with structured data and share image
   const raw = async (p) => (await fetch(APP + p, { headers: { 'user-agent': 'Googlebot/2.1' } })).text();
   const [bday, missyou, home] = await Promise.all([raw('/for/birthday-wish'), raw('/for/miss-you'), raw('/')]);
@@ -143,7 +195,7 @@ try {
 
   // 5. Funnel events were recorded (anonymously)
   const events = (await state()).events;
-  for (const name of ['page_view', 'creator_opened', 'wizard_next', 'publish_clicked', 'gift_published', 'gift_opened']) {
+  for (const name of ['page_view', 'occasion_selected', 'resume_clicked', 'creator_opened', 'wizard_next', 'publish_clicked', 'gift_published', 'gift_opened']) {
     assert.ok(events.includes(name), `event ${name} recorded (got ${events.join(',')})`);
   }
 
@@ -174,6 +226,11 @@ try {
 
   // 7. Preview first, pay after: with payments required a new gift is a private preview
   assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 149, linkDays: 365 });
+  const lp = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA })).newPage(); lp.setDefaultTimeout(15000);
+  await lp.goto(LOCKED_APP + '/', { waitUntil: 'load' }); await lp.waitForSelector('#priceStrip');
+  const strip = await lp.locator('#priceStrip').innerText();
+  assert.match(strip, /Free to build\. ₹149 to send\./); assert.match(strip, /One-time, no subscription/); assert.match(strip, /not refundable/);
+  assert.equal(await lp.locator('[data-pay-only]').first().isVisible(), true, 'the pay-only promise appears once payments are on');
   const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
   await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');

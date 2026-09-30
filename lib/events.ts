@@ -14,6 +14,12 @@ export const EVENT_NAMES = [
   'download_clicked',
   'gift_opened',
   'reply_sent',
+  // conversion levers, so each can be judged on its own
+  'demo_opened',
+  'resume_clicked',
+  'sticky_cta_clicked',
+  'price_strip_cta_clicked',
+  'unlock_clicked',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

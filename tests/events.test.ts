@@ -44,6 +44,12 @@ describe('cleanEvent', () => {
     expect(event?.props).toEqual({ label: 'Wrap it up' });
   });
 
+  it('accepts the conversion-lever events and their kind', () => {
+    for (const name of ['demo_opened', 'resume_clicked', 'sticky_cta_clicked', 'price_strip_cta_clicked', 'unlock_clicked']) {
+      expect(cleanEvent({ name, session: SESSION, props: { kind: 'preview_bar' } })?.props).toEqual({ kind: 'preview_bar' });
+    }
+  });
+
   it('rejects unknown events and malformed sessions', () => {
     expect(cleanEvent({ name: 'drop_table', session: SESSION })).toBeNull();
     expect(cleanEvent({ name: 'page_view', session: 'short' })).toBeNull();

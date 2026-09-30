@@ -24,6 +24,7 @@ export function LegacyApp({ occasion, children }: { occasion?: OccasionKey; chil
       {children}
       <script id="giftPayload" type="application/json" dangerouslySetInnerHTML={{ __html: 'null' }} />
       <Script src="/legacy/track.js" strategy="afterInteractive" />
+      <Script src="/legacy/motion.js" strategy="afterInteractive" />
       <Script src="/legacy/app.js" strategy="afterInteractive" data-luv4u-legacy="" />
     </>
   );

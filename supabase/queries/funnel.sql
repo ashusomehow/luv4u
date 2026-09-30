@@ -31,7 +31,14 @@ from public.events
 where occasion is not null and created_at > now() - interval '30 days'
 group by 1 order by 2 desc;
 
--- 4. Daily sessions.
+-- 4. Which conversion levers get used (sessions that triggered each in the last 30 days).
+select name, coalesce(props->>'kind', '') as kind, count(distinct session_id) as sessions
+from public.events
+where name in ('occasion_selected', 'demo_opened', 'resume_clicked', 'sticky_cta_clicked', 'price_strip_cta_clicked', 'unlock_clicked')
+  and created_at > now() - interval '30 days'
+group by 1, 2 order by 1, 3 desc;
+
+-- 5. Daily sessions.
 select date_trunc('day', created_at) as day, count(distinct session_id) as sessions
 from public.events
 where name = 'page_view' and created_at > now() - interval '30 days'
