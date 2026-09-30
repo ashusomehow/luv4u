@@ -82,4 +82,4 @@ Vercel builds every non-production branch as a Preview deployment. By default it
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every pull request and every push to `main`: typecheck, lint, unit/API tests, production build, and an end-to-end browser smoke test (`npm run test:e2e`) that creates, opens, replies to and deletes a gift against a local Supabase-compatible mock. Run it locally with `npm run build && npm run test:e2e`; set `CHROMIUM_EXECUTABLE` if Playwright's browser isn't installed.
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`: typecheck, lint, unit/API tests, production build, and an end-to-end browser smoke test (`npm run test:e2e`) that creates, opens, replies to and deletes a gift against a local Supabase-compatible mock. Run it locally with `NEXT_PUBLIC_SITE_URL=http://localhost:3100 npm run build && npm run test:e2e` (the site URL is fixed into static pages at build time); set `CHROMIUM_EXECUTABLE` if Playwright's browser isn't installed.

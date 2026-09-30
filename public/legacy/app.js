@@ -32,7 +32,7 @@ const OCCASIONS = {
   path:['Light up the room','Make a wish','Open a gift','All the birthday love'],
   fallback:'',finish:'',noteLabel:'A birthday note',extras:'A lovely note, cake, candles and celebration are already included.',
   detailTitle:'A little more birthday magic',share:'a little birthday world',cta:'Make a birthday wish',
-  seo:'Create a personalized birthday wish website with fairy lights, an interactive cake, photos and editable messages. No login or payment.'
+  seo:'Create a personalized birthday wish website with fairy lights, an interactive cake, photos and editable messages.'
  },
  proposal: {
   slug:'romantic-proposal',label:'Romantic proposal',short:'Proposal',symbol:'♡',art:'envelope',vibe:'Romantic',group:'love',
@@ -180,6 +180,8 @@ function sanitizeGiftV1(d, needName=true) {
 }
 function toast(text) { clearTimeout(toastTimer);$('#toast').textContent=text;$('#toast').classList.add('visible');toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),4200); }
 function uuid() { if(crypto.randomUUID) return crypto.randomUUID().replace(/-/g,'').slice(0,12);const a=new Uint8Array(9);crypto.getRandomValues(a);return [...a].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+/* The server sets each page's own <title> (home or /for/<occasion>); the landing view keeps it. */
+const SERVER_TITLE=document.title;
 function showViewV1(view) {
  if(currentView==='experience')cleanupExperience();
  if(view!=='creator' && mediaRecorder)stopRecording(false);
@@ -187,7 +189,7 @@ function showViewV1(view) {
  for(const [key,id] of Object.entries(ids))$('#'+id).hidden=key!==view;
  $('#experience').hidden=true;$('#siteHeader').hidden=false;document.body.classList.remove('experiencing');
  $('#headerRight').innerHTML=view==='home'?'<a href="#how-it-works" class="nav-link nav-how">How it works</a><button class="nav-link pill-link" data-action="create">Make someone\'s day '+icon('up')+'</button>':'<span class="header-note">A little love goes a long way.</span><span style="color:#c59b9e;font-size:19px" aria-hidden="true">♡</span>';
- document.title='Luv4u — little gifts, big feelings';
+ document.title=SERVER_TITLE;
  $('meta[name="theme-color"]').content='#faf7f2';
  window.scrollTo(0,0);
 }
@@ -836,7 +838,7 @@ async function routeV2(){const occasionRoute=/^#occasion=(birthday|proposal|love
  let embedded;try{embedded=JSON.parse($('#giftPayload').textContent);}catch{}
  if(embedded){try{embedded.server=false;startExperience(sanitizeGift(embedded));}catch(err){showView('error');$('#errorMessage').textContent=err.message;}return true;}
  const match=/^\/g\/([a-f0-9]{24})\/?$/.exec(location.pathname);
- if(match){try{const result=await api('/api/gifts/'+match[1]);startExperience(result.gift);}catch(err){showView('error');$('#errorMessage').textContent=err.message;}return true;}const campaign=Object.entries(OCCASIONS).find(([,o])=>location.pathname==='/for/'+o.slug||location.pathname==='/for/'+o.slug+'/');if(campaign){applyCampaign(campaign[0]);return true;}return false;
+ if(match){try{const result=await api('/api/gifts/'+match[1]);startExperience(result.gift);}catch(err){showView('error');$('#errorMessage').textContent=err.message;}return true;}const campaign=Object.entries(OCCASIONS).find(([,o])=>location.pathname==='/for/'+o.slug||location.pathname==='/for/'+o.slug+'/');if(campaign){/* The server already set this page's own title. */applyCampaign(campaign[0],true);return true;}return false;
 }
 async function init(){
  installWizard();installOccasions();bindV2();bindMessageTemplates();await restoreDraft();populateForm();showView('home');
@@ -1427,10 +1429,10 @@ function adaptOccasionScene(type,s){
 }
 
 const CAMPAIGN_HEADINGS={birthday:'A birthday wish.<br>A whole little<br><em>world.</em>',proposal:'A brave question.<br>A little room for<br><em>butterflies.</em>',love:'No big occasion.<br>Just a whole lot of<br><em>love.</em>',apology:'Honest words.<br>A little room to<br><em>be heard.</em>',anniversary:'Your little story.<br>Another lovely<br><em>chapter.</em>',thanks:'A little bouquet.<br>A whole lot of<br><em>thank you.</em>',congratulations:'Their little win.<br>A very well-earned<br><em>spotlight.</em>',missyou:'A paper hug.<br>For the one you<br><em>miss.</em>'};
-function applyCampaign(key){
+function applyCampaign(key,keepTitle=false){
  if(!Object.hasOwn(OCCASIONS,key))return;const o=OCCASIONS[key];showView('home');
  $('#landingTitle').innerHTML=CAMPAIGN_HEADINGS[key];$('#landingLead').textContent=o.description;const b=$('#primaryCreate');b.removeAttribute('data-action');b.dataset.chooseOccasion=key;b.innerHTML=e(o.cta)+' '+icon('arrow');
- setHomeOccasion(key);document.title=o.label+' website · Luv4u';
+ setHomeOccasion(key);if(!keepTitle)document.title=o.label+' website · Luv4u';
 }
 function resetLanding(){
  if(!$('#landingTitle'))return;$('#landingTitle').innerHTML='Some feelings<br>deserve a little<br><em>magic.</em>';$('#landingLead').innerHTML='More than a message. A little world they get to<br>open, feel, and keep. Made by you, just for them.';

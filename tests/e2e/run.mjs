@@ -1,5 +1,7 @@
 // End-to-end smoke test: real browser against the production build, with a local
-// Supabase-compatible mock. Usage: npm run build && npm run test:e2e
+// Supabase-compatible mock. Usage:
+//   NEXT_PUBLIC_SITE_URL=http://localhost:3100 npm run build && npm run test:e2e
+// (static pages fix the site URL at build time, and the test checks canonical URLs)
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -60,10 +62,30 @@ try {
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('#homeView');
   assert.equal(await page.locator('.occasion-card').count(), 8, 'eight gift cards');
   await page.goto(APP + '/for/miss-you', { waitUntil: 'load' }); await page.waitForTimeout(800);
-  assert.match(await page.title(), /Miss you/);
+  assert.match(await page.title(), /Miss You Website/);
+
+  // 1b. The raw HTML crawlers get: every /for page is different, with structured data and share image
+  const raw = async (p) => (await fetch(APP + p, { headers: { 'user-agent': 'Googlebot/2.1' } })).text();
+  const [bday, missyou, home] = await Promise.all([raw('/for/birthday-wish'), raw('/for/miss-you'), raw('/')]);
+  const h1 = (html) => /<h1 id="landingTitle">([\s\S]*?)<\/h1>/.exec(html)?.[1];
+  assert.match(h1(bday), /birthday wish/i); assert.match(h1(missyou), /paper hug/i); assert.notEqual(h1(bday), h1(missyou));
+  assert.match(bday, /<title>Birthday Wish Website/); assert.match(missyou, /<title>Miss You Website/);
+  assert.match(bday, /rel="canonical" href="http:\/\/localhost:3100\/for\/birthday-wish"/);
+  assert.match(bday, /"@type":"FAQPage"/); assert.match(bday, /A birthday message they can actually play with/);
+  assert.doesNotMatch(missyou, /A birthday message they can actually play with/);
+  assert.match(missyou, /For the miles between hellos/); assert.match(home, /Interactive gift websites for the people you love/);
+  assert.match(bday, /property="og:image" content="[^"]*\/for\/birthday-wish\/opengraph-image/);
+  const og = await fetch(`${APP}/for/miss-you/opengraph-image`);
+  assert.equal(og.headers.get('content-type'), 'image/png'); assert.ok((await og.arrayBuffer()).byteLength > 5000, 'og image has content');
+  assert.equal((await fetch(`${APP}/for/not-a-page`)).status, 404);
+  // The extra content is visible on the landing view and hidden once the creator opens
+  await page.goto(APP + '/for/miss-you', { waitUntil: 'load' }); await page.waitForTimeout(800);
+  assert.equal(await page.locator('.seo-content').isVisible(), true, 'seo content visible on landing');
+  assert.equal(await page.title(), 'Miss You Website — Send a Paper Hug | Luv4u', 'server title kept by the engine');
 
   // 2. Create a gift with a photo (uploads go to Storage, then a small JSON publish)
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForTimeout(1000);
+  assert.equal(await page.locator('.seo-content').isVisible(), false, 'seo content hidden inside the creator');
   await page.fill('#recipientName', 'Sarah');
   for (let i = 0; i < 3; i++) { await page.click('#wizardNext'); await page.waitForTimeout(400); }
   await page.locator('#photosDetail summary').click();
