@@ -77,7 +77,7 @@ export function HomeContent() {
       </nav>
 
       <p>
-        Not sure what to write? <Link href="/ideas">Browse ideas and example lines</Link> for birthdays, anniversaries, apologies, thank-yous and more.
+        Not sure yet? <Link href="/examples">Open a sample gift</Link> to see it first, or <Link href="/ideas">browse ideas and example lines</Link> for birthdays, anniversaries, apologies, thank-yous and more.
       </p>
 
       <section>

@@ -28,6 +28,8 @@ export function LegalPage({ title, children, updated = true }: { title: string; 
       </main>
       <footer className="legal-foot">
         <nav aria-label="Legal">
+          <a href="/examples">Samples</a>
+          <a href="/ideas">Ideas</a>
           <a href="/terms">Terms</a>
           <a href="/privacy">Privacy</a>
           <a href="/refund">Refunds</a>

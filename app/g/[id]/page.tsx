@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { LegacyApp } from '@/components/LegacyApp';
-import { findGift, ID_PATTERN, isUnlocked } from '@/lib/gifts';
+import { findGift, ID_PATTERN, isScheduled, isUnlocked } from '@/lib/gifts';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 type Props = { params: Promise<{ id: string }> };
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const row = await findGift(id);
     // Unpaid previews reveal nothing: no name, no cover image.
-    if (!row || !isUnlocked(row)) return base;
+    if (!row || !isUnlocked(row) || isScheduled(row)) return base;
     const gift = row.gift;
     // "Discreet preview" gifts leave the recipient's name and cover image out of link previews.
     const discreet = gift.sharePreview === false;

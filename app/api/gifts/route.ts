@@ -6,6 +6,8 @@ import {
   inDays,
   isUnlocked,
   hashSecret,
+  liveUntilAfter,
+  parseOpensAt,
   ID_PATTERN,
   KEY_PATTERN,
   normalizeGift,
@@ -26,6 +28,7 @@ interface CreateBody {
   cover?: unknown;
   coverUrl?: unknown;
   expiresDays?: unknown;
+  opensAt?: unknown;
 }
 
 export const POST = handle(async (request: Request) => {
@@ -53,6 +56,7 @@ export const POST = handle(async (request: Request) => {
       url: `${origin}/g/${id}`,
       revision: existing.revision,
       expiresAt: existing.expires_at,
+      opensAt: existing.opens_at ?? null,
       status: isUnlocked(existing) ? 'paid' : 'preview',
     });
   }
@@ -69,15 +73,18 @@ export const POST = handle(async (request: Request) => {
   const locked = paymentsRequired();
   // Paid links live for a fixed period; without payments the creator's choice applies as before.
   const liveDays = locked ? PAID_LINK_DAYS : daysFrom(body.expiresDays);
-  const expiresAt = locked ? inDays(previewTtlDays()) : expiryFrom(liveDays);
+  const opensAt = parseOpensAt(body.opensAt) ?? null;
+  const expiresAt = liveUntilAfter(locked ? inDays(previewTtlDays()) : expiryFrom(liveDays), opensAt);
   const row: Record<string, unknown> = locked
     ? { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt, status: 'preview', live_days: liveDays }
     : { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt };
+  // Only written when used, so this works before the scheduling migration has been applied.
+  if (opensAt) row.opens_at = opensAt;
   const { error } = await supabase().from('gifts').insert(row);
   if (error) {
     if (error.code === '23505') throw new ApiError(409, 'That gift link is already taken.');
     throw error;
   }
 
-  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt, status: locked ? 'preview' : 'paid' });
+  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt, opensAt, status: locked ? 'preview' : 'paid' });
 });

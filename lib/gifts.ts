@@ -36,6 +36,8 @@ export interface GiftRow {
   live_days?: number | null;
   paid_at?: string | null;
   /** Set when a report led to the gift being removed. The content and media are wiped at that time. */
+  /** When set and still in the future, the public link shows a "not yet" page instead of the gift. */
+  opens_at?: string | null;
   taken_down_at?: string | null;
   takedown_reason?: string | null;
 }
@@ -72,6 +74,34 @@ export function expiryFrom(days: unknown, fallback = 30): string {
 
 export function inDays(days: number): string {
   return new Date(Date.now() + days * DAY_MS).toISOString();
+}
+
+/** The furthest ahead a gift can be scheduled. */
+export const MAX_SCHEDULE_DAYS = 120;
+
+/**
+ * Reads an optional "open it at" moment from a request. `undefined` means not provided (leave as is),
+ * `null` means clear it, a string must be a real time between now and MAX_SCHEDULE_DAYS ahead.
+ */
+export function parseOpensAt(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  const time = typeof value === 'string' ? Date.parse(value) : NaN;
+  if (!Number.isFinite(time)) throw new ApiError(400, 'That opening time is not valid.');
+  if (time < Date.now() - 60_000) throw new ApiError(400, 'Choose an opening time in the future.');
+  if (time > Date.now() + MAX_SCHEDULE_DAYS * 86_400_000) throw new ApiError(400, `Gifts can be scheduled up to ${MAX_SCHEDULE_DAYS} days ahead.`);
+  return new Date(time).toISOString();
+}
+
+export function isScheduled(row: Pick<GiftRow, 'opens_at'>): boolean {
+  return !!row.opens_at && Date.parse(row.opens_at) > Date.now();
+}
+
+/** A scheduled gift must still be there when it opens, and for a while after. */
+export function liveUntilAfter(expiresAt: string | null, opensAt: string | null | undefined): string | null {
+  if (!expiresAt || !opensAt) return expiresAt;
+  const floor = Date.parse(opensAt) + 30 * 86_400_000;
+  return Date.parse(expiresAt) >= floor ? expiresAt : new Date(floor).toISOString();
 }
 
 export function isExpired(expiresAt: string | null): boolean {

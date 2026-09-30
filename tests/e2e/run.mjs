@@ -261,6 +261,25 @@ try {
     assert.equal((await state()).reports, 1, 'the report reached the database');
   }
 
+  // 5c. Scheduled delivery: the link says "not yet", with the time and nothing else, until the moment
+  {
+    const sid = 'ab'.repeat(12), skey = 'cd'.repeat(32);
+    const opensAt = new Date(Date.now() + 3 * 3600e3).toISOString();
+    const made = await fetch(`${APP}/api/gifts`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: sid, editKey: skey, gift: { name: 'Zara', occasion: 'love', vibe: 'Romantic', photos: [] }, opensAt }) });
+    assert.equal(made.status, 200);
+    const pub = await (await fetch(`${APP}/api/gifts/${sid}`)).json();
+    assert.deepEqual(Object.keys(pub).sort(), ['opensAt', 'scheduled']);
+    const sp = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); sp.setDefaultTimeout(15000);
+    await sp.goto(`${APP}/g/${sid}`, { waitUntil: 'load' }); await sp.waitForSelector('#errorView:not([hidden])');
+    assert.match(await sp.locator('#errorView h1').innerText(), /Not quite yet/);
+    assert.match(await sp.locator('#errorMessage').innerText(), /opens on/);
+    assert.doesNotMatch(await sp.content(), /Zara/, 'the name is not revealed before it opens');
+    // and the creator has the field
+    await sp.goto(APP + '/#make=love', { waitUntil: 'load' }); await sp.waitForSelector('#recipientName');
+    assert.equal(await sp.locator('#opensAt').getAttribute('type'), 'datetime-local');
+    await fetch(`${APP}/api/gifts/${sid}`, { method: 'DELETE', headers: { authorization: `Bearer ${skey}` } });
+  }
+
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());
   await page.getByRole('button', { name: 'Remove gift' }).first().click(); await page.waitForTimeout(1200);

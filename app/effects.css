@@ -113,3 +113,9 @@
 .footer-links{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px}
 .footer-links a{color:#5b4549;padding:10px 0;text-decoration:none}
 .footer-links a:hover{color:#8d3f51;text-decoration:underline}
+
+/* ---------- Scheduled delivery ---------- */
+.schedule-row{display:flex;gap:8px;align-items:center}
+.schedule-row .text-input{flex:1;min-height:48px}
+.schedule-clear{min-height:44px;padding:0 12px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:3px}
+.share-scheduled{margin:14px auto 0;max-width:520px;padding:12px 16px;border-radius:14px;background:#fff6dc;color:#5e4a12;font-size:14px;line-height:1.55;text-align:center}

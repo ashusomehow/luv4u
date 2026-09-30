@@ -160,3 +160,51 @@ describe('health and housekeeping', () => {
     expect(fake.tables.rate_hits).toHaveLength(1);
   });
 });
+
+describe('scheduled delivery', () => {
+  const inHours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+  const scheduled = (opensAt: unknown) => createGift(req('/api/gifts', 'POST', { id: ID, editKey: KEY, gift, opensAt }, ip(1)));
+
+  it('answers "not yet" with the time and nothing about the gift, then opens at the time', async () => {
+    expect((await scheduled(inHours(5))).status).toBe(200);
+    const before = await (await readGift(req('/x', 'GET'), ctx())).json();
+    expect(before).toEqual({ scheduled: true, opensAt: expect.any(String) });
+    expect(JSON.stringify(before)).not.toContain('Sarah');
+
+    fake.tables.gifts[0].opens_at = new Date(Date.now() - 1000).toISOString();
+    const after = await (await readGift(req('/x', 'GET'), ctx())).json();
+    expect(after.gift.name).toBe('Sarah');
+  });
+
+  it('counts no openings and takes no replies before it opens', async () => {
+    await scheduled(inHours(5));
+    expect((await reactionPost(req('/x', 'POST', { reaction: '❤️' }, ip(5)), ctx())).status).toBe(404);
+  });
+
+  it('rejects past times, times too far ahead and junk', async () => {
+    expect((await scheduled(inHours(-3))).status).toBe(400);
+    expect((await scheduled(inHours(24 * 130))).status).toBe(400);
+    expect((await scheduled('not a date')).status).toBe(400);
+  });
+
+  it('keeps the gift alive past the opening time', async () => {
+    await createGift(req('/api/gifts', 'POST', { id: ID, editKey: KEY, gift, expiresDays: 30, opensAt: inHours(24 * 100) }, ip(1)));
+    const expires = Date.parse(fake.tables.gifts[0].expires_at as string);
+    expect(expires).toBeGreaterThan(Date.now() + 125 * 86_400_000);
+  });
+
+  it('an owner can change and clear the time, and sees it when they come back', async () => {
+    const { PATCH } = await import('@/app/api/gifts/[id]/route');
+    const { GET: ownerGet } = await import('@/app/api/gifts/[id]/owner/route');
+    await scheduled(inHours(5));
+    const auth = { authorization: `Bearer ${KEY}` };
+    const changed = await PATCH(req('/x', 'PATCH', { gift, opensAt: inHours(9) }, auth), ctx());
+    expect((await changed.json()).opensAt).toBeTruthy();
+    expect((await (await ownerGet(req('/x', 'GET', undefined, auth), ctx())).json()).opensAt).toBeTruthy();
+    const kept = await PATCH(req('/x', 'PATCH', { gift }, auth), ctx());
+    expect((await kept.json()).opensAt).toBeTruthy();
+    const cleared = await PATCH(req('/x', 'PATCH', { gift, opensAt: null }, auth), ctx());
+    expect((await cleared.json()).opensAt).toBeNull();
+    expect((await (await readGift(req('/x', 'GET'), ctx())).json()).gift.name).toBe('Sarah');
+  });
+});
