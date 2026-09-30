@@ -173,15 +173,17 @@ try {
 
 
   // 7. Preview first, pay after: with payments required a new gift is a private preview
-  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true });
+  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 149, linkDays: 365 });
   const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
   await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');
   await owner.fill('#recipientName', 'Noor');
   await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.waitForTimeout(500);
   assert.match(await owner.locator('#createGiftBtn').innerText(), /Save & continue/, 'the button says what happens next');
+  assert.match(await owner.locator('#priceLine').innerText(), /Previewing is free\. You pay ₹149 once/, 'the price is stated before the buyer commits');
   await owner.locator('#moreOptions summary').click();
   assert.equal(await owner.locator('#deliverySelect').isVisible(), false, 'no free offline copy is offered');
+  assert.equal(await owner.locator('#expiryField').isVisible(), false, 'the paid link lifetime is fixed, so there is no expiry choice');
   await owner.click('#createGiftBtn'); await owner.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   assert.equal(await owner.locator('#unlockPanel').isVisible(), true, 'unlock panel shown');
   assert.equal(await owner.locator('#copyGiftLink').isDisabled(), true, 'cannot copy a link that does not work yet');
@@ -189,6 +191,21 @@ try {
   assert.equal(await owner.locator('#downloadGift').isDisabled(), true, 'export is locked too');
   assert.equal(await owner.locator('#previewPublished').isDisabled(), false, 'the owner can still preview');
   assert.match(await owner.inputValue('#giftLink'), /once it is unlocked/);
+  const panelText = await owner.locator('#unlockPanel').innerText();
+  assert.match(panelText, /Noor can’t open it yet/);
+  assert.match(panelText, /₹149/); assert.match(panelText, /one-time · no subscription/);
+  assert.match(panelText, /Stays live for a full year/);
+  assert.match(panelText, /kept for 7 more days\. After that it is deleted/, 'the real deletion date is shown');
+  assert.match(panelText, /payment is not refundable/, 'the no-refund rule is stated before payment');
+  assert.match(await owner.locator('[data-v3="unlock"]').innerText(), /Unlock & get link · ₹149/);
+  await owner.waitForTimeout(1300); await owner.evaluate(axeSource);
+  const lockedBad = await owner.evaluate(async () => (await axe.run(document, { runOnly: ['color-contrast'] })).violations.flatMap(v => v.nodes.map(n => { const d = n.any[0].data; return `${n.target.join(' ').slice(0, 50)} ${d.fgColor} on ${d.bgColor} ${d.contrastRatio}`; })));
+  assert.deepEqual(lockedBad, [], `colour contrast on the locked share screen: ${JSON.stringify(lockedBad)}`);
+  // previewing the saved gift keeps the way forward in view
+  await owner.click('#previewPublished'); await owner.waitForSelector('#experience:not([hidden]) .unlock-tray');
+  assert.match(await owner.locator('.unlock-tray').innerText(), /Unlock · ₹149/);
+  assert.match(await owner.locator('.unlock-tray').innerText(), /not sent yet/);
+  await owner.click('[data-story="exit-preview"]'); await owner.waitForSelector('#shareView:not([hidden])');
   const saved = await owner.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
 
   // nobody else can open it, and nothing about it leaks

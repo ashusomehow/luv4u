@@ -16,7 +16,7 @@ import {
   isExpired,
 } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, readJson, requireBackend } from '@/lib/http';
-import { previewTtlDays } from '@/lib/payments';
+import { paymentsRequired, previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -68,11 +68,13 @@ export const PATCH = handle(async (request: Request, { params }: Context) => {
   const unlocked = isUnlocked(row);
   const changes: Record<string, unknown> = {};
   let expiresAt = row.expires_at;
+  // With payments on the link lifetime is fixed, so a client-sent value is ignored.
+  const lifetimeEditable = !paymentsRequired();
   if (unlocked) {
-    if (body.expiresDays) expiresAt = expiryFrom(body.expiresDays);
+    if (body.expiresDays && lifetimeEditable) expiresAt = expiryFrom(body.expiresDays);
   } else {
     expiresAt = inDays(previewTtlDays());
-    if (body.expiresDays) changes.live_days = daysFrom(body.expiresDays);
+    if (body.expiresDays && lifetimeEditable) changes.live_days = daysFrom(body.expiresDays);
   }
   const revision = row.revision + 1;
 

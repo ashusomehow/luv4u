@@ -13,7 +13,7 @@ import {
   resolveCover,
 } from '@/lib/gifts';
 import { ApiError, handle, json, readJson, requireBackend } from '@/lib/http';
-import { paymentsRequired, previewTtlDays } from '@/lib/payments';
+import { PAID_LINK_DAYS, paymentsRequired, previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -64,7 +64,8 @@ export const POST = handle(async (request: Request) => {
   // remembers how long its link should live once it is. With payments off nothing new is written,
   // so this also works before the status migration has been applied.
   const locked = paymentsRequired();
-  const liveDays = daysFrom(body.expiresDays);
+  // Paid links live for a fixed period; without payments the creator's choice applies as before.
+  const liveDays = locked ? PAID_LINK_DAYS : daysFrom(body.expiresDays);
   const expiresAt = locked ? inDays(previewTtlDays()) : expiryFrom(liveDays);
   const row: Record<string, unknown> = locked
     ? { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt, status: 'preview', live_days: liveDays }
