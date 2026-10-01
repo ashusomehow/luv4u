@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/page-meta';
 import { LegalPage } from '@/components/LegalPage';
 import { ReportForm } from '@/components/ReportForm';
 
-export const metadata: Metadata = { title: 'Report a gift', description: 'Tell us about a gift that is harassing, unwanted or breaks the rules.', alternates: { canonical: '/report' } };
+export const metadata: Metadata = pageMeta({ title: 'Report a gift', description: 'Tell us about a gift that is harassing, unwanted or breaks the rules. You do not need to open it: paste the link and a person reviews it.', path: '/report', noindex: true });
 
 export default async function Report({ searchParams }: { searchParams: Promise<{ gift?: string }> }) {
   const { gift } = await searchParams;

@@ -1,13 +1,10 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/page-meta';
 import { LegalPage } from '@/components/LegalPage';
 import { HERO } from '@/lib/occasion-copy';
 import { OCCASION_KEYS, OCCASIONS } from '@/lib/occasions';
 
-export const metadata: Metadata = {
-  title: 'Try a sample gift before you make one',
-  description: 'Step inside a sample of every Luv4u gift: a birthday cake, a proposal, an apology, an anniversary storybook and more. See what they will feel first.',
-  alternates: { canonical: '/examples' },
-};
+export const metadata: Metadata = pageMeta({ title: 'Try a sample gift before you make one', description: 'Step inside a sample of every Kholona gift: a birthday cake, a proposal, an apology, an anniversary storybook and more. See what they will feel first.', path: '/examples' });
 
 export default function Examples() {
   return (

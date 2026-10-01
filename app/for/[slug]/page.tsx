@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LegacyApp } from '@/components/LegacyApp';
 import { OccasionContent } from '@/components/OccasionContent';
+import { pageMeta } from '@/lib/page-meta';
 import { OCCASION_KEYS, OCCASION_SLUGS, OCCASIONS } from '@/lib/occasions';
 import { PAGES } from '@/lib/seo-content';
 
@@ -19,13 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!key) return {};
   const { metaTitle, metaDescription } = PAGES[key];
   const url = `/for/${OCCASIONS[key].slug}`;
-  return {
-    title: metaTitle,
-    description: metaDescription,
-    alternates: { canonical: url },
-    openGraph: { title: metaTitle, description: metaDescription, url, type: 'website' },
-    twitter: { card: 'summary_large_image', title: metaTitle, description: metaDescription },
-  };
+  return pageMeta({ title: metaTitle, description: metaDescription, path: url, image: null });
 }
 
 export default async function OccasionPage({ params }: Props) {

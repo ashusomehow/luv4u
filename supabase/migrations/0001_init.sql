@@ -1,4 +1,4 @@
--- Luv4u v4 schema (Supabase Postgres + Storage).
+-- Kholona v4 schema (Supabase Postgres + Storage).
 -- All access goes through Next.js route handlers using the service-role key, so RLS is
 -- enabled with no policies: the anon/authenticated roles can read or write nothing directly.
 

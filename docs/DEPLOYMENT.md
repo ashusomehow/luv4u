@@ -1,6 +1,6 @@
 # Deployment: Supabase + Vercel
 
-Luv4u needs one Supabase project (database + storage) and one Vercel project. Everything runs on a single origin: Next.js serves the pages and the `/api/*` routes.
+Kholona needs one Supabase project (database + storage) and one Vercel project. Everything runs on a single origin: Next.js serves the pages and the `/api/*` routes.
 
 ## 1. Supabase
 
@@ -34,7 +34,11 @@ The service-role key bypasses Row Level Security. Keep it server-side only: neve
 
 `vercel.json` schedules `GET /api/cron/cleanup` once a day. It deletes expired gifts (their views and replies cascade) together with their Storage files, and removes upload folders that never became a gift (an upload followed by an abandoned publish) after 24 hours. Without `CRON_SECRET` the endpoint refuses every request. Check your Vercel plan's current cron limits.
 
-## 3. Local development
+## 3. Custom domain
+
+The production domain is **kholona.in**. The step-by-step (DNS, the one environment variable, redirecting the old Vercel address, Search Console) is in [Domain](DOMAIN.md).
+
+## 4. Local development
 
 ```sh
 cp .env.example .env.local

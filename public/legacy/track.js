@@ -1,4 +1,4 @@
-/* Luv4u funnel tracker: anonymous, first-party, no cookies.
+/* Kholona funnel tracker: anonymous, first-party, no cookies.
    - Sends a small event to /api/events for key steps (see lib/events.ts for the allowlist).
    - Uses a random per-tab session id (sessionStorage); it cannot follow anyone across visits.
    - Never sends names, messages, gift ids or any typed text.

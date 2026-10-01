@@ -208,3 +208,23 @@ describe('scheduled delivery', () => {
     expect((await (await readGift(req('/x', 'GET'), ctx())).json()).gift.name).toBe('Sarah');
   });
 });
+
+describe('analytics endpoint', () => {
+  it('stops answering a flood from one address, quietly', async () => {
+    const { POST: eventsPost } = await import('@/app/api/events/route');
+    const post = (n: number) => eventsPost(new Request('https://x.test/api/events', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.7', 'user-agent': 'Mozilla/5.0' }, body: JSON.stringify({ name: 'page_view', session: 'a'.repeat(16), path: '/' + n }) }));
+    for (let i = 0; i < 300; i++) await post(i);
+    const stored = (fake.tables.events ?? []).length;
+    expect((await post(301)).status).toBe(204);
+    expect((fake.tables.events ?? []).length).toBe(stored);
+  });
+
+  it('cleanup drops events older than thirteen months', async () => {
+    fake.tables.events = [
+      { id: 1, name: 'page_view', created_at: new Date(Date.now() - 500 * 86_400_000).toISOString() },
+      { id: 2, name: 'page_view', created_at: new Date().toISOString() },
+    ];
+    await cleanup(req('/x', 'GET', undefined, { authorization: 'Bearer cron-secret' }));
+    expect(fake.tables.events).toHaveLength(1);
+  });
+});

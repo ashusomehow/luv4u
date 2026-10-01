@@ -1,9 +1,9 @@
 {
-  "name": "luv4u",
+  "name": "kholona",
   "version": "4.0.0",
   "private": true,
   "type": "module",
-  "description": "Luv4u — little gifts, big feelings.",
+  "description": "Kholona \u2014 little gifts, big feelings.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "node tests/e2e/run.mjs"
+    "test:e2e": "node tests/e2e/run.mjs",
+    "audit:site": "node scripts/audit-site.mjs http://localhost:3100 ${NEXT_PUBLIC_SITE_URL:-http://localhost:3100}",
+    "audit:pages": "node scripts/audit-pages.mjs http://localhost:3100 ${NEXT_PUBLIC_SITE_URL:-http://localhost:3100}"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

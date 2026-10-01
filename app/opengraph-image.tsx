@@ -2,7 +2,7 @@ import { OG_SIZE, ogCard } from '@/lib/og-card';
 
 export const size = OG_SIZE;
 export const contentType = 'image/png';
-export const alt = 'Luv4u: little gifts, big feelings';
+export const alt = 'Kholona: little gifts, big feelings';
 
 export default function Image() {
   return ogCard({

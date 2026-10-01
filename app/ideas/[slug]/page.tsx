@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { JsonLd } from '@/components/JsonLd';
 import { LegalPage } from '@/components/LegalPage';
 import { siteUrl } from '@/lib/env';
+import { pageMeta } from '@/lib/page-meta';
 import { IDEA_SLUGS, IDEAS } from '@/lib/ideas';
 import { HERO } from '@/lib/occasion-copy';
 import { OCCASIONS } from '@/lib/occasions';
@@ -21,14 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const idea = IDEA_SLUGS.get(slug);
   if (!idea) return {};
-  const url = `/ideas/${idea.slug}`;
-  return {
-    title: idea.metaTitle,
-    description: idea.metaDescription,
-    alternates: { canonical: url },
-    openGraph: { title: idea.metaTitle, description: idea.metaDescription, url, type: 'article' },
-    twitter: { card: 'summary_large_image', title: idea.metaTitle, description: idea.metaDescription },
-  };
+  return pageMeta({ title: idea.metaTitle, description: idea.metaDescription, path: `/ideas/${idea.slug}`, type: 'article' });
 }
 
 export default async function IdeaPage({ params }: Props) {
@@ -44,7 +38,7 @@ export default async function IdeaPage({ params }: Props) {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Luv4u', item: `${origin}/` },
+        { '@type': 'ListItem', position: 1, name: 'Kholona', item: `${origin}/` },
         { '@type': 'ListItem', position: 2, name: 'Ideas', item: `${origin}/ideas` },
         { '@type': 'ListItem', position: 3, name: idea.h1, item: `${origin}/ideas/${idea.slug}` },
       ],
@@ -60,7 +54,7 @@ export default async function IdeaPage({ params }: Props) {
     <LegalPage title={idea.h1} updated={false}>
       <JsonLd data={schema} />
       <nav className="idea-crumbs" aria-label="Breadcrumb">
-        <a href="/">Luv4u</a> <span aria-hidden="true">/</span> <a href="/ideas">Ideas</a>
+        <a href="/">Kholona</a> <span aria-hidden="true">/</span> <a href="/ideas">Ideas</a>
       </nav>
       {idea.intro.map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>

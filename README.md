@@ -1,12 +1,12 @@
-# Luv4u v4 ♡
+# Kholona v4 ♡
 
 **Eight little ways to say it.**
 
-Luv4u turns a name and a feeling into a small, interactive gift website. Start from a warm, illustrated landing page, choose an occasion, and make something the recipient opens a little at a time.
+Kholona turns a name and a feeling into a small, interactive gift website. Start from a warm, illustrated landing page, choose an occasion, and make something the recipient opens a little at a time.
 
 No creator or recipient account. **The recipient’s name is the only required detail.** Every journey works with that name alone; personal messages, photos, memories, audio and extra surprises remain optional.
 
-Luv4u is a **Next.js** app written in **TypeScript**, styled with CSS (plus Tailwind for new components), animated with CSS and lightweight JavaScript, storing gifts in **Supabase** (Postgres) and photos/audio in **Supabase Storage**, and hosted on **Vercel**. No external font service or generative API is required.
+Kholona is a **Next.js** app written in **TypeScript**, styled with CSS (plus Tailwind for new components), animated with CSS and lightweight JavaScript, storing gifts in **Supabase** (Postgres) and photos/audio in **Supabase Storage**, and hosted on **Vercel**. No external font service or generative API is required.
 
 | Layer | Choice |
 | --- | --- |

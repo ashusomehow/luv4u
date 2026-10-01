@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/page-meta';
 import { ContactLine, LegalPage } from '@/components/LegalPage';
 import { BUSINESS_NAME, GRIEVANCE_OFFICER } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'Privacy policy', description: 'What Luv4u stores, why, and for how long.', alternates: { canonical: '/privacy' } };
+export const metadata: Metadata = pageMeta({ title: 'Privacy policy', description: 'What Kholona stores when you make a gift, why, who else handles it, how long it is kept, and how to have it corrected or erased.', path: '/privacy' });
 
 export default function Privacy() {
   return (
@@ -27,7 +28,7 @@ export default function Privacy() {
         </li>
         <li>
           <strong>Simple usage counts.</strong> To learn which steps confuse people we record events such as “opened the creator”. These carry a random per-tab code that cannot be linked across visits, the page
-          type and where the visitor came from. They never include gift ids, names or messages, and they are skipped if your browser sends Do Not Track or Global Privacy Control.
+          type and where the visitor came from. They are deleted after thirteen months. They never include gift ids, names or messages, and they are skipped if your browser sends Do Not Track or Global Privacy Control.
         </li>
         <li>
           <strong>Abuse protection.</strong> To stop bulk abuse we keep a scrambled (hashed) version of your network address for up to a day alongside a count of recent requests. If someone reports a gift, the report

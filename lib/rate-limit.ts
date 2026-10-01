@@ -41,6 +41,25 @@ export async function rateLimit(request: Request, bucket: string, max: number, w
   }
 }
 
+const memoryHits = new Map<string, number[]>();
+
+/**
+ * A cheap per-instance limiter for high-volume, low-stakes endpoints (analytics), where a database write per
+ * check would cost more than the event itself. Best effort: each serverless instance counts on its own.
+ * Returns true when the caller is over the limit.
+ */
+export function overMemoryLimit(request: Request, bucket: string, max: number, windowSeconds: number): boolean {
+  const hash = addressHash(request);
+  if (!hash) return false;
+  const key = `${bucket}:${hash}`;
+  const now = Date.now();
+  const recent = (memoryHits.get(key) ?? []).filter((t) => now - t < windowSeconds * 1000);
+  recent.push(now);
+  memoryHits.set(key, recent);
+  if (memoryHits.size > 5000) for (const [k, times] of memoryHits) if (!times.some((t) => now - t < windowSeconds * 1000)) memoryHits.delete(k);
+  return recent.length > max;
+}
+
 /** Limits per action. Generous for real use, tight for scripts. */
 export const LIMITS = {
   create: { max: 12, window: 3600 },

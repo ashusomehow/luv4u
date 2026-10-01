@@ -6,7 +6,7 @@ import { check, sleep } from 'k6';
 const ORIGIN = __ENV.ORIGIN;
 const GIFT_ID = __ENV.GIFT_ID;
 if (!ORIGIN) throw new Error('Set ORIGIN, e.g. -e ORIGIN=https://your-preview-url');
-if (/^https:\/\/(www\.)?luv4u\.in/.test(ORIGIN)) throw new Error('Refusing to load-test production.');
+if (/^https:\/\/(www\.)?kholona.in/.test(ORIGIN)) throw new Error('Refusing to load-test production.');
 
 export const options = {
   stages: [

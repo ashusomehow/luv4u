@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/page-meta';
 import { ContactLine, LegalPage } from '@/components/LegalPage';
 import { BUSINESS_NAME } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'Terms of use', description: 'The rules for making and sharing gifts on Luv4u.', alternates: { canonical: '/terms' } };
+export const metadata: Metadata = pageMeta({ title: 'Terms of use', description: 'The rules for making and sharing gifts on Kholona: who can use it, what you must not make, how reports work, and how payment and expiry are handled.', path: '/terms' });
 
 export default function Terms() {
   return (

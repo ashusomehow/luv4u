@@ -21,7 +21,7 @@ export function ogCard({ eyebrow, title, subtitle }: { eyebrow: string; title: s
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 40, letterSpacing: -1 }}>
           <span style={{ display: 'flex' }}>
-            luv<span style={{ color: '#aa5265' }}>4</span>u
+            khol<span style={{ color: '#aa5265' }}>o</span>na
           </span>
           <svg width="34" height="34" viewBox="0 0 24 24">
             <path

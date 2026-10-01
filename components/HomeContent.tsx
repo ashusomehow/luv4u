@@ -10,7 +10,8 @@ const STEPS = [
 ];
 
 const FAQS = [
-  { q: 'What is Luv4u?', a: 'Luv4u turns a name and a feeling into a small interactive gift website. The person you send it to opens it in their browser: lights come on, notes unfold, small surprises appear.' },
+  { q: 'What is Kholona?', a: 'Kholona turns a name and a feeling into a small interactive gift website. The person you send it to opens it in their browser: lights come on, notes unfold, small surprises appear.' },
+  { q: 'Why is it called Kholona?', a: '“Khol na” is what you say when you hand someone a surprise: open it, na? Kholona is a small gift you make for one person and send as a single link, and the fun starts the moment they open it.' },
   { q: 'Do I need an account?', a: 'No. There is no account for you or for the person you send it to. You keep a private recovery link so you can edit, see replies or remove the gift later.' },
   { q: 'What can I add to a gift?', a: 'Beyond their name, you can add a personal message, up to four photos, up to three memories, a voice note or music, and an optional final note. Each occasion also has its own extra details.' },
   { q: 'Is a gift page private?', a: 'Anyone with the link can open it, so share it only with the person it is for. Gift pages are hidden from search engines and you can delete a gift whenever you like. It is not end-to-end encrypted.' },
@@ -23,8 +24,16 @@ export function HomeContent() {
   const schema = [
     {
       '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Kholona',
+      url: `${origin}/`,
+      logo: `${origin}/icon.svg`,
+      description: 'Kholona turns a name and a feeling into a small interactive gift website, shared with one link.',
+    },
+    {
+      '@context': 'https://schema.org',
       '@type': 'WebSite',
-      name: 'Luv4u',
+      name: 'Kholona',
       url: `${origin}/`,
     },
     {
@@ -45,7 +54,7 @@ export function HomeContent() {
       <section>
         <h2 id="seo-home">Interactive gift websites for the people you love</h2>
         <p>
-          A message is read and forgotten. A Luv4u gift is a tiny world made for one person: a birthday cake to light, a
+          A message is read and forgotten. A Kholona gift is a tiny world made for one person: a birthday cake to light, a
           question to answer, an apology that gives them room, a storybook of your years together. Add a name and your
           words, preview it, and share a single link.
         </p>

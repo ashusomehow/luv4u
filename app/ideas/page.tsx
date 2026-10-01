@@ -1,13 +1,10 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/page-meta';
 import { LegalPage } from '@/components/LegalPage';
 import { IDEAS } from '@/lib/ideas';
 import { OCCASION_KEYS, OCCASIONS } from '@/lib/occasions';
 
-export const metadata: Metadata = {
-  title: 'Message and gift ideas for the people you love',
-  description: 'What to write for a birthday, anniversary, apology, thank-you or a message for someone you miss, with real example lines you can adapt.',
-  alternates: { canonical: '/ideas' },
-};
+export const metadata: Metadata = pageMeta({ title: 'Message and gift ideas for the people you love', description: 'What to write for a birthday, anniversary, apology, thank-you or a message for someone you miss, with real example lines you can adapt.', path: '/ideas' });
 
 export default function IdeasIndex() {
   return (

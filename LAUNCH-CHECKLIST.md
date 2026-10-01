@@ -1,4 +1,4 @@
-# Luv4u v4 — Launch Checklist (Next.js · Supabase · Vercel)
+# Kholona v4 — Launch Checklist (Next.js · Supabase · Vercel)
 
 ## 1. Code
 
@@ -15,7 +15,7 @@
 - [ ] Create the Vercel project from the GitHub repo
 - [ ] Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RATE_SALT`, `NEXT_PUBLIC_SITE_URL`, `CRON_SECRET` (see `docs/DEPLOYMENT.md`)
 - [ ] Save `RATE_SALT` somewhere safe; changing it invalidates every edit key
-- [ ] Choose the canonical domain and attach it in Vercel; update `NEXT_PUBLIC_SITE_URL`
+- [ ] Go live on kholona.in: follow `docs/DOMAIN.md` (attach domain, set `NEXT_PUBLIC_SITE_URL`, redirect the old address, Search Console and Bing)
 - [ ] Set usage and billing alerts on both Vercel and Supabase
 - [ ] Designate a support/abuse contact
 
@@ -51,4 +51,4 @@
 
 ## 5. Distribution
 
-See `LUV4U-LAUNCH-PLAN.md` sections 4–8 (safety, device testing, measurement, distribution, search). Sections 2, 3 and 9 there describe the previous Cloudflare stack and are superseded by `docs/DEPLOYMENT.md`.
+See `LAUNCH-PLAN.md` sections 4–8 (safety, device testing, measurement, distribution, search). Sections 2, 3 and 9 there describe the previous Cloudflare stack and are superseded by `docs/DEPLOYMENT.md`.
