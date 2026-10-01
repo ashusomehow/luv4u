@@ -1,4 +1,4 @@
-# Operations: running Luv4u after launch
+# Operations: running Kholona after launch
 
 Everything here can be done with `curl` and the Supabase and Vercel dashboards. Nothing needs code changes.
 

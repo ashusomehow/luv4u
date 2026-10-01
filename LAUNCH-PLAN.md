@@ -1,4 +1,4 @@
-# Luv4u — deployment and launch plan
+# Kholona — deployment and launch plan
 
 > **Stack update (v4).** The app now runs on Next.js, TypeScript, Supabase and Vercel. Sections 2 (account gate), 3 (deployment gate) and 9 (budget) below describe the previous Cloudflare Workers / D1 / R2 stack, including its pricing figures, and are **superseded by [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and [`LAUNCH-CHECKLIST.md`](LAUNCH-CHECKLIST.md)**. The safety, device-testing, measurement, distribution and search sections still apply.
 
@@ -209,7 +209,7 @@ Invite roughly 10–20 creators and ask each to make one real gift. Start with p
 
 Invitation copy:
 
-> I made Luv4u — a tiny surprise website you can send to someone you care about. It is free to use, and you do not need an account. Would you try making one for a real person and tell me where anything feels confusing? Here is a sample and the create page: [public links]
+> I made Kholona — a tiny surprise website you can send to someone you care about. It is free to use, and you do not need an account. Would you try making one for a real person and tell me where anything feels confusing? Here is a sample and the create page: [public links]
 
 Use fictional/synthetic demo gifts rather than exposing a real person's gift as the sample. Do not share owner recovery links.
 

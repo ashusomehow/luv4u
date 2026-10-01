@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/page-meta';
 import { LegalPage } from '@/components/LegalPage';
 import { BUSINESS_NAME, CONTACT_EMAIL, GRIEVANCE_OFFICER } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'Contact', description: 'How to reach the people behind Luv4u.', alternates: { canonical: '/contact' } };
+export const metadata: Metadata = pageMeta({ title: 'Contact', description: 'How to reach the small team behind Kholona about a gift, a refund, deleting something, or a gift you were sent and do not want.', path: '/contact' });
 
 export default function Contact() {
   return (

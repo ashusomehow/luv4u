@@ -28,12 +28,12 @@ export interface OccasionPage {
 
 export const PAGES: Record<OccasionKey, OccasionPage> = {
   birthday: {
-    metaTitle: 'Birthday Wish Website — A Gift They Can Open | Luv4u',
+    metaTitle: 'Birthday Wish Website — A Gift They Can Open | Kholona',
     metaDescription:
       'Make a personal birthday website: a cake to light, a wish to make and a gift to open. Add photos and a note, preview it, then share one link.',
     introHeading: 'A birthday message they can actually play with',
     intro: [
-      'A text is read in two seconds and buried by the evening. A Luv4u birthday wish is a tiny world with their name on it: fairy lights come on, they light the candles, make a wish, blow them out and open a gift, one small moment at a time.',
+      'A text is read in two seconds and buried by the evening. A Kholona birthday wish is a tiny world with their name on it: fairy lights come on, they light the candles, make a wish, blow them out and open a gift, one small moment at a time.',
       'All you need is their name. Add a note, up to four photos, a few memories or a voice note if you want to, and choose the mood — cute, funny, romantic, emotional, crazy or elegant. You see exactly what they will see before you send it.',
     ],
     goodFor: [
@@ -62,7 +62,7 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     related: ['thanks', 'love', 'congratulations'],
   },
   proposal: {
-    metaTitle: 'Romantic Proposal Website — Ask Your Question | Luv4u',
+    metaTitle: 'Romantic Proposal Website — Ask Your Question | Kholona',
     metaDescription:
       'Create a candlelit proposal page with your own words and one honest question, and answer options with no pressure. Preview it, then share the link.',
     introHeading: 'One honest question, asked gently',
@@ -96,12 +96,12 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     related: ['love', 'anniversary', 'missyou'],
   },
   love: {
-    metaTitle: 'Love Letter Website — Tell Them Why | Luv4u',
+    metaTitle: 'Love Letter Website — Tell Them Why | Kholona',
     metaDescription:
       'Send a personal love letter site: three paper hearts to unfold, each with a reason you love them, plus your letter. Preview it and share one link.',
     introHeading: 'Say the small reasons, not the big speech',
     intro: [
-      'You do not need an anniversary to tell someone they matter. A Luv4u love note gives them three paper hearts to unfold, each holding one reason you love them, followed by a letter from you.',
+      'You do not need an anniversary to tell someone they matter. A Kholona love note gives them three paper hearts to unfold, each holding one reason you love them, followed by a letter from you.',
       'Write your own reasons, or leave a heart blank and it fills with a thoughtful line you can edit. Add photos or a voice note so it sounds like you. They can send back a little love, which arrives only in your private inbox.',
     ],
     goodFor: [
@@ -130,7 +130,7 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     related: ['proposal', 'anniversary', 'missyou'],
   },
   apology: {
-    metaTitle: 'Apology Card Website — Say Sorry Sincerely | Luv4u',
+    metaTitle: 'Apology Card Website — Say Sorry Sincerely | Kholona',
     metaDescription:
       'Write a thoughtful apology card with an honest note, an optional concrete next step, and space for them to respond when ready. No games, no pressure.',
     introHeading: 'An apology that asks for nothing back',
@@ -164,7 +164,7 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     related: ['love', 'thanks', 'missyou'],
   },
   anniversary: {
-    metaTitle: 'Anniversary Website — Your Story, Page by Page | Luv4u',
+    metaTitle: 'Anniversary Website — Your Story, Page by Page | Kholona',
     metaDescription:
       'Create an anniversary website with a miniature storybook, your start date, memories and photos, and a note for this chapter. Preview it, then share the link.',
     introHeading: 'Turn the pages of your story together',
@@ -199,12 +199,12 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     related: ['love', 'proposal', 'birthday'],
   },
   thanks: {
-    metaTitle: 'Thank You Website — A Bouquet of Gratitude | Luv4u',
+    metaTitle: 'Thank You Website — A Bouquet of Gratitude | Kholona',
     metaDescription:
       'Send a personal thank-you: an interactive bouquet of flowers, each with something you appreciate, plus a heartfelt note. Preview it and share one link.',
     introHeading: 'A thank-you that says exactly what they did',
     intro: [
-      '"Thanks so much!" rarely tells someone what they changed for you. A Luv4u thank-you lets the recipient gather a small bouquet, with three flowers that each carry something you appreciate about them.',
+      '"Thanks so much!" rarely tells someone what they changed for you. A Kholona thank-you lets the recipient gather a small bouquet, with three flowers that each carry something you appreciate about them.',
       'Write the three things yourself, or let the suggestions get you started. Add a photo, a voice note or a short message. It is a good way to thank a teacher, a mentor, a friend or a colleague in a way they can keep.',
     ],
     goodFor: [
@@ -233,7 +233,7 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     related: ['congratulations', 'birthday', 'apology'],
   },
   congratulations: {
-    metaTitle: 'Congratulations Website — Celebrate Their Win | Luv4u',
+    metaTitle: 'Congratulations Website — Celebrate Their Win | Kholona',
     metaDescription:
       'Celebrate a new job, graduation, promotion or personal win with a warm spotlight, a ribbon to untie and your note of pride. Preview it, then share the link.',
     introHeading: 'A little spotlight for a big moment',
@@ -267,7 +267,7 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     related: ['thanks', 'birthday', 'love'],
   },
   missyou: {
-    metaTitle: 'Miss You Website — Send a Paper Hug | Luv4u',
+    metaTitle: 'Miss You Website — Send a Paper Hug | Kholona',
     metaDescription:
       'Send a long-distance "miss you" gift: a paper hug that travels across a little map, plus a note from afar. Preview it and share the link in seconds.',
     introHeading: 'For the miles between hellos',

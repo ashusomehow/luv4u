@@ -1,4 +1,4 @@
-// Local stand-in for the Supabase REST + Storage endpoints Luv4u calls, used by the e2e smoke test.
+// Local stand-in for the Supabase REST + Storage endpoints Kholona calls, used by the e2e smoke test.
 // Not a full implementation: it supports exactly the queries the app issues.
 import http from 'node:http';
 const tables = { gifts: [], gift_views: [], gift_replies: [], events: [], gift_reports: [], rate_hits: [] };

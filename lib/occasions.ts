@@ -1,4 +1,4 @@
-// Luv4u occasion registry: public routes, SEO copy and API validation.
+// Kholona occasion registry: public routes, SEO copy and API validation.
 
 export type OccasionKey =
   | 'birthday'

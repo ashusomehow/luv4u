@@ -17,7 +17,7 @@ export function OccasionContent({ occasion }: { occasion: OccasionKey }) {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Luv4u', item: `${origin}/` },
+        { '@type': 'ListItem', position: 1, name: 'Kholona', item: `${origin}/` },
         { '@type': 'ListItem', position: 2, name: meta.label, item: `${origin}/for/${meta.slug}` },
       ],
     },
@@ -68,7 +68,7 @@ export function OccasionContent({ occasion }: { occasion: OccasionKey }) {
 
       <section>
         <h2>Words to get you started</h2>
-        <p>Every field in Luv4u has editable suggestions. Here are a few lines to make your own:</p>
+        <p>Every field in Kholona has editable suggestions. Here are a few lines to make your own:</p>
         <ul>
           {page.starters.map((line) => (
             <li key={line}>“{line}”</li>

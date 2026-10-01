@@ -147,7 +147,7 @@ try {
   // The extra content is visible on the landing view and hidden once the creator opens
   await page.goto(APP + '/for/miss-you', { waitUntil: 'load' }); await page.waitForTimeout(800);
   assert.equal(await page.locator('.seo-content').isVisible(), true, 'seo content visible on landing');
-  assert.equal(await page.title(), 'Miss You Website — Send a Paper Hug | Luv4u', 'server title kept by the engine');
+  assert.equal(await page.title(), 'Miss You Website — Send a Paper Hug | Kholona', 'server title kept by the engine');
 
   // 2. Create a gift with a photo (uploads go to Storage, then a small JSON publish)
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForTimeout(1000);
@@ -273,7 +273,7 @@ try {
     assert.deepEqual(Object.keys(pub).sort(), ['opensAt', 'scheduled']);
     const sp = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); sp.setDefaultTimeout(15000);
     await sp.goto(`${APP}/g/${sid}`, { waitUntil: 'load' }); await sp.waitForSelector('#errorView:not([hidden])');
-    assert.match(await sp.locator('#errorView h1').innerText(), /Not quite yet/);
+    assert.match(await sp.locator('#errorView h2').innerText(), /Not quite yet/);
     assert.match(await sp.locator('#errorMessage').innerText(), /opens on/);
     assert.doesNotMatch(await sp.content(), /Zara/, 'the name is not revealed before it opens');
     // and the creator has the field

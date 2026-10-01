@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/page-meta';
 import { ContactLine, LegalPage } from '@/components/LegalPage';
 
-export const metadata: Metadata = { title: 'Refunds and cancellations', description: 'When a Luv4u payment is refunded, and when it is not.', alternates: { canonical: '/refund' } };
+export const metadata: Metadata = pageMeta({ title: 'Refunds and cancellations', description: 'When a Kholona payment is refunded and when it is not, how to ask, and how long a refund takes. There is no subscription to cancel.', path: '/refund' });
 
 export default function Refund() {
   return (

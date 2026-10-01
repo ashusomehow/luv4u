@@ -18,14 +18,14 @@ const FALLBACK_ICON =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: 'Luv4u — little gifts, big feelings',
+  title: 'Kholona — little gifts, big feelings',
   description: DESCRIPTION,
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     // Inline fallback so a downloaded gift opened from disk has an icon without the site.
     other: [{ rel: 'alternate icon', url: FALLBACK_ICON }],
   },
-  openGraph: { siteName: 'Luv4u', type: 'website', title: 'Luv4u — little gifts, big feelings', description: DESCRIPTION },
+  openGraph: { siteName: 'Kholona', locale: 'en_IN', type: 'website', title: 'Kholona — little gifts, big feelings', description: DESCRIPTION },
 };
 
 export const viewport: Viewport = {
@@ -41,7 +41,7 @@ const FIRST_PAINT = `(()=>{if(location.hash.startsWith('#gift=')||/^\\/g\\/[a-f0
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // The gift engine toggles classes on <html>/<body> after hydration.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en-IN" suppressHydrationWarning>
       <head>
         <script id="luv4u-firstpaint" dangerouslySetInnerHTML={{ __html: FIRST_PAINT }} />
       </head>

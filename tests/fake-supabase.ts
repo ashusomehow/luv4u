@@ -1,4 +1,4 @@
-// Minimal in-memory stand-in for the parts of supabase-js that Luv4u uses.
+// Minimal in-memory stand-in for the parts of supabase-js that Kholona uses.
 type Row = Record<string, unknown>;
 type Filter = (row: Row) => boolean;
 

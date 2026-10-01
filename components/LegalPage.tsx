@@ -17,7 +17,7 @@ export function LegalPage({ title, children, updated = true }: { title: string; 
     <div className="legal">
       <header className="legal-head">
         <a className="legal-brand" href="/" aria-label={`${BUSINESS_NAME} home`}>
-          luv<span>4</span>u
+          khol<span>o</span>na
         </a>
         <a className="legal-back" href="/">Back to the gifts</a>
       </header>
