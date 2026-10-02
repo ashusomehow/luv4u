@@ -878,24 +878,47 @@ function savedDaysLeft(){if(!publishedExpiresAt)return null;return Math.max(0,Ma
 function savedLossLine(){const n=savedDaysLeft();if(n===null)return '';return n<=1?'Your saved gift is deleted within a day unless you unlock it.':`Your saved gift is kept for ${n} more days. After that it is deleted.`;}
 const lifeText=days=>days>=365?'a full year':days+' days';
 function updatePriceLine(){const el=$('#priceLine');if(!el)return;const show=paymentsRequired&&!!priceText();el.hidden=!show;if(show)el.innerHTML=`Previewing is free. You pay <strong>${e(priceText())}</strong> once, only when you are ready to send it.`;}
-function madeSummary(g){const parts=[];if(g.message?.trim())parts.push('your own words');if(g.photos.length)parts.push(g.photos.length+(g.photos.length===1?' photo':' photos'));if(g.voice)parts.push('a voice note');if(g.memories.some(m=>m.text.trim()))parts.push('little memories');if(g.music!=='none')parts.push('a soundtrack');return parts.length?parts.join(' · '):'A thoughtful ready-made note is tucked inside';}
+function madeSummary(g,fallback=true){const parts=[];if(g.message?.trim())parts.push('your own words');if(g.photos.length)parts.push(g.photos.length+(g.photos.length===1?' photo':' photos'));if(g.voice)parts.push('a voice note');if(g.memories.some(m=>m.text.trim()))parts.push('little memories');if(g.music!=='none')parts.push('a soundtrack');return parts.length?parts.join(' · '):fallback?'A thoughtful ready-made note is tucked inside':'';}
 /* A preview gift is saved and editable but its link does not open yet: show what is at stake and how to unlock it. */
 function applyShareLock(){
  const locked=!!publishedGift?.server&&publishedStatus==='preview';
  let panel=$('#unlockPanel');
  if(!panel){$('.link-wrap').insertAdjacentHTML('beforebegin','<section class="unlock-panel" id="unlockPanel" aria-labelledby="unlockTitle" hidden></section>');panel=$('#unlockPanel');}
- panel.hidden=!locked;
+ panel.hidden=!locked;$('#shareView').classList.toggle('is-locked',locked);
  /* Unlocked: give back the tools the lock took away (the link tools are restored by showShare itself). */
  if(!locked){for(const id of ['downloadGift','qrGift'])if($('#'+id))$('#'+id).disabled=false;return;}
- const o=occasionOf(publishedGift),name=e(publishedGift.name),photo=publishedGift.photos[0],price=priceText();
- panel.innerHTML=`<div class="unlock-gift"><span class="unlock-art" aria-hidden="true">${photo?`<img src="${e(photo.src)}" alt="" style="${cropStyle(photo)}" referrerpolicy="no-referrer">`:e(o.symbol)}</span><span class="unlock-gift-copy"><strong>${e(o.short)} for ${name}</strong><span>${e(madeSummary(publishedGift))}</span></span></div>
-<h2 id="unlockTitle">${name} can’t open it yet.</h2>
-<p id="unlockText">Right now only you can see this gift. Unlock it to get the link you can send, and ${name} gets to open the whole thing.</p>
-${price?`<div class="unlock-price"><strong>${e(price)}</strong><span>one-time · no subscription</span></div>`:''}
-<ul class="unlock-list"><li>A private link only ${name} gets</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes to you, privately</li><li>Edit it any time, on the same link</li></ul>
-<div class="unlock-actions"><button type="button" class="btn btn-primary pulse-cta" data-v3="unlock">Unlock & get link${price?' · '+e(price):''}</button></div>
+ const name=e(publishedGift.name),price=priceText();
+ const frameKey=publishedGift.id+':'+(editing?.revision??'');
+ if(panel.dataset.frame===frameKey&&panel.querySelector('#phoneFrame')&&!panel.querySelector('.pay-done')){/* nothing changed: keep the preview playing */}
+ else{
+ panel.dataset.frame=frameKey;payBusy=false;payPendingRef='';
+ panel.innerHTML=`<ol class="unlock-steps" aria-label="Your progress"><li class="done"><span>✓</span>Made</li><li class="done"><span>✓</span>Previewed</li><li class="now" aria-current="step"><span>3</span>Unlock & send</li></ol>
+<header class="unlock-head"><h2 id="unlockTitle">${name}’s gift is ready.</h2><p id="unlockText">This is exactly what ${name} will open. Tap through it.</p></header>
+<figure class="phone" aria-label="Live preview of the gift">
+<div class="phone-body"><span class="phone-key phone-key-a"></span><span class="phone-key phone-key-b"></span><span class="phone-key phone-key-c"></span>
+<div class="phone-screen"><iframe class="phone-frame" id="phoneFrame" title="Live preview of ${name}’s gift" src="/preview-frame" loading="lazy"></iframe><span class="phone-island" aria-hidden="true"></span><div class="phone-loading" id="phoneLoading" aria-hidden="true"><span>Unwrapping…</span></div></div></div>
+<figcaption>The real thing, not a screenshot.</figcaption>
+<div class="phone-tools"><button type="button" id="phoneRestart">↺ Start over</button><button type="button" id="phoneFull">⤢ Full screen</button><button type="button" data-action="edit">✎ Edit</button></div>
+</figure>
+<div class="unlock-rest">${madeSummary(publishedGift,false)?`<p class="unlock-made">Inside: ${e(madeSummary(publishedGift,false))}</p>`:''}
+<div class="unlock-card">
+<div class="unlock-price"><strong>${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
+<ul class="unlock-list"><li>A private link only ${name} gets, ready the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li></ul>
+<p class="unlock-trust">${paySimulated?'<strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.':payTestMode?'<strong>Test mode.</strong> Pay with Razorpay’s test card or test UPI. No real money moves.':'<span aria-hidden="true">🔒</span> Secure payment by Razorpay · UPI, cards, netbanking'}</p>
+</div>
+<div class="unlock-cta">
+<p class="pay-error" id="payError" role="alert" hidden></p>
+<p class="pay-status" id="payStatus" role="status" hidden></p>
+<button type="button" class="btn btn-primary pulse-cta pay-btn" id="payGo" data-v3="unlock" data-label="Unlock & get link${price?' · '+e(price):''}">Unlock & get link${price?' · '+e(price):''}</button>
 <p class="unlock-loss">${e(savedLossLine())}</p>
-<p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable.</p>`;
+</div>
+<details class="unlock-faq"><summary>What happens after I pay?</summary><p>Your private link appears right away. Send it on WhatsApp or anywhere. ${name} opens it with no account and no app.</p></details>
+<details class="unlock-faq"><summary>What if the payment fails?</summary><p>Nothing unlocks and your gift stays saved, so you can try again or use another method. If your bank shows a debit anyway, it is returned automatically, usually in 5–7 working days. If a payment goes through but the page doesn’t update, the gift unlocks on its own within minutes. <a href="/contact">Still stuck? Write to us.</a></p></details>
+<details class="unlock-faq"><summary>Can I change it after paying?</summary><p>Yes. Edit the words, photos or music any time and the same link shows the new version.</p></details>
+<p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable.</p></div>`;
+ $('#phoneRestart').onclick=()=>{try{$('#phoneFrame').contentWindow.location.reload();$('#phoneLoading')?.classList.remove('is-done');}catch{}};
+ $('#phoneFull').onclick=()=>$('#previewPublished').click();
+ }
  $('#giftLink').value='Your link appears here once it is unlocked';
  for(const id of ['giftLink','copyGiftLink','whatsappGift','downloadGift','nativeShareGift','qrGift'])if($('#'+id))$('#'+id).disabled=true;
  for(const b of $$('[data-v2="native-share"],[data-v2="share-cover"]'))b.disabled=true;
@@ -927,68 +950,91 @@ function loadRazorpay(){
 /* Opens Razorpay for the order the server made. Resolves with Razorpay's proof of payment; rejects {cancelled:true} if the window is closed. */
 function runRazorpay(r){
  return loadRazorpay().then(()=>new Promise((ok,no)=>{
-  let settled=false;const done=(fn,v)=>{if(settled)return;settled=true;fn(v);};
-  const rz=new window.Razorpay({key:r.keyId,order_id:r.order.id,amount:r.order.amount,currency:r.order.currency,name:'Kholona',description:'A Kholona gift',theme:{color:'#aa5265'},retry:{enabled:true},modal:{confirm_close:true,ondismiss:()=>done(no,{cancelled:true})},handler:resp=>done(ok,resp)});
+  let settled=false,failure=null;const done=(fn,v)=>{if(settled)return;settled=true;fn(v);};
+  const rz=new window.Razorpay({key:r.keyId,order_id:r.order.id,amount:r.order.amount,currency:r.order.currency,name:'Kholona',description:'A Kholona gift',theme:{color:'#aa5265'},retry:{enabled:true},modal:{confirm_close:true,ondismiss:()=>done(no,{cancelled:true,failure})},handler:resp=>done(ok,resp)});
+  rz.on('payment.failed',resp=>{failure=resp&&resp.error||{};});
   rz.open();
  }));
 }
-/* The payment modal. It states the price, what is included and the refund rule, then takes the buyer to checkout. */
-function unlockGift(){
- if(!editing?.key||!publishedGift?.server)return;
- const previous=document.activeElement,root=$('#modalRoot'),name=e(publishedGift.name),price=priceText(),o=occasionOf(publishedGift);
- root.innerHTML=`<div class="modal-backdrop pay-backdrop"><section class="modal pay-modal" role="dialog" aria-modal="true" aria-labelledby="payTitle">
-<button type="button" class="pay-close" id="payClose" aria-label="Close">×</button>
-<div class="pay-body" id="payBody">
-<div class="pay-gift"><span class="pay-gift-art" aria-hidden="true">${e(o.symbol)}</span><span><strong>${e(o.short)} for ${name}</strong><small>${e(madeSummary(publishedGift))}</small></span></div>
-<h2 id="payTitle">Unlock ${name}’s gift</h2>
-<div class="pay-price"><strong>${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
-<ul class="pay-list"><li>Your private link, ready to send the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li></ul>
-${paySimulated?'<p class="pay-test"><strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.</p>':payTestMode?'<p class="pay-test"><strong>Test mode.</strong> Pay with Razorpay’s test card or test UPI. No real money moves.</p>':'<p class="pay-methods" aria-label="Payment methods">UPI · Cards · Netbanking</p>'}
-<p class="pay-error" id="payError" role="alert" hidden></p>
-<button type="button" class="btn btn-primary pay-btn" id="payGo">${paySimulated?'Continue (test mode)':'Pay '+e(price)}</button>
-<button type="button" class="pay-later" id="payLater">Not yet, keep it saved</button>
-<p class="pay-terms">Once a gift is unlocked, the payment is not refundable. Previewing stays free, so look as often as you like.</p>
-</div></section></div>`;
- const close=()=>{root.innerHTML='';document.removeEventListener('keydown',trap);previous?.focus?.();};
- const trap=event=>{if(event.key==='Escape'&&!$('#payGo')?.disabled)close();if(event.key==='Tab'){const bs=$$('button:not([disabled])',root),first=bs[0],last=bs[bs.length-1];if(!first)return;if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}};
- document.addEventListener('keydown',trap);
- $('#payClose').onclick=close;$('#payLater').onclick=close;
- $('.pay-backdrop',root).addEventListener('click',ev=>{if(ev.target.classList.contains('pay-backdrop')&&!$('#payGo')?.disabled)close();});
- const finish=async()=>{
-  const owner=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});
-  publishedStatus='paid';publishedURL=owner.url;
-  $('#payBody').innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="payTitle">Unlocked. ${name} can open it now.</h2><p>Your private link is ready. Send it whenever you like.</p><button type="button" class="btn btn-primary pay-btn" id="payDone">Get my link</button></div>`;
-  $('#payClose').hidden=true;confetti(140);$('#payDone').focus();
-  $('#payDone').onclick=()=>{close();showShare();toast('Unlocked. Send it with love. ♡');};
- };
- const checkout=()=>api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
- $('#payGo').onclick=async()=>{
-  const go=$('#payGo'),err=$('#payError'),label=go.textContent;
-  go.disabled=true;go.classList.add('is-busy');go.textContent='Processing…';err.hidden=true;$('#payLater').disabled=true;
-  const reset=()=>{go.disabled=false;go.classList.remove('is-busy');go.textContent=label;$('#payLater').disabled=false;};
-  try{
-   let r=await checkout();
-   if(r.status!=='paid'){
-    if(!r.order||!r.keyId)throw new Error('We could not start the payment. Nothing was charged.');
-    go.textContent='Opening payment…';
-    const proof=await runRazorpay(r);
-    go.textContent='Confirming…';
-    r=await api('/api/gifts/'+editing.id+'/verify',{method:'POST',key:editing.key,body:proof,timeout:60000});
-   }
-   if(r.status!=='paid')throw new Error('We could not confirm the payment. Nothing was unlocked.');
-   await finish();
-  }catch(ex){
-   reset();
-   if(ex&&ex.cancelled){
-    /* They closed the payment window. Nothing to report, but check in case the money did move. */
-    try{const again=await checkout();if(again.status==='paid')await finish();}catch{/* stay quiet: they can press Pay again */}
-    return;
-   }
-   err.textContent=(ex&&ex.message)||'We could not take the payment. Your gift is still saved.';err.hidden=false;
-  }
- };
- $('#payGo').focus();
+/* Paying happens right on the unlock page. Every way it can go wrong ends in a message that says what happened to the money. */
+let payBusy=false,payPendingRef='';
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+const refText=ref=>ref?' Reference: '+ref+'.':'';
+function failureText(f){
+ const why=f&&(f.description||f.reason)?String(f.description||f.reason).replace(/[.\s]+$/,''):'';
+ return 'That payment did not go through'+(why?' ('+why+')':'')+'. Your gift is safe and nothing was unlocked. Try again, or pick another way to pay. If your bank shows a debit, it is returned automatically, usually in 5–7 working days.';
 }
+/* Asks the server to confirm a payment. A network blip right after paying must never look like a failed payment. */
+async function confirmPayment(proof,status){
+ const ref=proof&&proof.razorpay_payment_id||'';let last;
+ for(let attempt=0;attempt<3;attempt++){
+  try{return await api('/api/gifts/'+editing.id+'/verify',{method:'POST',key:editing.key,body:proof,timeout:30000});}
+  catch(ex){
+   last=ex;
+   if(ex.status&&ex.status<500&&ex.status!==429)throw new Error((ex.message||'We could not confirm the payment.')+' Nothing was unlocked.'+refText(ref)+' If money was taken, write to us with this reference.');
+   status('Payment received. Confirming it…');await delay(1500*(attempt+1));
+  }
+ }
+ /* Still no answer: the money may have moved. Look for it for a minute, never ask them to pay again. */
+ payPendingRef=ref||'pending';
+ status('Payment received. Waiting for the bank to confirm it. Please do not pay again.');
+ for(let i=0;i<12;i++){await delay(5000);try{const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,timeout:20000});if(r.status==='paid'){payPendingRef='';return r;}}catch{}}
+ throw new Error('Your payment is still being confirmed. Please do not pay again: this gift unlocks on its own as soon as it is confirmed, usually within minutes. Come back to it in a little while.'+refText(ref)+' If it is not unlocked within a day, write to us with this reference.');
+}
+function unlockDone(name){
+ const panel=$('#unlockPanel');if(!panel)return;
+ panel.dataset.frame='';
+ panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">Unlocked. ${name} can open it now.</h2><p>Your private link is ready. Send it whenever you like.</p><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone">Get my link</button></div>`;
+ confetti(140);$('#payDone').focus();
+ $('#payDone').onclick=async()=>{
+  const btn=$('#payDone');btn.disabled=true;
+  try{const owner=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});publishedStatus='paid';publishedURL=owner.url;showShare();toast('Unlocked. Send it with love. ♡');}
+  catch(ex){btn.disabled=false;const er=$('#payError');er.textContent='Your gift is unlocked, but we could not load your link just now. Check your connection and press the button again.';er.hidden=false;}
+ };
+}
+async function startPayment(){
+ if(payBusy||!editing?.key||!publishedGift?.server)return;
+ const go=$('#payGo'),err=$('#payError'),note=$('#payStatus');if(!go)return;
+ const name=e(publishedGift.name),label=go.dataset.label||go.textContent;
+ const busy=t=>{go.disabled=true;go.classList.add('is-busy');go.textContent=t;};
+ const status=t=>{note.textContent=t;note.hidden=!t;};
+ const idle=()=>{go.disabled=false;go.classList.remove('is-busy');go.textContent=payPendingRef?'Check payment status':label;payBusy=false;};
+ const checkout=()=>api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
+ payBusy=true;err.hidden=true;status('');busy('Processing…');
+ try{
+  let r=await checkout();
+  if(r.status!=='paid'&&payPendingRef){status('');throw new Error('Your payment is still being confirmed. Please do not pay again. This gift unlocks on its own as soon as it is confirmed.'+refText(payPendingRef!=='pending'?payPendingRef:''));}
+  if(r.status!=='paid'){
+   if(!r.order||!r.keyId)throw new Error('We could not start the payment. Nothing was charged.');
+   busy('Opening payment…');
+   let proof;
+   try{proof=await runRazorpay(r);}
+   catch(ex){
+    if(!(ex&&ex.cancelled))throw ex;
+    /* They closed the window. If money did move (or a payment failed), say so; otherwise stay quiet. */
+    const again=await checkout().catch(()=>null);
+    if(again&&again.status==='paid'){unlockDone(name);return;}
+    if(ex.failure){err.textContent=failureText(ex.failure);err.hidden=false;}
+    idle();return;
+   }
+   busy('Confirming…');
+   r=await confirmPayment(proof,status);
+  }
+  if(r.status!=='paid')throw new Error('We could not confirm the payment. Nothing was unlocked.');
+  payPendingRef='';unlockDone(name);
+ }catch(ex){
+  status('');idle();
+  err.textContent=(ex&&ex.message)||'We could not take the payment. Your gift is still saved.';err.hidden=false;
+ }
+}
+function unlockGift(){startPayment();$('#unlockPanel')?.scrollIntoView({behavior:'smooth',block:'center'});}
+/* The unlock page plays the gift inside a phone. The frame (same origin) asks for the gift once it has loaded. */
+window.addEventListener('message',ev=>{
+ if(ev.origin!==location.origin)return;
+ const f=$('#phoneFrame');if(!f||ev.source!==f.contentWindow||!ev.data||ev.data.type!=='kholona-embed-ready'||!publishedGift)return;
+ f.contentWindow.postMessage({type:'kholona-embed-play',gift:publishedGift},location.origin);
+ $('#phoneLoading')?.classList.add('is-done');
+});
 /* Open a saved gift's share screen (used for gifts still waiting to be unlocked). */
 async function openSavedShare(id){
  const entry=libraryCache.find(v=>v.id===id);if(!entry)return;
@@ -1096,7 +1142,20 @@ async function routeV2(){const occasionRoute=/^#occasion=(birthday|proposal|love
  const match=/^\/g\/([a-f0-9]{24})\/?$/.exec(location.pathname);
  if(match){try{const result=await api('/api/gifts/'+match[1]);if(result.scheduled){showScheduled(result.opensAt);return true;}startExperience(result.gift);}catch(err){showView('error');$('#errorMessage').textContent=err.message;}return true;}const campaign=Object.entries(OCCASIONS).find(([,o])=>location.pathname==='/for/'+o.slug||location.pathname==='/for/'+o.slug+'/');if(campaign){/* The server already set this page's own title. */applyCampaign(campaign[0],true);return true;}return false;
 }
+/* The phone on the unlock page plays the gift in here. It only ever shows what its parent window hands it. */
+function initEmbed(){
+ document.documentElement.classList.add('is-embed');
+ for(const id of ['homeView','creatorView','shareView','errorView','myGiftsView'])if($('#'+id))$('#'+id).hidden=true;
+ if($('#siteHeader'))$('#siteHeader').hidden=true;
+ window.addEventListener('message',ev=>{
+  if(ev.origin!==location.origin||ev.source!==window.parent||!ev.data||ev.data.type!=='kholona-embed-play')return;
+  try{startExperience(sanitizeGift(ev.data.gift),{preview:true,returnView:'share'});}catch{}
+ });
+ document.documentElement.classList.remove('gift-loading');
+ window.parent.postMessage({type:'kholona-embed-ready'},location.origin);
+}
 async function init(){
+ if(location.pathname==='/preview-frame'&&window.parent!==window){initEmbed();return;}
  installWizard();installOccasions();bindV2();bindMessageTemplates();await restoreDraft();populateForm();showView('home');
  await checkBackend();
  try{const pending=await store('pending-create');if(pending&&/^[a-f0-9]{24}$/.test(pending.id)&&/^[a-f0-9]{64}$/.test(pending.key)){publishAttempt={id:pending.id,key:pending.key};}}catch{}
@@ -1531,7 +1590,7 @@ function installOccasions(){
   const b=event.target.closest('[data-v3]');if(!b)return;event.preventDefault();
   switch(b.dataset.v3){
    case'change-gift':browseGifts();break;
-   case'unlock':unlockGift();break;
+   case'unlock':startPayment();break;
    case'resume-dismiss':try{sessionStorage.setItem('luv4u.resume.dismissed','1');}catch{}updateResumeBanner();break;
    case'unlock-saved':openSavedShare(b.dataset.id);break;
    case'home-demo':previewOccasion();break;
