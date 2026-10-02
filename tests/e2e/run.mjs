@@ -3,6 +3,7 @@
 //   NEXT_PUBLIC_SITE_URL=http://localhost:3100 npm run build && npm run test:e2e
 // (static pages fix the site URL at build time, and the test checks canonical URLs)
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -12,9 +13,13 @@ import { chromium } from 'playwright-core';
 
 const APP = 'http://localhost:3100';
 const LOCKED_APP = 'http://localhost:3101'; // same build and database, PAYMENTS_REQUIRED=true
+const RZP_APP = 'http://localhost:3102'; // same build, PAYMENTS_REQUIRED=true and Razorpay (pointed at the mock) configured
 const MOCK = 'http://localhost:54321';
 const NORMAL_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const children = [];
+// `next start` also reads .env.local, so a developer's real Razorpay test keys would leak into these servers.
+// Blank values win over the file, which keeps the tests hermetic: only the :3102 server has Razorpay, and it points at the mock.
+const NO_RAZORPAY = { RAZORPAY_KEY_ID: '', RAZORPAY_KEY_SECRET: '', RAZORPAY_WEBHOOK_SECRET: '', RAZORPAY_API_BASE: '', PAYMENT_SIMULATE: '', PAYMENT_PRICE_INR: '' };
 
 function start(cmd, args, env) {
   const child = spawn(cmd, args, { env: { ...process.env, ...env }, stdio: ['ignore', 'inherit', 'inherit'] });
@@ -42,19 +47,29 @@ function solidPng(file) {
   fs.writeFileSync(file, Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]));
 }
 
+// A server left over from an earlier step would answer instead of the ones started below, and the test would
+// quietly run against the wrong thing. Fail loudly instead.
+const portFree = port => new Promise(resolve => { const s = net.createServer(); s.once('error', () => resolve(false)); s.once('listening', () => s.close(() => resolve(true))); s.listen(port); });
+
 let browser;
 try {
+  for (const port of [3100, 3101, 3102, 54321]) assert.ok(await portFree(port), `port ${port} is already in use: stop whatever is running there and rerun`);
   start(process.execPath, ['tests/e2e/mock-supabase.mjs'], {});
   // Run Next directly (not via npx) so SIGTERM reaches the server process.
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100'], {
-    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP,
+    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, ...NO_RAZORPAY,
   });
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3101'], {
+    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, PAYMENTS_REQUIRED: 'true', ...NO_RAZORPAY,
+  });
+  start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3102'], {
     SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, PAYMENTS_REQUIRED: 'true',
+    RAZORPAY_KEY_ID: 'rzp_test_e2e', RAZORPAY_KEY_SECRET: 'e2e-razorpay-secret', RAZORPAY_WEBHOOK_SECRET: 'e2e-webhook-secret', RAZORPAY_API_BASE: MOCK,
   });
   await waitFor(`${MOCK}/__state`, 'mock supabase');
   await waitFor(`${APP}/api/config`, 'next server');
   await waitFor(`${LOCKED_APP}/api/config`, 'next server (payments required)');
+  await waitFor(`${RZP_APP}/api/config`, 'next server (razorpay)');
 
   const photo = path.join(os.tmpdir(), 'luv4u-e2e.png'); solidPng(photo);
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--no-sandbox'] });
@@ -364,6 +379,77 @@ try {
   await owner.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
   assert.equal(await owner.locator('#copyGiftLink').isDisabled(), false, 'link tools are available after unlocking');
   assert.match(await owner.inputValue('#giftLink'), /\/g\/[a-f0-9]{24}$/);
+
+  // 8. Razorpay: the whole payment, in a browser, against a fake Razorpay. The real checkout script is replaced
+  //    by a stub that either "closes the window" or "pays" through the mock (which signs like Razorpay does).
+  {
+    assert.deepEqual((await (await fetch(`${RZP_APP}/api/config`)).json()).payments, { required: true, priceInr: 99, linkDays: 365, provider: 'razorpay', testMode: true });
+    const zctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
+    await zctx.route('https://checkout.razorpay.com/v1/checkout.js', route => route.fulfill({ contentType: 'application/javascript', body: `
+      window.Razorpay = function (o) { this.open = async () => {
+        window.__rzpOptions = { key: o.key, order_id: o.order_id, amount: o.amount, currency: o.currency, name: o.name, description: o.description };
+        if (window.__rzpMode === 'dismiss') { o.modal.ondismiss(); return; }
+        const r = await fetch('${MOCK}/__pay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: o.order_id }) });
+        const p = await r.json();
+        o.handler({ razorpay_order_id: o.order_id, razorpay_payment_id: p.payment.id, razorpay_signature: p.signature });
+      }; };` }));
+    const zp = await zctx.newPage(); zp.setDefaultTimeout(15000); watch(zp, 'razorpay');
+    await zp.goto(RZP_APP + '/#make=love', { waitUntil: 'load' }); await zp.waitForSelector('#recipientName');
+    await zp.fill('#recipientName', 'Zoya');
+    await zp.click('#wizardNext'); await zp.waitForTimeout(500); await zp.click('#wizardNext'); await zp.click('#askSkip'); await zp.waitForTimeout(500);
+    await zp.click('#createGiftBtn'); await zp.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
+    const zid = (await zp.inputValue('#giftLink')).includes('/g/') ? null : (await zp.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0].id));
+    assert.ok(zid, 'saved gift id');
+
+    await zp.click('[data-v3="unlock"]'); await zp.waitForSelector('.pay-modal');
+    assert.match(await zp.locator('.pay-modal').innerText(), /Test mode[\s\S]*test card/, 'test mode is announced');
+    assert.equal(await zp.locator('#payGo').innerText(), 'Pay ₹99');
+
+    // a) closing the payment window changes nothing: no error, still locked, and the button works again
+    await zp.evaluate(() => { window.__rzpMode = 'dismiss'; });
+    await zp.click('#payGo'); await zp.waitForFunction(() => window.__rzpOptions);
+    const opts = await zp.evaluate(() => window.__rzpOptions);
+    assert.equal(opts.amount, 9900, 'the server fixed the price'); assert.equal(opts.currency, 'INR'); assert.equal(opts.key, 'rzp_test_e2e');
+    assert.doesNotMatch(opts.description + opts.name, /Zoya/, 'no recipient name goes to Razorpay');
+    await zp.waitForFunction(() => !document.querySelector('#payGo').disabled);
+    assert.equal(await zp.locator('#payError').isVisible(), false);
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${zid}`)).status, 402);
+
+    // b) paying unlocks it, using the same order as before (no pile of orders)
+    await zp.evaluate(() => { window.__rzpMode = 'pay'; delete window.__rzpOptions; });
+    await zp.click('#payGo'); await zp.waitForSelector('#payDone');
+    assert.match(await zp.locator('.pay-done').innerText(), /Unlocked/);
+    await zp.click('#payDone'); await zp.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${zid}`)).status, 200, 'the recipient link opens after payment');
+    let st = await state();
+    assert.equal(st.rzpOrders, 1, 'one order for one gift, even after a closed window');
+    assert.deepEqual(st.paymentRows.map(r => r.status), ['paid']);
+    assert.doesNotMatch(await zp.content(), /e2e-razorpay-secret/, 'the key secret never reaches the browser');
+    await zctx.close();
+
+    // c) the browser never comes back: Razorpay's webhook unlocks the gift, a forged one does not
+    const mk = async (id, key) => { await fetch(`${RZP_APP}/api/gifts`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, editKey: key, gift: { name: 'Webhook', occasion: 'love', vibe: 'Romantic', photos: [] } }) });
+      return (await (await fetch(`${RZP_APP}/api/gifts/${id}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${key}` } })).json()); };
+    const wid = 'c1'.repeat(12), wkey = 'd1'.repeat(32);
+    const pending = await mk(wid, wkey);
+    assert.equal(pending.status, 'pending'); assert.equal(pending.order.amount, 9900);
+    const paidAt = await (await fetch(`${MOCK}/__pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: pending.order.id }) })).json();
+    const raw = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity: paidAt.payment } } });
+    const post = sig => fetch(`${RZP_APP}/api/webhooks/razorpay`, { method: 'POST', headers: { 'x-razorpay-signature': sig }, body: raw });
+    assert.equal((await post('0'.repeat(64))).status, 400, 'a forged webhook is refused');
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${wid}`)).status, 402, 'and unlocks nothing');
+    const { createHmac } = await import('node:crypto');
+    assert.equal((await post(createHmac('sha256', 'e2e-webhook-secret').update(raw).digest('hex'))).status, 200);
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${wid}`)).status, 200, 'the webhook unlocked it');
+
+    // d) paid, but neither the browser nor the webhook reported: pressing Unlock again finds the payment
+    const rid = 'c2'.repeat(12), rkey = 'd2'.repeat(32);
+    const pend2 = await mk(rid, rkey);
+    await fetch(`${MOCK}/__pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: pend2.order.id }) });
+    assert.equal((await (await fetch(`${RZP_APP}/api/gifts/${rid}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${rkey}` } })).json()).status, 'paid');
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${rid}`)).status, 200);
+    assert.deepEqual((await state()).paymentRows.map(r => r.status), ['paid', 'paid', 'paid']);
+  }
 
   assert.deepEqual(errors.filter(e => !/favicon/.test(e)), [], 'no browser errors');
   console.log('e2e smoke passed');

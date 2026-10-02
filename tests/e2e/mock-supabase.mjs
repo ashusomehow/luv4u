@@ -1,7 +1,13 @@
 // Local stand-in for the Supabase REST + Storage endpoints Kholona calls, used by the e2e smoke test.
 // Not a full implementation: it supports exactly the queries the app issues.
+import crypto from 'node:crypto';
 import http from 'node:http';
-const tables = { gifts: [], gift_views: [], gift_replies: [], events: [], gift_reports: [], rate_hits: [] };
+const tables = { gifts: [], gift_views: [], gift_replies: [], events: [], gift_reports: [], rate_hits: [], payments: [] };
+
+// A stand-in for api.razorpay.com (orders, payments, capture) plus /__pay, which plays the customer paying.
+const RZP_AUTH = 'Basic ' + Buffer.from('rzp_test_e2e:e2e-razorpay-secret').toString('base64');
+const rzpOrders = new Map(), rzpPayments = new Map();
+let rzpSeq = 1;
 const pk = { gifts: 'id' };
 const files = new Map();
 let seq = 1;
@@ -27,6 +33,24 @@ http.createServer(async (req, res) => {
   const raw = await readBody(req);
   const p = url.pathname;
   let m;
+  if (p.startsWith('/v1/') || p === '/__pay') {
+    if (p.startsWith('/v1/') && req.headers.authorization !== RZP_AUTH) return send(res, 401, { error: { code: 'BAD_REQUEST_ERROR', description: 'Authentication failed' } });
+    if (req.method === 'POST' && p === '/v1/orders') {
+      const body = JSON.parse(raw.toString()); const order = { id: 'order_E2E' + rzpSeq++, amount: body.amount, currency: body.currency, receipt: body.receipt, status: 'created' };
+      rzpOrders.set(order.id, order); return send(res, 200, order);
+    }
+    if (req.method === 'POST' && p === '/__pay') {
+      const { order_id } = JSON.parse(raw.toString()); const order = rzpOrders.get(order_id);
+      if (!order) return send(res, 404, { error: 'no such order' });
+      const payment = { id: 'pay_E2E' + rzpSeq++, order_id, amount: order.amount, currency: order.currency, status: 'captured' };
+      rzpPayments.set(payment.id, payment);
+      return send(res, 200, { payment, signature: crypto.createHmac('sha256', 'e2e-razorpay-secret').update(order_id + '|' + payment.id).digest('hex') });
+    }
+    if ((m = p.match(/^\/v1\/orders\/([^/]+)\/payments$/))) return send(res, 200, { items: [...rzpPayments.values()].filter(x => x.order_id === m[1]) });
+    if ((m = p.match(/^\/v1\/payments\/([^/]+)\/capture$/))) { const x = rzpPayments.get(m[1]); if (!x) return send(res, 404, { error: {} }); x.status = 'captured'; return send(res, 200, x); }
+    if ((m = p.match(/^\/v1\/payments\/([^/]+)$/))) { const x = rzpPayments.get(m[1]); return x ? send(res, 200, x) : send(res, 404, { error: {} }); }
+    return send(res, 404, { error: 'mock: unhandled razorpay ' + req.method + ' ' + p });
+  }
   if ((m = p.match(/^\/rest\/v1\/(\w+)$/))) {
     const table = m[1]; const prefer = req.headers.prefer || '';
     if (req.method === 'GET' || req.method === 'HEAD') {
@@ -93,6 +117,6 @@ http.createServer(async (req, res) => {
     const { prefixes } = JSON.parse(raw.toString()); prefixes.forEach(x => files.delete(x));
     return send(res, 200, prefixes.map(name => ({ name })));
   }
-  if (p === '/__state') return send(res, 200, { gifts: tables.gifts.length, views: tables.gift_views.length, replies: tables.gift_replies.length, reports: tables.gift_reports.length, rateHits: tables.rate_hits.length, events: tables.events.map(e => e.name), files: [...files].map(([k, v]) => [k, v.type, v.bytes.length]) });
+  if (p === '/__state') return send(res, 200, { gifts: tables.gifts.length, views: tables.gift_views.length, replies: tables.gift_replies.length, reports: tables.gift_reports.length, rzpOrders: rzpOrders.size, paymentRows: tables.payments.map(r => ({ gift: r.gift_id, status: r.status, payment: r.payment_id })), rateHits: tables.rate_hits.length, events: tables.events.map(e => e.name), files: [...files].map(([k, v]) => [k, v.type, v.bytes.length]) });
   send(res, 404, { error: 'mock: unhandled ' + req.method + ' ' + p });
 }).listen(PORT, () => console.log('mock supabase on', PORT));

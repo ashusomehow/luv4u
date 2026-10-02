@@ -5,7 +5,7 @@ Kholona needs one Supabase project (database + storage) and one Vercel project. 
 ## 1. Supabase
 
 1. Create a project.
-2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), [`0002_events.sql`](../supabase/migrations/0002_events.sql), then [`0003_gift_status.sql`](../supabase/migrations/0003_gift_status.sql), [`0004_safety.sql`](../supabase/migrations/0004_safety.sql) and [`0005_scheduled_delivery.sql`](../supabase/migrations/0005_scheduled_delivery.sql). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
+2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), [`0002_events.sql`](../supabase/migrations/0002_events.sql), then [`0003_gift_status.sql`](../supabase/migrations/0003_gift_status.sql), [`0004_safety.sql`](../supabase/migrations/0004_safety.sql) and [`0005_scheduled_delivery.sql`](../supabase/migrations/0005_scheduled_delivery.sql) and [`0006_payments.sql`](../supabase/migrations/0006_payments.sql). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
    - `gifts`, `gift_views`, `gift_replies` with Row Level Security **enabled and no policies**: the browser can never read or write them directly; only the server can, using the service-role key.
    - a public Storage bucket `gift-media` (4 MiB per file; image and audio MIME types only).
 3. From the project's API settings, copy the **Project URL** and the **service_role** key.
@@ -106,6 +106,6 @@ Vercel builds every non-production branch as a Preview deployment. By default it
 `.github/workflows/ci.yml` runs on every pull request and every push to `main`: typecheck, lint, unit/API tests, production build, and an end-to-end browser smoke test (`npm run test:e2e`) that creates, opens, replies to and deletes a gift against a local Supabase-compatible mock. Run it locally with `NEXT_PUBLIC_SITE_URL=http://localhost:3100 npm run build && npm run test:e2e` (the site URL is fixed into static pages at build time); set `CHROMIUM_EXECUTABLE` if Playwright's browser isn't installed.
 
 
-## Trying the payment flow before Razorpay
+## Payments
 
-Set `PAYMENTS_REQUIRED=true` and `PAYMENT_SIMULATE=true` on a **Preview** deployment (or locally). The unlock button opens the payment modal, and its button unlocks the gift without charging anything; the modal says "Test mode". `PAYMENT_SIMULATE` is ignored on the Vercel Production deployment, so it cannot give away free unlocks there. The Razorpay task replaces the simulated branch in `app/api/gifts/[id]/checkout/route.ts` with a real order.
+Everything about taking money (how the flow works, the Razorpay keys and webhook, test cards, going live, refunds and duplicate payments) is in [Payments](PAYMENTS.md). To try the unlock flow with no provider at all, set `PAYMENTS_REQUIRED=true` and `PAYMENT_SIMULATE=true` on a **Preview** deployment: the Pay button then unlocks the gift without charging anything. `PAYMENT_SIMULATE` is ignored on Production, and whenever Razorpay keys are present.

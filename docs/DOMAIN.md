@@ -7,7 +7,7 @@ Do the steps in this order. The order matters: the site must answer on the domai
 1. Vercel → your project → **Settings → Domains → Add** `kholona.in`, then add `www.kholona.in` as well.
 2. Vercel shows the DNS records it needs for each. Add exactly those at your registrar's DNS page. They are normally an **A record** for the bare domain (`@`) and a **CNAME** for `www` pointing at Vercel. Use the values Vercel shows, not values from this page.
 3. Wait until both rows say **Valid Configuration** (minutes to a few hours). HTTPS is issued for you.
-4. In the Domains list, make `kholona.in` the primary. The app also redirects `www.kholona.in` to `kholona.in` once the next step is done.
+4. In the Domains list, make `kholona.in` the primary, and set `www.kholona.in` to **redirect to `kholona.in`** (edit the www row → Redirect to Another Domain). **Never** set `kholona.in` to redirect to `www`: the app already sends `www` to the bare domain, so redirecting the other way makes a loop and the site will not load. If the site ever shows "too many redirects", this is why.
 
 ## 2. Tell the app its address
 
@@ -48,6 +48,9 @@ Once `kholona.in` loads correctly, set `LEGACY_HOST=luv4u-tau.vercel.app` (or wh
 - Search the Indian trademark register for "KHOLONA" in the classes for software and online services before you spend money on branding.
 - Add the domain to your email later: when you send mail from `@kholona.in` you will need SPF, DKIM and DMARC records at your registrar.
 
-## What does not change
+## What carries over, and what does not
 
-Saved drafts, saved gifts and edit keys live in each person's browser and in Supabase under internal names that were not renamed, so nothing anyone already made is lost. Gift links on the old address keep opening, and redirect once step 3 is done.
+- **Carries over:** every gift link (it lives in Supabase, and the old address redirects once step 3 is done), private edit links (the `#edit=…` part survives the redirect), replies, and everything stored in Supabase.
+- **Does not carry over:** the *"My little gifts" list and unfinished drafts*. Browsers store those per website address, so a browser that saved them on the old address will not see them on kholona.in. Before moving, open any gift you still need from the old address and copy its private edit link; with that link you can edit it from the new address.
+
+This matters little before launch, because only you have made gifts so far. It would matter a lot if you moved a busy site, so keep the domain you launch with.

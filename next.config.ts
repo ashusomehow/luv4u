@@ -35,7 +35,7 @@ const config: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'microphone=(self), accelerometer=(self), gyroscope=(self), camera=(), geolocation=(), payment=(self)' },
+          { key: 'Permissions-Policy', value: 'microphone=(self), accelerometer=(self), gyroscope=(self), camera=(), geolocation=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com")' },
         ],
       },
       {

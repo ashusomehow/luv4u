@@ -1,13 +1,19 @@
+import { openOrderFor, reconcileGift } from '@/lib/checkout';
 import { findOwnedGift, isUnlocked, markPaid } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, requireBackend } from '@/lib/http';
 import { simulatePayments } from '@/lib/payments';
+import { LIMITS, rateLimit } from '@/lib/rate-limit';
+import { razorpayConfigured, razorpayKeyId, razorpayTestMode } from '@/lib/razorpay';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Starts payment for a preview gift. Only the owner (edit key) may call it.
- * Already unlocked: answers ok. Test mode (PAYMENT_SIMULATE=true, never on production) unlocks without charging. No payment provider connected yet: answers 503, and the gift stays
- * saved as a preview. The Razorpay integration replaces the 503 with a real checkout order.
+ *  - already unlocked: answers paid.
+ *  - Razorpay configured: first looks for a payment that already went through (page closed mid-payment),
+ *    otherwise returns a checkout order whose amount the server fixed. The browser then opens Razorpay.
+ *  - not configured, test mode (PAYMENT_SIMULATE=true, never on production): unlocks without charging.
+ *  - not configured at all: 503, and the gift stays saved as a preview.
  */
 export const POST = handle(async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
   const unavailable = requireBackend();
@@ -18,6 +24,13 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
 
   const row = await findOwnedGift(id, key);
   if (isUnlocked(row)) return json({ ok: true, status: 'paid' });
+
+  if (razorpayConfigured()) {
+    await rateLimit(request, 'checkout', LIMITS.checkout.max, LIMITS.checkout.window);
+    if (await reconcileGift(id)) return json({ ok: true, status: 'paid' });
+    const order = await openOrderFor(id);
+    return json({ ok: true, status: 'pending', order, keyId: razorpayKeyId(), testMode: razorpayTestMode() });
+  }
   if (simulatePayments()) {
     await markPaid(id);
     return json({ ok: true, status: 'paid', simulated: true });

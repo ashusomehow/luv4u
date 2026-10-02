@@ -38,6 +38,10 @@ Per address, per hour: create gift 12, media upload 80, reply 20, report 8 (see 
 3. **Usage.** Set usage and billing alerts on both Vercel and Supabase (Storage and egress grow with photos).
 4. **Funnel.** `supabase/queries/funnel.sql` has the queries. Look at them weekly.
 
+## Payments
+
+Day-to-day handling (refunds, duplicate payments, a paid gift that stayed locked, webhook failures) is in [Payments](PAYMENTS.md). Two things to look at weekly once you are live: Razorpay Dashboard → Webhooks for failed deliveries, and Vercel Logs for `Razorpay error` and `refund needed`.
+
 ## Backups and a restore drill
 
 Gifts are personal, so treat the database like it matters.
