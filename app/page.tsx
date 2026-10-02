@@ -1,4 +1,5 @@
 import { HomeContent } from '@/components/HomeContent';
+import { Testimonials } from '@/components/Testimonials';
 import type { Metadata } from 'next';
 import { LegacyApp } from '@/components/LegacyApp';
 import { pageMeta } from '@/lib/page-meta';
@@ -12,6 +13,7 @@ export const metadata: Metadata = pageMeta({
 export default function HomePage() {
   return (
     <LegacyApp>
+      <Testimonials />
       <HomeContent />
     </LegacyApp>
   );
