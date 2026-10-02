@@ -54,10 +54,10 @@ A 70% purchase rate is not a realistic target for any funnel with cold organic t
 
 Order in the product: make gift → full preview → pay → get shareable link.
 
-- [x] Gift status model: `preview → paid → expired`, enforced server-side (an unpaid gift never gets a public recipient link). Behind `PAYMENTS_REQUIRED`, off by default; see `docs/DEPLOYMENT.md`
-- [x] Pricing decision (single price, INR) and a clear "what you get" screen: ₹99 one-time, see `docs/PRICING-AND-CONVERSION.md`
+- [x] Gift status model: `preview → paid → expired`, enforced server-side (an unpaid gift never gets a public recipient link). Always on: there is no switch; see `docs/DEPLOYMENT.md`
+- [x] Pricing decision (single price, INR) and a clear "what you get" screen: ₹199 one-time, see `docs/PRICING-AND-CONVERSION.md`
 - [x] Razorpay: order created on the server at the server's price, signature verified, payment confirmed with Razorpay before unlocking, idempotent webhook, recovery when the browser never returns. Built and tested against a fake Razorpay; needs one real test-mode payment on a deployment: see `docs/PAYMENTS.md`
-- [x] Paywall UX: unlock panel, unlock bar during preview, the ending-scene nudge and the payment window, which opens Razorpay Checkout (UPI, cards, netbanking). All behind `PAYMENTS_REQUIRED`
+- [x] Paywall UX: unlock panel, unlock bar during preview, the ending-scene nudge and the payment window, which opens Razorpay Checkout (UPI, cards, netbanking). Always on
 - [~] Payment success: the unlock screen and link are done and Razorpay emails the buyer a receipt. Our own GST invoice and an edit-key recovery email are not built
 - [~] Refunds are made by hand in the Razorpay dashboard; duplicate and orphaned payments are logged and have SQL to find them; the test → live checklist is in `docs/PAYMENTS.md`. Automatic refunds are not built
 - [x] Terms, Privacy, Refund/Cancellation and Contact pages (fill in business name, contact email and grievance officer; get them read by a lawyer). GST invoice details are still to do with Razorpay

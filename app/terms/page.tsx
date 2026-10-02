@@ -46,7 +46,7 @@ export default function Terms() {
 
       <h2>Price, payment and how long a gift lasts</h2>
       <p>
-        Making, editing and previewing a gift is free. Sending it may need a one-time payment; the price is shown before you pay, in rupees, with no subscription. A saved gift that has not been
+        Making, editing and previewing a gift is free. Sending it needs a one-time payment; the price is shown before you pay, in rupees, with no subscription. A saved gift that has not been
         unlocked is kept for a limited time (shown to you) and then deleted. An unlocked gift’s link stays live for the period shown when you pay, then the gift and its files are deleted. Keep a
         copy of anything you want to keep for longer. Refunds are covered on the <a href="/refund">Refunds</a> page.
       </p>

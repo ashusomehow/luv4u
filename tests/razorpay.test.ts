@@ -97,7 +97,6 @@ beforeEach(() => {
   fake.files.clear();
   Object.assign(process.env, {
     RATE_SALT: 'test-salt',
-    PAYMENTS_REQUIRED: 'true',
     RAZORPAY_KEY_ID: KEY_ID,
     RAZORPAY_KEY_SECRET: SECRET,
     RAZORPAY_WEBHOOK_SECRET: HOOK,
@@ -116,14 +115,14 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  for (const k of ['PAYMENTS_REQUIRED', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'RAZORPAY_API_BASE', 'PAYMENT_PRICE_INR', 'PAYMENT_SIMULATE']) delete process.env[k];
+  for (const k of ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'RAZORPAY_API_BASE', 'PAYMENT_PRICE_INR', 'PAYMENT_SIMULATE']) delete process.env[k];
 });
 
 describe('config', () => {
   it('announces Razorpay and test mode, without any secret', async () => {
     const res = await getConfig();
     const text = JSON.stringify(await res.json());
-    expect(JSON.parse(text).payments).toEqual({ required: true, priceInr: 99, linkDays: 365, provider: 'razorpay', testMode: true });
+    expect(JSON.parse(text).payments).toEqual({ required: true, priceInr: 199, linkDays: 365, provider: 'razorpay', testMode: true });
     expect(text).not.toContain(SECRET);
     expect(text).not.toContain(KEY_ID);
   });
@@ -138,7 +137,7 @@ describe('config', () => {
 
   it('shows no provider when Razorpay is not configured', async () => {
     delete process.env.RAZORPAY_KEY_SECRET;
-    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 99, linkDays: 365 });
+    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 199, linkDays: 365 });
   });
 });
 
@@ -156,12 +155,12 @@ describe('starting a payment', () => {
     const text = await res.text();
     const data = JSON.parse(text);
     expect(res.status).toBe(200);
-    expect(data).toMatchObject({ ok: true, status: 'pending', keyId: KEY_ID, testMode: true, order: { amount: 9900, currency: 'INR' } });
+    expect(data).toMatchObject({ ok: true, status: 'pending', keyId: KEY_ID, testMode: true, order: { amount: 19900, currency: 'INR' } });
     expect(text).not.toContain(SECRET);
-    expect(JSON.parse(rzp.lastOrderBody)).toEqual({ amount: 9900, currency: 'INR', receipt: `k_${ID}`, notes: { gift_id: ID } });
+    expect(JSON.parse(rzp.lastOrderBody)).toEqual({ amount: 19900, currency: 'INR', receipt: `k_${ID}`, notes: { gift_id: ID } });
     expect(rzp.lastOrderBody).not.toContain('Sarah');
     expect(fake.tables.payments).toHaveLength(1);
-    expect(fake.tables.payments[0]).toMatchObject({ gift_id: ID, amount: 9900, status: 'created' });
+    expect(fake.tables.payments[0]).toMatchObject({ gift_id: ID, amount: 19900, status: 'created' });
     expect(await isPublic()).toBe(false);
   });
 

@@ -15,7 +15,7 @@ import { POST as takedown } from '@/app/api/admin/takedown/route';
 import { GET as listReports } from '@/app/api/admin/reports/route';
 import { GET as health } from '@/app/api/health/route';
 import { GET as cleanup } from '@/app/api/cron/cleanup/route';
-import { findGift } from '@/lib/gifts';
+import { findGift, markPaid } from '@/lib/gifts';
 
 const ID = 'a1b2c3d4e5f6a1b2c3d4e5f6';
 const KEY = 'f'.repeat(64);
@@ -92,6 +92,7 @@ describe('rate limiting', () => {
 describe('reports and takedown', () => {
   it('records a report with a hashed reporter and no change to the gift', async () => {
     await create();
+    await markPaid(ID);
     const res = await reportPost(req('/x', 'POST', { reason: 'harassment', details: 'unwanted and upsetting' }, ip(9)), ctx());
     expect(res.status).toBe(200);
     expect(fake.tables.gift_reports).toHaveLength(1);
@@ -163,7 +164,11 @@ describe('health and housekeeping', () => {
 
 describe('scheduled delivery', () => {
   const inHours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
-  const scheduled = (opensAt: unknown) => createGift(req('/api/gifts', 'POST', { id: ID, editKey: KEY, gift, opensAt }, ip(1)));
+  const scheduled = async (opensAt: unknown) => {
+    const res = await createGift(req('/api/gifts', 'POST', { id: ID, editKey: KEY, gift, opensAt }, ip(1)));
+    if (res.status === 200) await markPaid(ID); // paid for, and waiting for its opening time
+    return res;
+  };
 
   it('answers "not yet" with the time and nothing about the gift, then opens at the time', async () => {
     expect((await scheduled(inHours(5))).status).toBe(200);

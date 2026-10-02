@@ -1,7 +1,7 @@
 import { publicMediaUrl } from '@/lib/gifts';
 import { json } from '@/lib/http';
 import { OCCASION_KEYS } from '@/lib/occasions';
-import { PAID_LINK_DAYS, paymentsRequired, priceInr, simulatePayments } from '@/lib/payments';
+import { PAID_LINK_DAYS, priceInr, simulatePayments } from '@/lib/payments';
 import { razorpayConfigured, razorpayTestMode } from '@/lib/razorpay';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
@@ -16,8 +16,8 @@ export function GET() {
     occasions: OCCASION_KEYS,
     // Public Storage prefix: lets the browser recognise its own uploads and pack them into downloaded gifts.
     mediaBase: hosted ? publicMediaUrl('gifts/') : '',
-    // When required, gifts start as private previews and the link opens only after payment.
-    payments: hosted && paymentsRequired()
+    // Gifts start as private previews and the link opens only after payment. Without a server there is nothing to gate.
+    payments: hosted
       ? {
           required: true,
           priceInr: priceInr(),

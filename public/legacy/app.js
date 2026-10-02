@@ -885,7 +885,8 @@ function applyShareLock(){
  let panel=$('#unlockPanel');
  if(!panel){$('.link-wrap').insertAdjacentHTML('beforebegin','<section class="unlock-panel" id="unlockPanel" aria-labelledby="unlockTitle" hidden></section>');panel=$('#unlockPanel');}
  panel.hidden=!locked;
- if(!locked)return;
+ /* Unlocked: give back the tools the lock took away (the link tools are restored by showShare itself). */
+ if(!locked){for(const id of ['downloadGift','qrGift'])if($('#'+id))$('#'+id).disabled=false;return;}
  const o=occasionOf(publishedGift),name=e(publishedGift.name),photo=publishedGift.photos[0],price=priceText();
  panel.innerHTML=`<div class="unlock-gift"><span class="unlock-art" aria-hidden="true">${photo?`<img src="${e(photo.src)}" alt="" style="${cropStyle(photo)}" referrerpolicy="no-referrer">`:e(o.symbol)}</span><span class="unlock-gift-copy"><strong>${e(o.short)} for ${name}</strong><span>${e(madeSummary(publishedGift))}</span></span></div>
 <h2 id="unlockTitle">${name} can’t open it yet.</h2>

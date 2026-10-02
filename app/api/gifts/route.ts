@@ -1,7 +1,5 @@
 import {
   assertGiftSize,
-  daysFrom,
-  expiryFrom,
   findGift,
   inDays,
   isUnlocked,
@@ -16,7 +14,7 @@ import {
 } from '@/lib/gifts';
 import { ApiError, handle, json, readJson, requireBackend } from '@/lib/http';
 import { LIMITS, rateLimit } from '@/lib/rate-limit';
-import { PAID_LINK_DAYS, paymentsRequired, previewTtlDays } from '@/lib/payments';
+import { PAID_LINK_DAYS, previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +25,6 @@ interface CreateBody {
   gift?: unknown;
   cover?: unknown;
   coverUrl?: unknown;
-  expiresDays?: unknown;
   opensAt?: unknown;
 }
 
@@ -67,18 +64,12 @@ export const POST = handle(async (request: Request) => {
   gift.coverUrl = await resolveCover(id, body, gift.sharePreview !== false);
   assertGiftSize(gift);
 
-  // With payments on, a new gift starts as a private preview that expires if never unlocked, and
-  // remembers how long its link should live once it is. With payments off nothing new is written,
-  // so this also works before the status migration has been applied.
-  const locked = paymentsRequired();
-  // Paid links live for a fixed period; without payments the creator's choice applies as before.
-  const liveDays = locked ? PAID_LINK_DAYS : daysFrom(body.expiresDays);
+  // A new gift is always a private preview that expires if never unlocked, and remembers how long its link
+  // should live once it is. The lifetime is fixed (a year), so anything the browser sends for it is ignored.
   const opensAt = parseOpensAt(body.opensAt) ?? null;
-  const expiresAt = liveUntilAfter(locked ? inDays(previewTtlDays()) : expiryFrom(liveDays), opensAt);
-  const row: Record<string, unknown> = locked
-    ? { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt, status: 'preview', live_days: liveDays }
-    : { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt };
-  // Only written when used, so this works before the scheduling migration has been applied.
+  const expiresAt = liveUntilAfter(inDays(previewTtlDays()), opensAt);
+  const row: Record<string, unknown> = { id, owner_hash: ownerHash, gift, revision: 1, expires_at: expiresAt, status: 'preview', live_days: PAID_LINK_DAYS };
+  // Only written when used.
   if (opensAt) row.opens_at = opensAt;
   const { error } = await supabase().from('gifts').insert(row);
   if (error) {
@@ -86,5 +77,5 @@ export const POST = handle(async (request: Request) => {
     throw error;
   }
 
-  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt, opensAt, status: locked ? 'preview' : 'paid' });
+  return json({ ok: true, gift, url: `${origin}/g/${id}`, revision: 1, expiresAt, opensAt, status: 'preview' });
 });

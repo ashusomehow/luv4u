@@ -43,41 +43,40 @@ beforeEach(() => {
   delete process.env.PREVIEW_TTL_DAYS;
 });
 afterEach(() => {
-  delete process.env.PAYMENTS_REQUIRED;
+  delete process.env.PAYMENT_PRICE_INR;
 });
 
-describe('with payments off (the default)', () => {
-  it('creates unlocked gifts and writes nothing new to the database', async () => {
-    const data = await (await create()).json();
-    expect(data.status).toBe('paid');
-    const row = fake.tables.gifts[0];
-    expect(row).not.toHaveProperty('status');
-    expect(row).not.toHaveProperty('live_days');
-    expect((await readGift(req('/x', 'GET'), ctx())).status).toBe(200);
-    expect((await (await getConfig()).json()).payments).toEqual({ required: false });
-  });
-
-  it('treats rows from before the status column as unlocked', async () => {
+describe('gifts from before the status column existed', () => {
+  it('count as unlocked, so nothing already shared breaks', async () => {
     await create();
     delete fake.tables.gifts[0].status;
     expect((await readGift(req('/x', 'GET'), ctx())).status).toBe(200);
   });
 });
 
-describe('with payments required', () => {
-  beforeEach(() => {
-    process.env.PAYMENTS_REQUIRED = 'true';
+describe('payment is always required', () => {
+  it('cannot be switched off: an old PAYMENTS_REQUIRED=false setting changes nothing', async () => {
+    for (const value of ['false', '', '0', undefined]) {
+      fake.tables = {};
+      if (value === undefined) delete process.env.PAYMENTS_REQUIRED;
+      else process.env.PAYMENTS_REQUIRED = value;
+      const data = await (await create()).json();
+      expect(data.status, `PAYMENTS_REQUIRED=${value}`).toBe('preview');
+      expect(fake.tables.gifts[0].status).toBe('preview');
+      expect((await readGift(req('/x', 'GET'), ctx())).status).toBe(402);
+    }
+    delete process.env.PAYMENTS_REQUIRED;
   });
 
-  it('advertises the requirement', async () => {
-    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 99, linkDays: 365 });
+  it('advertises the requirement and the ₹199 price', async () => {
+    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 199, linkDays: 365 });
   });
 
   it('takes the price from PAYMENT_PRICE_INR and falls back to the default for nonsense', async () => {
-    process.env.PAYMENT_PRICE_INR = '199';
-    expect((await (await getConfig()).json()).payments.priceInr).toBe(199);
+    process.env.PAYMENT_PRICE_INR = '149';
+    expect((await (await getConfig()).json()).payments.priceInr).toBe(149);
     process.env.PAYMENT_PRICE_INR = 'free';
-    expect((await (await getConfig()).json()).payments.priceInr).toBe(99);
+    expect((await (await getConfig()).json()).payments.priceInr).toBe(199);
     delete process.env.PAYMENT_PRICE_INR;
   });
 
@@ -184,11 +183,7 @@ describe('with payments required', () => {
   });
 });
 
-describe('checkout placeholder', () => {
-  beforeEach(() => {
-    process.env.PAYMENTS_REQUIRED = 'true';
-  });
-
+describe('checkout without a payment provider', () => {
   it('needs the owner key', async () => {
     await create();
     expect((await checkoutPost(req('/x', 'POST'), ctx())).status).toBe(401);

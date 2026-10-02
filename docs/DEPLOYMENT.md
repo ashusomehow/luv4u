@@ -45,7 +45,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Point `.env.local` at a Supabase project (a separate development project is a good idea), or leave the Supabase variables empty to work in standalone mode. `RATE_SALT` falls back to a development-only value outside production.
+Add `PAYMENT_SIMULATE=true` to `.env.local`: payment is always required, so without Razorpay keys the Unlock button would answer "not set up" (with this flag it unlocks without charging). Point `.env.local` at a Supabase project (a separate development project is a good idea), or leave the Supabase variables empty to work in standalone mode. `RATE_SALT` falls back to a development-only value outside production.
 
 ## Request-size limit
 
@@ -78,7 +78,7 @@ If the `events` table is missing, the app keeps working: `/api/events` always an
 
 ## Preview first, pay after
 
-Set `PAYMENTS_REQUIRED=true` (after applying migration `0003`) and new gifts become **private previews**:
+Payment is always required, so every new gift is a **private preview** (this needs migration `0003`, applied before the first gift is made):
 
 | State | Who can see it | Link |
 | --- | --- | --- |
@@ -86,11 +86,11 @@ Set `PAYMENTS_REQUIRED=true` (after applying migration `0003`) and new gifts bec
 | `paid` | anyone with the link | works; its lifetime starts at unlock |
 | expired | nobody | an unlocked gift past `expires_at`, or a preview never unlocked within `PREVIEW_TTL_DAYS` (default 7); the daily cleanup deletes it and its files |
 
-- The owner keeps editing a preview as often as they like; each edit keeps the preview alive a little longer. With payments on, the link lifetime after unlock is fixed at one year (`PAID_LINK_DAYS` in `lib/payments.ts`) and a lifetime sent by the browser is ignored.
-- With payments required the offline "standalone" option is not offered, and the link, copy, WhatsApp and download buttons stay disabled until the gift is unlocked.
-- The price shown to buyers is `PAYMENT_PRICE_INR` (default 99). The reasoning, the paywall design and the ethical rules are in [Pricing and conversion](PRICING-AND-CONVERSION.md).
-- **Unlocking is only possible from the server.** `markPaid()` in `lib/gifts.ts` is the single unlock function and is idempotent. Nothing on the public API calls it yet: `POST /api/gifts/:id/checkout` answers 503 ("Payments are not set up yet") until the Razorpay integration replaces it, so turning `PAYMENTS_REQUIRED` on before that ships would leave new gifts locked.
-- Existing gifts are untouched. Rows created before the migration have no status and count as unlocked. With the flag off, nothing new is written to the database, so the code also runs before the migration is applied.
+- The owner keeps editing a preview as often as they like; each edit keeps the preview alive a little longer. The link lifetime after unlock is fixed at one year (`PAID_LINK_DAYS` in `lib/payments.ts`) and a lifetime sent by the browser is ignored.
+- The offline "standalone" option is not offered, and the link, copy, WhatsApp and download buttons stay disabled until the gift is unlocked.
+- The price shown to buyers is `PAYMENT_PRICE_INR` (default 199; leave it unset). The reasoning, the paywall design and the ethical rules are in [Pricing and conversion](PRICING-AND-CONVERSION.md).
+- **Unlocking is only possible from the server.** `markPaid()` in `lib/gifts.ts` is the single unlock function and is idempotent. It is reached only through a verified Razorpay payment (see [Payments](PAYMENTS.md)) or, outside production and only when no Razorpay keys are set, `PAYMENT_SIMULATE`. With neither, `POST /api/gifts/:id/checkout` answers 503, so a misconfigured deployment can never give links away.
+- Gifts created before migration `0003` have no status and count as unlocked, so nothing already shared breaks.
 - **Honest limits:** the gift engine runs in the browser, so a determined person can still read the JavaScript or rebuild a gift by hand. The paywall protects hosting, the link and the convenience tools, not the code. Media files sit in a public bucket under unguessable paths, as before.
 
 ## Separate Preview environment
@@ -98,7 +98,7 @@ Set `PAYMENTS_REQUIRED=true` (after applying migration `0003`) and new gifts bec
 Vercel builds every non-production branch as a Preview deployment. By default it would use your production Supabase data. To keep test gifts out of production:
 
 1. Create a second Supabase project (for example `luv4u-preview`) and apply both migrations to it.
-2. In Vercel, **Settings → Environment Variables**, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `RATE_SALT` **separately** for *Production* and for *Preview* (untick the other environment on each row), using the new project's values for Preview.
+2. In Vercel, **Settings → Environment Variables**, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RATE_SALT` and `PAYMENT_SIMULATE=true` **separately** for *Production* and for *Preview* (untick the other environment on each row), using the new project's values for Preview.
 3. Leave `NEXT_PUBLIC_SITE_URL` unset for Preview: Vercel's own URL is then used.
 
 ## Continuous integration
@@ -108,4 +108,4 @@ Vercel builds every non-production branch as a Preview deployment. By default it
 
 ## Payments
 
-Everything about taking money (how the flow works, the Razorpay keys and webhook, test cards, going live, refunds and duplicate payments) is in [Payments](PAYMENTS.md). To try the unlock flow with no provider at all, set `PAYMENTS_REQUIRED=true` and `PAYMENT_SIMULATE=true` on a **Preview** deployment: the Pay button then unlocks the gift without charging anything. `PAYMENT_SIMULATE` is ignored on Production, and whenever Razorpay keys are present.
+Everything about taking money (how the flow works, the Razorpay keys and webhook, test cards, going live, refunds and duplicate payments) is in [Payments](PAYMENTS.md). Payment is always required and has no off switch. For local development and Preview deployments set `PAYMENT_SIMULATE=true`: the payment window then unlocks without charging. It is ignored on Production, and whenever Razorpay keys are present.
