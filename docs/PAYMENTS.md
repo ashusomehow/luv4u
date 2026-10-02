@@ -1,6 +1,6 @@
 # Payments (Razorpay)
 
-Making and previewing a gift is free. Sending it costs a one-time ₹99 (`PAYMENT_PRICE_INR`). This page is how the money part works and how to run it.
+Making and previewing a gift is free. Sending it costs a one-time **₹199**. Payment is **always required**: there is no setting that turns it off, so a configuration mistake can never hand out free links. This page is how the money part works and how to run it.
 
 ## How a payment flows
 
@@ -22,18 +22,19 @@ One row per order in `payments` (migration `0006`): gift id, Razorpay order and 
 
 ## Setting it up
 
-**1. Database.** Run `supabase/migrations/0006_payments.sql` in the Supabase SQL editor (safe to run twice).
+**1. Database.** Run `supabase/migrations/0006_payments.sql` in the Supabase SQL editor (safe to run twice). Migration `0003` (gift status) must also be applied: every new gift starts as a locked preview.
 
-**2. Keys.** Razorpay Dashboard → Account & Settings → API keys. In Vercel → Settings → Environment Variables:
+**2. Keys.** Razorpay Dashboard → Account & Settings → API keys. In Vercel → Settings → Environment Variables (Production):
 
 | Name | Value |
 | --- | --- |
 | `RAZORPAY_KEY_ID` | `rzp_test_…` (later `rzp_live_…`) |
 | `RAZORPAY_KEY_SECRET` | the matching secret (mark **Sensitive**) |
 | `RAZORPAY_WEBHOOK_SECRET` | a long random string you make up (see step 3) |
-| `PAYMENTS_REQUIRED` | `true` when you want the paywall on |
 
-Never paste the secret into chat, an issue or a commit. It lives only in Vercel and your local `.env.local` (git-ignored). Redeploy after changing variables.
+Never paste the secret into chat, an issue or a commit. It lives only in Vercel and your local `.env.local` (git-ignored). Redeploy after changing variables. There is no `PAYMENTS_REQUIRED` any more: an old one left in Vercel is ignored. `PAYMENT_PRICE_INR` is optional and only for a price test; leave it unset to charge ₹199 (if an old value is set, delete it).
+
+**Fails closed.** If Razorpay keys are missing or wrong on a deployment, nobody can unlock a gift (the Unlock button answers "Payments are not set up yet"), and gifts stay private previews. A broken setup stops sales; it never gives gifts away.
 
 **3. Webhook.** Dashboard → Account & Settings → Webhooks → Add:
 - URL: `https://kholona.in/api/webhooks/razorpay`
@@ -43,17 +44,20 @@ Never paste the secret into chat, an issue or a commit. It lives only in Vercel 
 Test-mode and live-mode have separate keys *and* separate webhooks. Add the webhook in each mode you use.
 
 ## Test mode
-With `rzp_test_` keys the payment window shows "Test mode" and **no real money moves**. Use the test card and test UPI details from Razorpay's own documentation (search their docs for "test card details"); the payment window also shows them. To check it works:
+With `rzp_test_` keys the payment window shows "Test mode" and **no real money moves**. Use the test card and test UPI details from Razorpay's own documentation (search their docs for "test card details"). To check it works:
 1. Make a gift, press Unlock, pay with a test card or the test UPI success id. The gift unlocks and the link appears.
 2. In Razorpay Dashboard (test mode) → Transactions → Payments you see the payment, and in Supabase `select * from payments order by id desc;` shows `status = 'paid'`.
 3. Test the safety net: start a payment, close the tab right after paying, then open the gift's edit link and press Unlock: it should unlock. Check Dashboard → Webhooks for delivery status.
 
-**Do not run test keys on a public site that is promoting itself:** with `PAYMENTS_REQUIRED=true` and test keys, visitors "pay" with fake cards and get real links. Use test keys on a Preview deployment or while the site is private.
+**While you are on test keys, the public site hands out free links:** anyone can "pay" with a fake card. Fine before launch, since nobody is sending traffic yet; it must not last. Switch to live keys before you promote the site.
+
+## Local development and preview deployments
+These have no Razorpay keys, so Unlock would answer "not set up". Set `PAYMENT_SIMULATE=true` in `.env.local` (or on the Vercel **Preview** environment): the payment window then says "Test mode" and unlocks without charging. It is ignored on the Vercel Production deployment, and ignored whenever Razorpay keys are present, so it can never give away gifts on the real site.
 
 ## Going live
 1. Complete Razorpay's activation (KYC, bank account, the website's Terms, Privacy, Refund and Contact pages, which exist).
-2. In Vercel Production replace the key id and secret with the **live** pair, add the live-mode webhook, and set `PAYMENTS_REQUIRED=true`. Make sure `PAYMENT_SIMULATE` is unset.
-3. Redeploy. Make one real ₹99 payment yourself, check the dashboard, and refund it (below).
+2. In Vercel Production replace the key id and secret with the **live** pair and add the live-mode webhook. Make sure `PAYMENT_SIMULATE` is unset.
+3. Redeploy. Make one real ₹199 payment yourself, check the dashboard, and refund it (below).
 4. Watch the first days: Vercel logs for `Razorpay error`, Razorpay Dashboard → Webhooks for failed deliveries.
 
 ## Refunds and duplicates

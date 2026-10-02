@@ -6,11 +6,11 @@ Decisions, evidence and design for turning a finished preview into a purchase.
 
 | | |
 | --- | --- |
-| **Price** | **₹99**, one time, for any of the eight gifts. No subscription. |
+| **Price** | **₹199**, one time, for any of the eight gifts. No subscription. Set by the owner on 2 Oct 2026 (history: ₹149, then ₹99, then ₹199). |
 | **Included** | A private link only the recipient gets; the link stays live for a full year; their reply comes to you privately; you can edit the gift any time on the same link. |
 | **Free** | Building, editing and previewing as often as you like. The gift is saved for 7 days. |
 | **Refunds** | None once a gift is unlocked, stated before payment (see [Refund policy](#refund-policy)). |
-| **Config** | `PAYMENT_PRICE_INR` (default 99), `PAYMENTS_REQUIRED`, `PREVIEW_TTL_DAYS`. Nothing is charged yet: checkout arrives with the Razorpay task. |
+| **Config** | Payment is always required (no switch). `PAYMENT_PRICE_INR` (optional, default 199) and `PREVIEW_TTL_DAYS`. Checkout is Razorpay: see [Payments](PAYMENTS.md). |
 
 These are starting points to test, not permanent truths. See [Experiments](#experiments).
 
@@ -34,25 +34,22 @@ What this says:
 - Indian one-time prices cluster between **₹49 and ₹349**, with **₹99–₹199** the common middle. WishCupid already uses the same model we want (build free, pay to publish), so the model is proven, and so is the risk that free alternatives exist.
 - Cutiepage offers a link that never expires. Our one-year link is a real difference; we will need to say clearly why (see [Open decisions](#open-decisions)).
 
-## Why ₹99 (lowered from ₹149)
+## Why ₹199, and what to watch
 
-The owner's own reaction to ₹149 was "not worth it" for the gift as it stands, and said a much better gift would change that. So the price starts at ₹99 (inside the ₹49–₹199 cluster) while the gift itself gets a big quality upgrade; raise it later if conversion supports it.
+₹199 is the owner's decision. For the record, the evidence and the risk:
 
-The points below were written for ₹149 and still hold at ₹99 except the margin figures.
-
-- **Above the "thin template" tier (₹19–₹79).** Ours has eight interactive journeys, voice notes, a private reply inbox and same-link editing. A very low price signals a very small gift.
-- **Level with Cutiepage's birthday pages (₹100–₹149) and below WishCupid's birthday (₹199).** No need to be the cheapest, and easy to justify.
-- **Small enough to be an impulse.** A physical gift is hundreds to thousands of rupees; this is about a coffee.
-- **Healthy margin.** Razorpay's standard fee is 2% plus 18% GST on the fee, about ₹3.52 on ₹149 ([Razorpay](https://razorpay.com/blog/razorpay-payment-gateway-pricing-explained/)). Their page also mentions zero platform fees for new merchants activated on or after 1 July 2026, for up to ₹5 lakh of sales or 90 days; confirm this when you sign up. Storage for a few photos per gift costs paise.
+- **Where it sits.** Indian one-time prices from search results run ₹49–₹349, with ₹99–₹199 the common middle. ₹199 is the **top of that middle**: level with WishCupid's birthday price and above Cutiepage's birthday pages (₹100–₹149). Check those pages yourself, since the numbers came from search snippets.
+- **The case for it.** The gift is far richer than a template (eight interactive journeys, a sealed-envelope opening, a photo-reel ending, voice notes, a private reply inbox, scheduled delivery, editing on the same link), and a higher price signals a more serious gift. At ₹199 fees are about 2.4% of the price (Razorpay's standard 2% plus 18% GST on the fee is about ₹4.70, per [Razorpay](https://razorpay.com/blog/razorpay-payment-gateway-pricing-explained/); their page also mentions zero platform fees for new merchants activated on or after 1 July 2026, for up to ₹5 lakh of sales or 90 days: confirm when you sign up).
+- **The risk.** Earlier the owner's own reaction to ₹149 was "not worth it". Price is the biggest lever on conversion, and nothing here is proven until real people reach the paywall. Treat ₹199 as a hypothesis and measure it (see [Experiments](#experiments)).
 
 Revenue at 100,000 monthly visitors, for different visitor-to-purchase rates (net of the standard fee, before any offer):
 
 | Visit → paid | Orders / month | Net revenue / month |
 | --- | --- | --- |
-| 1% | 1,000 | about ₹1.45 lakh |
-| 2% | 2,000 | about ₹2.9 lakh |
-| 3% | 3,000 | about ₹4.4 lakh |
-| 5% | 5,000 | about ₹7.3 lakh |
+| 1% | 1,000 | about ₹1.94 lakh |
+| 2% | 2,000 | about ₹3.9 lakh |
+| 3% | 3,000 | about ₹5.8 lakh |
+| 5% | 5,000 | about ₹9.7 lakh |
 
 ## The 80% question
 
@@ -76,7 +73,7 @@ The product already does the hardest part: people build the gift **before** payi
 | **Ownership (effort already spent)** | Their gift, named, with their photo and a list of what they made ("your own words · 2 photos · a voice note") at the top of the unlock panel | Yes |
 | **The gift is blocked, not absent** | "Sarah can't open it yet." | Yes |
 | **A real deadline** | "Your saved gift is kept for 7 more days. After that it is deleted." Every word is true: the daily cleanup deletes it | Yes |
-| **Peak-end timing** | A bar during the preview says "Preview · not sent yet · Unlock · ₹99"; at the ending scene it becomes "This is what Sarah will feel. Unlock it and send it." | Yes |
+| **Peak-end timing** | A bar during the preview says "Preview · not sent yet · Unlock · ₹199"; at the ending scene it becomes "This is what Sarah will feel. Unlock it and send it." | Yes |
 | **Price and terms up front** | Price stated on the last step before saving, on the unlock panel and on the button; "one-time · no subscription"; refund rule shown before payment | Yes |
 | **Low perceived risk** | "Previewing is free, so look as often as you like" | Yes |
 | **Less to decide** | One price, one link lifetime, no plans to compare | Yes |
@@ -105,9 +102,9 @@ My recommendation, for you to confirm: **no refunds for change of mind, but** re
 
 ## Experiments
 
-Start at ₹99, then test with real traffic. Measure **revenue per paywall view**, not conversion alone: a cheaper price converts more but may earn less.
+Start at ₹199, then test with real traffic. Measure **revenue per paywall view**, not conversion alone: a cheaper price converts more but may earn less.
 
-1. **Price:** ₹79 vs ₹99 vs ₹149 (about 300 paywall views each before deciding).
+1. **Price:** ₹149 vs ₹199 vs ₹249 (about 300 paywall views each before deciding). `PAYMENT_PRICE_INR` changes it without a code change.
 2. **Seasonal:** ₹199 or a themed price in the days before Valentine's Day, Raksha Bandhan and Diwali.
 3. **Panel copy:** "Sarah can't open it yet" vs a neutral headline.
 4. **Deadline framing:** "7 more days" vs a date.

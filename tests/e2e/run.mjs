@@ -12,8 +12,8 @@ import zlib from 'node:zlib';
 import { chromium } from 'playwright-core';
 
 const APP = 'http://localhost:3100';
-const LOCKED_APP = 'http://localhost:3101'; // same build and database, PAYMENTS_REQUIRED=true
-const RZP_APP = 'http://localhost:3102'; // same build, PAYMENTS_REQUIRED=true and Razorpay (pointed at the mock) configured
+const LOCKED_APP = 'http://localhost:3101'; // same build and database, no payment provider (and an old PAYMENTS_REQUIRED=false that must change nothing)
+const RZP_APP = 'http://localhost:3102'; // same build, Razorpay (pointed at the mock) configured
 const MOCK = 'http://localhost:54321';
 const NORMAL_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const children = [];
@@ -51,6 +51,13 @@ function solidPng(file) {
 // quietly run against the wrong thing. Fail loudly instead.
 const portFree = port => new Promise(resolve => { const s = net.createServer(); s.once('error', () => resolve(false)); s.once('listening', () => s.close(() => resolve(true))); s.listen(port); });
 
+/** Every new gift is a locked preview. On the :3100 server (test-mode unlock) the real Unlock screen releases it for free. */
+const payAndUnlock = async (p) => {
+  await p.click('[data-v3="unlock"]'); await p.waitForSelector('.pay-modal');
+  await p.click('#payGo'); await p.waitForSelector('#payDone'); await p.click('#payDone');
+  await p.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
+};
+
 let browser;
 try {
   for (const port of [3100, 3101, 3102, 54321]) assert.ok(await portFree(port), `port ${port} is already in use: stop whatever is running there and rerun`);
@@ -58,12 +65,15 @@ try {
   // Run Next directly (not via npx) so SIGTERM reaches the server process.
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100'], {
     SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, ...NO_RAZORPAY,
+    // Payment is always required. This server has no provider, so its payment window unlocks for free (test mode): that lets the
+    // creator flows below run without a real payment while still going through the real Unlock screen.
+    PAYMENT_SIMULATE: 'true',
   });
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3101'], {
-    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, PAYMENTS_REQUIRED: 'true', ...NO_RAZORPAY,
+    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, PAYMENTS_REQUIRED: 'false', ...NO_RAZORPAY,
   });
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3102'], {
-    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP, PAYMENTS_REQUIRED: 'true',
+    SUPABASE_URL: MOCK, SUPABASE_SERVICE_ROLE_KEY: 'test-key', RATE_SALT: 'e2e-salt', CRON_SECRET: 'cs', NEXT_PUBLIC_SITE_URL: APP,
     RAZORPAY_KEY_ID: 'rzp_test_e2e', RAZORPAY_KEY_SECRET: 'e2e-razorpay-secret', RAZORPAY_WEBHOOK_SECRET: 'e2e-webhook-secret', RAZORPAY_API_BASE: MOCK,
   });
   await waitFor(`${MOCK}/__state`, 'mock supabase');
@@ -96,9 +106,10 @@ try {
   // 1c. Conversion pieces on the landing page
   assert.match(await page.locator('#primaryCreate').innerText(), /^Make a gift\s*$/, 'the main button is plain');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('.trust-row');
-  assert.equal(await page.locator('.trust-row li:visible').count(), 3, 'three promises are visible when payments are off');
-  assert.equal(await page.locator('[data-pay-only]').first().isVisible(), false, 'no pay-only promise while everything is free');
-  assert.equal(await page.locator('#priceStrip').count(), 0, 'no price strip while everything is free');
+  await page.waitForSelector('#priceStrip');
+  assert.equal(await page.locator('.trust-row li:visible').count(), 4, 'all four promises are visible: payment is always part of the product');
+  assert.equal(await page.locator('[data-pay-only]').first().isVisible(), true, 'the pay-when-you-send promise is shown');
+  assert.match(await page.locator('#priceStrip').innerText(), /Free to build\. ₹199 to send\./, 'the price is on the landing page');
   assert.equal(await page.locator('.hero-cta .hero-demo').isVisible(), true, 'the try-it demo sits next to the main button');
 
   // sticky call to action (phones): only after the hero button is gone, and not while the chooser is on screen
@@ -131,7 +142,7 @@ try {
   const shiftCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
   await shiftCtx.addInitScript(() => { window.__cls = 0; new PerformanceObserver((list) => { for (const e of list.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); });
   const shifty = await shiftCtx.newPage(); shifty.setDefaultTimeout(15000);
-  for (const [name, url] of [['payments off', APP], ['payments on', LOCKED_APP]]) {
+  for (const [name, url] of [['test-mode unlock', APP], ['no provider', LOCKED_APP]]) {
     await shifty.goto(url + '/', { waitUntil: 'load' }); await shifty.waitForTimeout(1500);
     for (let y = 0; y <= 7000; y += 700) { await shifty.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y); await shifty.waitForTimeout(100); }
     const cls = await shifty.evaluate(() => window.__cls);
@@ -183,6 +194,11 @@ try {
   assert.equal(await page.locator('#dockPreview').isVisible(), true, 'one preview button in the dock');
   assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
+  assert.equal(await page.locator('#unlockPanel').isVisible(), true, 'a new gift is locked until paid for');
+  assert.deepEqual((await (await fetch(`${APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365, simulated: true });
+  assert.equal(await page.locator('#downloadGift').isDisabled(), true, 'the file download is locked too');
+  await payAndUnlock(page);
+  for (const id of ['copyGiftLink', 'downloadGift', 'qrGift']) assert.equal(await page.locator('#' + id).isDisabled(), false, `${id} works again after paying`);
   const link = await page.inputValue('#giftLink');
   const [qrFile] = await Promise.all([page.waitForEvent('download'), page.click('[data-v2="download-qr"]')]);
   assert.equal(qrFile.suggestedFilename(), 'gift-qr.png', 'a QR code can be saved for a printed card');
@@ -284,6 +300,8 @@ try {
     const opensAt = new Date(Date.now() + 3 * 3600e3).toISOString();
     const made = await fetch(`${APP}/api/gifts`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: sid, editKey: skey, gift: { name: 'Zara', occasion: 'love', vibe: 'Romantic', photos: [] }, opensAt }) });
     assert.equal(made.status, 200);
+    assert.equal((await fetch(`${APP}/api/gifts/${sid}`)).status, 402, 'locked until paid for, scheduled or not');
+    assert.equal((await (await fetch(`${APP}/api/gifts/${sid}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${skey}` } })).json()).status, 'paid');
     const pub = await (await fetch(`${APP}/api/gifts/${sid}`)).json();
     assert.deepEqual(Object.keys(pub).sort(), ['opensAt', 'scheduled']);
     const sp = await (await browser.newContext({ userAgent: NORMAL_UA })).newPage(); sp.setDefaultTimeout(15000);
@@ -304,12 +322,12 @@ try {
   assert.equal(s.gifts, 0); assert.equal(s.files.length, 0);
 
 
-  // 7. Preview first, pay after: with payments required a new gift is a private preview
-  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 99, linkDays: 365 });
+  // 7. Preview first, pay after: a new gift is a private preview (this server has no provider and an old PAYMENTS_REQUIRED=false, which must change nothing)
+  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365 });
   const lp = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA })).newPage(); lp.setDefaultTimeout(15000);
   await lp.goto(LOCKED_APP + '/', { waitUntil: 'load' }); await lp.waitForSelector('#priceStrip');
   const strip = await lp.locator('#priceStrip').innerText();
-  assert.match(strip, /Free to build\. ₹99 to send\./); assert.match(strip, /One-time, no subscription/); assert.match(strip, /not refundable/);
+  assert.match(strip, /Free to build\. ₹199 to send\./); assert.match(strip, /One-time, no subscription/); assert.match(strip, /not refundable/);
   assert.equal((await lp.locator('.cta-free').innerText()).trim(), 'Free preview', 'the free preview note sits under the button');
   assert.equal(await lp.locator('[data-pay-only]').first().isVisible(), true, 'the pay-only promise appears once payments are on');
   const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
@@ -318,7 +336,7 @@ try {
   await owner.fill('#recipientName', 'Noor');
   await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.click('#askSkip'); await owner.waitForTimeout(500);
   assert.match(await owner.locator('#createGiftBtn').innerText(), /Save & continue/, 'the button says what happens next');
-  assert.match(await owner.locator('#priceLine').innerText(), /Previewing is free\. You pay ₹99 once/, 'the price is stated before the buyer commits');
+  assert.match(await owner.locator('#priceLine').innerText(), /Previewing is free\. You pay ₹199 once/, 'the price is stated before the buyer commits');
   await owner.locator('#moreOptions summary').click();
   assert.equal(await owner.locator('#deliverySelect').isVisible(), false, 'no free offline copy is offered');
   assert.equal(await owner.locator('#expiryField').isVisible(), false, 'the paid link lifetime is fixed, so there is no expiry choice');
@@ -331,18 +349,18 @@ try {
   assert.match(await owner.inputValue('#giftLink'), /once it is unlocked/);
   const panelText = await owner.locator('#unlockPanel').innerText();
   assert.match(panelText, /Noor can’t open it yet/);
-  assert.match(panelText, /₹99/); assert.match(panelText, /one-time · no subscription/);
+  assert.match(panelText, /₹199/); assert.match(panelText, /one-time · no subscription/);
   assert.match(panelText, /Stays live for a full year/);
   assert.match(panelText, /kept for 7 more days\. After that it is deleted/, 'the real deletion date is shown');
   assert.match(panelText, /payment is not refundable/, 'the no-refund rule is stated before payment');
-  assert.match(await owner.locator('[data-v3="unlock"]').innerText(), /Unlock & get link · ₹99/);
+  assert.match(await owner.locator('[data-v3="unlock"]').innerText(), /Unlock & get link · ₹199/);
   await owner.waitForTimeout(1300); await owner.evaluate(axeSource);
   const lockedBad = await owner.evaluate(async () => (await axe.run(document, { runOnly: ['color-contrast'] })).violations.flatMap(v => v.nodes.map(n => { const d = n.any[0].data; return `${n.target.join(' ').slice(0, 50)} ${d.fgColor} on ${d.bgColor} ${d.contrastRatio}`; })));
   assert.deepEqual(lockedBad, [], `colour contrast on the locked share screen: ${JSON.stringify(lockedBad)}`);
   // previewing the saved gift keeps the way forward in view
   await owner.click('#previewPublished'); await owner.waitForSelector('#experience:not([hidden]) .unlock-tray');
   await owner.click('#sealSkip'); await owner.waitForSelector('#sealGate', { state: 'detached' });
-  assert.match(await owner.locator('.unlock-tray').innerText(), /Unlock · ₹99/);
+  assert.match(await owner.locator('.unlock-tray').innerText(), /Unlock · ₹199/);
   assert.match(await owner.locator('.unlock-tray').innerText(), /not sent yet/);
   await owner.click('[data-story="exit-preview"]'); await owner.waitForSelector('#shareView:not([hidden])');
   const saved = await owner.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
@@ -361,8 +379,8 @@ try {
   await owner.click('[data-v3="unlock"]');
   await owner.waitForSelector('.pay-modal');
   const modalText = await owner.locator('.pay-modal').innerText();
-  assert.match(modalText, /Unlock Noor’s gift/); assert.match(modalText, /₹99/); assert.match(modalText, /not refundable/);
-  assert.equal(await owner.locator('#payGo').innerText(), 'Pay ₹99');
+  assert.match(modalText, /Unlock Noor’s gift/); assert.match(modalText, /₹199/); assert.match(modalText, /not refundable/);
+  assert.equal(await owner.locator('#payGo').innerText(), 'Pay ₹199');
   await owner.click('#payGo');
   await owner.waitForFunction(() => /Payments are not set up yet/.test(document.querySelector('#payError')?.textContent || ''));
   assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 402, 'still locked');
@@ -383,7 +401,7 @@ try {
   // 8. Razorpay: the whole payment, in a browser, against a fake Razorpay. The real checkout script is replaced
   //    by a stub that either "closes the window" or "pays" through the mock (which signs like Razorpay does).
   {
-    assert.deepEqual((await (await fetch(`${RZP_APP}/api/config`)).json()).payments, { required: true, priceInr: 99, linkDays: 365, provider: 'razorpay', testMode: true });
+    assert.deepEqual((await (await fetch(`${RZP_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365, provider: 'razorpay', testMode: true });
     const zctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
     await zctx.route('https://checkout.razorpay.com/v1/checkout.js', route => route.fulfill({ contentType: 'application/javascript', body: `
       window.Razorpay = function (o) { this.open = async () => {
@@ -403,13 +421,13 @@ try {
 
     await zp.click('[data-v3="unlock"]'); await zp.waitForSelector('.pay-modal');
     assert.match(await zp.locator('.pay-modal').innerText(), /Test mode[\s\S]*test card/, 'test mode is announced');
-    assert.equal(await zp.locator('#payGo').innerText(), 'Pay ₹99');
+    assert.equal(await zp.locator('#payGo').innerText(), 'Pay ₹199');
 
     // a) closing the payment window changes nothing: no error, still locked, and the button works again
     await zp.evaluate(() => { window.__rzpMode = 'dismiss'; });
     await zp.click('#payGo'); await zp.waitForFunction(() => window.__rzpOptions);
     const opts = await zp.evaluate(() => window.__rzpOptions);
-    assert.equal(opts.amount, 9900, 'the server fixed the price'); assert.equal(opts.currency, 'INR'); assert.equal(opts.key, 'rzp_test_e2e');
+    assert.equal(opts.amount, 19900, 'the server fixed the price'); assert.equal(opts.currency, 'INR'); assert.equal(opts.key, 'rzp_test_e2e');
     assert.doesNotMatch(opts.description + opts.name, /Zoya/, 'no recipient name goes to Razorpay');
     await zp.waitForFunction(() => !document.querySelector('#payGo').disabled);
     assert.equal(await zp.locator('#payError').isVisible(), false);
@@ -432,7 +450,7 @@ try {
       return (await (await fetch(`${RZP_APP}/api/gifts/${id}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${key}` } })).json()); };
     const wid = 'c1'.repeat(12), wkey = 'd1'.repeat(32);
     const pending = await mk(wid, wkey);
-    assert.equal(pending.status, 'pending'); assert.equal(pending.order.amount, 9900);
+    assert.equal(pending.status, 'pending'); assert.equal(pending.order.amount, 19900);
     const paidAt = await (await fetch(`${MOCK}/__pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: pending.order.id }) })).json();
     const raw = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity: paidAt.payment } } });
     const post = sig => fetch(`${RZP_APP}/api/webhooks/razorpay`, { method: 'POST', headers: { 'x-razorpay-signature': sig }, body: raw });

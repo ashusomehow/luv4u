@@ -2,8 +2,6 @@ import {
   assertGiftSize,
   assertId,
   deleteAllMedia,
-  daysFrom,
-  expiryFrom,
   findGift,
   inDays,
   isUnlocked,
@@ -19,7 +17,7 @@ import {
   parseOpensAt,
 } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, readJson, requireBackend } from '@/lib/http';
-import { paymentsRequired, previewTtlDays } from '@/lib/payments';
+import { previewTtlDays } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +46,6 @@ interface UpdateBody {
   gift?: unknown;
   cover?: unknown;
   coverUrl?: unknown;
-  expiresDays?: unknown;
   opensAt?: unknown;
 }
 
@@ -70,19 +67,12 @@ export const PATCH = handle(async (request: Request, { params }: Context) => {
   gift.coverUrl = (await resolveCover(id, body, sharePreview)) || (sharePreview ? previousCover : '');
   assertGiftSize(gift);
 
-  // Unlocked gifts: a changed "keep live for" applies from now. Previews: it is remembered for
-  // when the gift is unlocked, and every edit keeps the preview alive a little longer.
+  // The link's lifetime is fixed when the gift is bought, so a lifetime sent by the browser is ignored.
+  // Every edit to a preview keeps it alive a little longer.
   const unlocked = isUnlocked(row);
   const changes: Record<string, unknown> = {};
   let expiresAt = row.expires_at;
-  // With payments on the link lifetime is fixed, so a client-sent value is ignored.
-  const lifetimeEditable = !paymentsRequired();
-  if (unlocked) {
-    if (body.expiresDays && lifetimeEditable) expiresAt = expiryFrom(body.expiresDays);
-  } else {
-    expiresAt = inDays(previewTtlDays());
-    if (body.expiresDays && lifetimeEditable) changes.live_days = daysFrom(body.expiresDays);
-  }
+  if (!unlocked) expiresAt = inDays(previewTtlDays());
   // `opensAt` only changes when the request carries it: a string sets it, null clears it.
   const opensAt = parseOpensAt(body.opensAt);
   if (opensAt !== undefined) changes.opens_at = opensAt;

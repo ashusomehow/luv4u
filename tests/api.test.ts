@@ -16,6 +16,7 @@ import { POST as viewPost } from '@/app/api/gifts/[id]/views/route';
 import { POST as reactionPost } from '@/app/api/gifts/[id]/reactions/route';
 import { POST as mediaPost } from '@/app/api/gifts/[id]/media/route';
 import { GET as cleanup } from '@/app/api/cron/cleanup/route';
+import { markPaid } from '@/lib/gifts';
 
 const ID = 'a1b2c3d4e5f6a1b2c3d4e5f6';
 const KEY = 'f'.repeat(64);
@@ -119,7 +120,8 @@ describe('creating gifts', () => {
 });
 
 describe('reading and owning gifts', () => {
-  beforeEach(async () => { await create(); });
+  // Gifts start as private previews; these tests are about a gift that has been paid for.
+  beforeEach(async () => { await create(); await markPaid(ID); });
 
   it('serves the public gift without any secrets', async () => {
     const res = await readGift(req(`/api/gifts/${ID}`, 'GET'), ctx());
@@ -174,7 +176,7 @@ describe('reading and owning gifts', () => {
 });
 
 describe('recipient interactions', () => {
-  beforeEach(async () => { await create(); });
+  beforeEach(async () => { await create(); await markPaid(ID); });
 
   it('counts each visitor once and reports replies to the owner only', async () => {
     for (const visitor of ['v1', 'v1', 'v2']) await viewPost(req('/x', 'POST', { visitor }), ctx());

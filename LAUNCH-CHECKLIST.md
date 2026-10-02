@@ -44,7 +44,7 @@
 - [ ] Run `supabase/migrations/0003`, `0004` and `0005` (all safe to run any time, in order)
 - [ ] Set `ADMIN_TOKEN`, `NEXT_PUBLIC_BUSINESS_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_GRIEVANCE_OFFICER` in Vercel
 - [ ] Have a lawyer read Terms, Privacy and Refunds before you take payments
-- [ ] Payments: run `supabase/migrations/0006_payments.sql`; set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`; add the webhook (events `payment.captured`, `order.paid`); do one real test-mode payment; then follow the go-live list in `docs/PAYMENTS.md` (live keys, live webhook, `PAYMENTS_REQUIRED=true`)
+- [ ] Payments: run `supabase/migrations/0006_payments.sql`; set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`; add the webhook (events `payment.captured`, `order.paid`); do one real test-mode payment; then follow the go-live list in `docs/PAYMENTS.md` (live keys, live webhook). Payment is always required, so until live keys are in, the public site hands out free links to anyone who "pays" with a test card: do not promote the site before switching
 - [ ] Add an uptime monitor on `/api/health`; set Vercel and Supabase usage alerts
 - [ ] Take a manual database backup and do one restore drill (`docs/OPERATIONS.md`)
 - [ ] Run `scripts/loadtest.js` against a Preview deployment
