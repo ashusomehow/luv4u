@@ -479,7 +479,7 @@ try {
     assert.match(await zp.locator('#resumeBanner').innerText(), /Dana’s gift is waiting[\s\S]*Kept for 7 more days/);
     await zp.click('#resumeBanner [data-v3="unlock-saved"]'); await zp.waitForSelector('#unlockPanel:not([hidden]) #payGo');
     await zp.waitForFunction(() => /Welcome back/.test(document.querySelector('#payStatus')?.textContent || ''));
-    assert.match(await zp.locator('#payStatus').innerText(), /Welcome back[\s\S]*no payment has come through, so nothing was charged/, 'coming back after opening checkout says where things stand');
+    assert.match(await zp.locator('#payStatus').innerText(), /Welcome back[\s\S]*nothing has been paid yet, so nothing was charged/, 'coming back after opening checkout says where things stand');
 
     // b3) paid, but the server rejects the confirmation: the buyer is told the reference and nothing unlocks, and pressing the button again
     //     finds the money that did move instead of charging twice

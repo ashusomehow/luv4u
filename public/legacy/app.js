@@ -1053,7 +1053,7 @@ async function recheckPayment(){
 async function welcomeBack(){
  if(!publishedGift?.server||!payStartedRecently(publishedGift.id))return;
  if(await recheckPayment())return;
- const note=$('#payStatus');if(note&&!payBusy&&note.hidden){note.textContent='Welcome back. We checked: no payment has come through, so nothing was charged. '+publishedGift.name+'’s gift is still saved.'+keptLine();note.hidden=false;}
+ const note=$('#payStatus');if(note&&!payBusy&&note.hidden){note.textContent='Welcome back. We checked: nothing has been paid yet, so nothing was charged. '+publishedGift.name+'’s gift is still saved.'+keptLine();note.hidden=false;}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&publishedGift?.server&&payStartedRecently(publishedGift.id))welcomeBack();});
 function unlockGift(){startPayment();$('#unlockPanel')?.scrollIntoView({behavior:'smooth',block:'center'});}

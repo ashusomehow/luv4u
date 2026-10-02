@@ -59,7 +59,7 @@ Every failure ends in a plain message that says what happened to the money. All 
 | What happens | What the buyer sees | What really happened |
 |---|---|---|
 | Closes the Razorpay window | A calm note: nothing was charged, the gift is still saved, N days left (after a quiet re-check in case money moved) | Nothing charged |
-| Leaves and comes back later (same browser) | The home page shows "Noor’s gift is waiting · kept N more days" with a Finish button. On the unlock page, if checkout was opened before, it re-checks Razorpay first: unlocks if the money moved, otherwise "Welcome back… no payment has come through" | Nothing lost |
+| Leaves and comes back later (same browser) | The home page shows "Noor’s gift is waiting · kept N more days" with a Finish button. On the unlock page, if checkout was opened before, it re-checks Razorpay first: unlocks if the money moved, otherwise "Welcome back… nothing has been paid yet" | Nothing lost |
 | Card declined / UPI failed | "That payment did not go through (reason)… returned automatically in 5–7 working days" | Razorpay's `payment.failed`; no payment recorded, gift stays locked |
 | Script blocked (ad blocker, offline) | "We could not open the payment window… Nothing was charged." | Nothing charged |
 | Paid, but our confirmation is rejected | "Nothing was unlocked. Reference: pay_…" | Pressing the button again finds the payment and unlocks, never charges twice |
