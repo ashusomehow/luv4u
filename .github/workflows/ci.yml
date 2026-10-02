@@ -30,14 +30,6 @@ jobs:
       - run: npx playwright-core install --with-deps chromium
       # Crawl the production build like a search engine: titles, canonicals, headings, links, headers.
       - name: Site audit
-        run: |
-          npx next start -p 3100 &
-          server=$!
-          for i in $(seq 1 30); do curl -sf http://localhost:3100/api/health >/dev/null && break; sleep 1; done
-          node scripts/audit-site.mjs http://localhost:3100 http://localhost:3100
-          status=$?
-          node scripts/audit-pages.mjs http://localhost:3100 http://localhost:3100 || status=1
-          kill $server
-          exit $status
+        run: ./scripts/ci-site-audit.sh
       # Real browser against the production build and a local Supabase-compatible mock.
       - run: npm run test:e2e

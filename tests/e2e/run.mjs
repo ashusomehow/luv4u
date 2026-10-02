@@ -3,6 +3,7 @@
 //   NEXT_PUBLIC_SITE_URL=http://localhost:3100 npm run build && npm run test:e2e
 // (static pages fix the site URL at build time, and the test checks canonical URLs)
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -46,8 +47,13 @@ function solidPng(file) {
   fs.writeFileSync(file, Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]));
 }
 
+// A server left over from an earlier step would answer instead of the ones started below, and the test would
+// quietly run against the wrong thing. Fail loudly instead.
+const portFree = port => new Promise(resolve => { const s = net.createServer(); s.once('error', () => resolve(false)); s.once('listening', () => s.close(() => resolve(true))); s.listen(port); });
+
 let browser;
 try {
+  for (const port of [3100, 3101, 3102, 54321]) assert.ok(await portFree(port), `port ${port} is already in use: stop whatever is running there and rerun`);
   start(process.execPath, ['tests/e2e/mock-supabase.mjs'], {});
   // Run Next directly (not via npx) so SIGTERM reaches the server process.
   start(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100'], {
