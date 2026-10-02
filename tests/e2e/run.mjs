@@ -422,6 +422,7 @@ try {
       window.Razorpay = function (o) { const on = {}; this.on = (ev, fn) => { on[ev] = fn; }; this.open = async () => {
         window.__rzpOptions = { key: o.key, order_id: o.order_id, amount: o.amount, currency: o.currency, name: o.name, description: o.description };
         if (window.__rzpMode === 'dismiss') { o.modal.ondismiss(); return; }
+        if (window.__rzpMode === 'paywait') { await fetch('${MOCK}/__pay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: o.order_id }) }); return; }   // money moves, the page never hears (tab lost)
         if (window.__rzpMode === 'decline') { on['payment.failed']({ error: { code: 'BAD_REQUEST_ERROR', description: 'Your card was declined' } }); o.modal.ondismiss(); return; }
         const r = await fetch('${MOCK}/__pay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: o.order_id }) });
         const p = await r.json();
@@ -448,6 +449,7 @@ try {
     assert.doesNotMatch(opts.description + opts.name, /Zoya/, 'no recipient name goes to Razorpay');
     await zp.waitForFunction(() => !document.querySelector('#payGo').disabled);
     assert.equal(await zp.locator('#payError').isVisible(), false, 'closing the window is not an error');
+    assert.match(await zp.locator('#payStatus').innerText(), /Nothing was charged[\s\S]*still saved[\s\S]*7 more days/, 'closing the window gets a calm nudge, not silence');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${zid}`)).status, 402);
 
     // b) paying unlocks it, using the same order as before (no pile of orders)
@@ -470,6 +472,14 @@ try {
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${did}`)).status, 402, 'a declined payment unlocks nothing');
     assert.equal(await zp.locator('#payGo').isDisabled(), false, 'they can try again');
     assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 1, 'no payment was recorded for a declined card');
+
+    // b2b) they leave and come back later: the home page reminds them, with the real days left, and one tap returns to the unlock page
+    await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
+    await zp.waitForSelector('#resumeBanner.show');
+    assert.match(await zp.locator('#resumeBanner').innerText(), /Dana’s gift is waiting[\s\S]*Kept for 7 more days/);
+    await zp.click('#resumeBanner [data-v3="unlock-saved"]'); await zp.waitForSelector('#unlockPanel:not([hidden]) #payGo');
+    await zp.waitForFunction(() => /Welcome back/.test(document.querySelector('#payStatus')?.textContent || ''));
+    assert.match(await zp.locator('#payStatus').innerText(), /Welcome back[\s\S]*no payment has come through, so nothing was charged/, 'coming back after opening checkout says where things stand');
 
     // b3) paid, but the server rejects the confirmation: the buyer is told the reference and nothing unlocks, and pressing the button again
     //     finds the money that did move instead of charging twice
@@ -494,6 +504,20 @@ try {
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${oid}`)).status, 200, 'the gift unlocked without a second payment');
     assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 3, 'one payment for the third gift');
     await zp.unroute('**/api/gifts/*/verify');
+
+    // b5) they pay in their UPI app, the tab is lost and reloaded: coming back finds the money and unlocks without paying again
+    const pid = await makeGift('Pia');
+    await zp.evaluate(() => { window.__rzpMode = 'paywait'; });
+    await zp.click('#payGo'); await zp.waitForFunction(() => window.__rzpOptions);
+    await zp.waitForTimeout(500);
+    await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
+    await zp.waitForSelector('#resumeBanner.show');
+    await zp.click('#resumeBanner [data-v3="unlock-saved"]'); await zp.waitForSelector('#payDone');
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${pid}`)).status, 200, 'the payment made while away unlocked the gift');
+    await zp.click('#payDone'); await zp.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
+    await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
+    assert.equal(await zp.locator('#resumeBanner.show').count(), 0, 'no reminder once everything is unlocked');
+    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 4, 'one payment for the fourth gift');
     await zctx.close();
 
     // c) the browser never comes back: Razorpay's webhook unlocks the gift, a forged one does not
@@ -517,7 +541,7 @@ try {
     await fetch(`${MOCK}/__pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: pend2.order.id }) });
     assert.equal((await (await fetch(`${RZP_APP}/api/gifts/${rid}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${rkey}` } })).json()).status, 'paid');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${rid}`)).status, 200);
-    assert.deepEqual((await state()).paymentRows.map(r => r.status), ['paid', 'paid', 'paid', 'paid', 'paid']);
+    assert.deepEqual((await state()).paymentRows.map(r => r.status), ['paid', 'paid', 'paid', 'paid', 'paid', 'paid']);
   }
 
   // The only console noise allowed is the failures this test injected on purpose: one rejected and three dropped confirmation requests.

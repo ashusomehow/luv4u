@@ -821,7 +821,7 @@ async function publishGift(){
  const media=await offloadMedia(editing.id,editing.key,g,g.sharePreview?coverData:'');
  const data=await api('/api/gifts/'+editing.id,{method:'PATCH',key:editing.key,body:{gift:media.gift,coverUrl:media.coverUrl,revision:editing.revision,...($('#expiryDays').dataset.changed==='true'?{expiresDays:+$('#expiryDays').value}:{}),...opensAtBody(false)}});
  publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';publishedExpiresAt=data.expiresAt||'';setOpensAt(data.opensAt);editing.revision=data.revision;
- rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt});
+ rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});
  }else{
  // Keep these values after a network failure, so retrying does not duplicate gifts.
  if(!publishAttempt)publishAttempt={id:hexToken(12),key:hexToken(32)};
@@ -829,7 +829,7 @@ async function publishGift(){
  const media=await offloadMedia(publishAttempt.id,publishAttempt.key,g,g.sharePreview?coverData:'');
  const data=await api('/api/gifts',{method:'POST',body:{id:publishAttempt.id,editKey:publishAttempt.key,gift:media.gift,coverUrl:media.coverUrl,expiresDays:+$('#expiryDays').value,...opensAtBody(true)}});
  publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';publishedExpiresAt=data.expiresAt||'';setOpensAt(data.opensAt);editing={id:publishedGift.id,key:publishAttempt.key,revision:data.revision,mode:'hosted'};
- rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt});publishAttempt=null;await removeStored('pending-create').catch(()=>{});
+ rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});publishAttempt=null;await removeStored('pending-create').catch(()=>{});
  }
  }else{
  publishedStatus='paid';publishedGift={...g,id:hexToken(12),server:false};const encoded=await encodeGift(publishedGift);const candidate=buildGiftURL(encoded);publishedURL=candidate.length<=8000?candidate:'';
@@ -866,6 +866,14 @@ function updatePaymentsUI(){
 function updateResumeBanner(){
  const b=$('#resumeBanner');if(!b)return;
  let dismissed=false;try{dismissed=sessionStorage.getItem('luv4u.resume.dismissed')==='1';}catch{}
+ /* A saved gift that is waiting to be unlocked outranks an unfinished draft: it is the closer one to done. */
+ const waiting=libraryCache.find(v=>v.mode==='hosted'&&v.waiting===true&&v.key&&(!v.expiresAt||new Date(v.expiresAt).getTime()>Date.now()));
+ if(waiting&&currentView==='home'&&!dismissed){
+  const left=Math.max(0,Math.ceil((new Date(waiting.expiresAt||0).getTime()-Date.now())/86400000)),nm=e(waiting.name||'Their');
+  b.dataset.on='1';b.classList.add('show');b.inert=false;
+  b.innerHTML=`<span class="resume-copy"><strong>${nm}’s gift is waiting</strong><span>Saved, but not unlocked yet.${waiting.expiresAt?(left<=1?' Kept for about a day more.':' Kept for '+left+' more days.'):''}</span></span><button type="button" class="resume-btn" data-v3="unlock-saved" data-id="${e(waiting.id)}">Finish</button><button type="button" class="resume-close" data-v3="resume-dismiss" aria-label="Dismiss">×</button>`;
+  return;
+ }
  const name=draft.name.trim(),show=!!name&&currentView==='home'&&!dismissed;
  b.dataset.on=show?'1':'';b.classList.toggle('show',show);b.inert=!show;
  if(!show)return;
@@ -916,6 +924,7 @@ function applyShareLock(){
 <details class="unlock-faq"><summary>What if the payment fails?</summary><p>Nothing unlocks and your gift stays saved, so you can try again or use another method. If your bank shows a debit anyway, it is returned automatically, usually in 5–7 working days. If a payment goes through but the page doesn’t update, the gift unlocks on its own within minutes. <a href="/contact">Still stuck? Write to us.</a></p></details>
 <details class="unlock-faq"><summary>Can I change it after paying?</summary><p>Yes. Edit the words, photos or music any time and the same link shows the new version.</p></details>
 <p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable.</p></div>`;
+setTimeout(welcomeBack,0);
  $('#phoneRestart').onclick=()=>{try{$('#phoneFrame').contentWindow.location.reload();$('#phoneLoading')?.classList.remove('is-done');}catch{}};
  $('#phoneFull').onclick=()=>$('#previewPublished').click();
  }
@@ -983,6 +992,7 @@ async function confirmPayment(proof,status){
 }
 function unlockDone(name){
  const panel=$('#unlockPanel');if(!panel)return;
+ clearPayStarted(editing.id);{const en=libraryCache.find(v=>v.id===editing.id);if(en&&en.waiting)rememberGift({...en,waiting:false});}
  panel.dataset.frame='';
  panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">Unlocked. ${name} can open it now.</h2><p>Your private link is ready. Send it whenever you like.</p><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone">Get my link</button></div>`;
  confetti(140);$('#payDone').focus();
@@ -1006,7 +1016,7 @@ async function startPayment(){
   if(r.status!=='paid'&&payPendingRef){status('');throw new Error('Your payment is still being confirmed. Please do not pay again. This gift unlocks on its own as soon as it is confirmed.'+refText(payPendingRef!=='pending'?payPendingRef:''));}
   if(r.status!=='paid'){
    if(!r.order||!r.keyId)throw new Error('We could not start the payment. Nothing was charged.');
-   busy('Opening payment…');
+   busy('Opening payment…');markPayStarted(editing.id);
    let proof;
    try{proof=await runRazorpay(r);}
    catch(ex){
@@ -1015,6 +1025,7 @@ async function startPayment(){
     const again=await checkout().catch(()=>null);
     if(again&&again.status==='paid'){unlockDone(name);return;}
     if(ex.failure){err.textContent=failureText(ex.failure);err.hidden=false;}
+    else{status('No problem. Nothing was charged and '+publishedGift.name+'’s gift is still saved.'+keptLine()+' Press the button whenever you are ready.');}
     idle();return;
    }
    busy('Confirming…');
@@ -1027,6 +1038,24 @@ async function startPayment(){
   err.textContent=(ex&&ex.message)||'We could not take the payment. Your gift is still saved.';err.hidden=false;
  }
 }
+/* Someone who opened the payment window and left (closed it, switched to their UPI app, lost the tab) gets a calm nudge when they come back. */
+const payFlagKey=id=>'kholona.paystart.'+id;
+function markPayStarted(id){try{localStorage.setItem(payFlagKey(id),String(Date.now()));}catch{}}
+function clearPayStarted(id){try{localStorage.removeItem(payFlagKey(id));}catch{}}
+function payStartedRecently(id){try{const t=Number(localStorage.getItem(payFlagKey(id)));return t>0&&Date.now()-t<48*3600*1000;}catch{return false;}}
+const keptLine=()=>{const n=savedDaysLeft();return n===null?'':n<=1?' It is kept for about a day more.':' It is kept for '+n+' more days.';};
+/* Asks the server (which also looks for money that moved while we were away). Unlocks the page if it did. */
+async function recheckPayment(){
+ if(payBusy||!editing?.key||!publishedGift?.server||publishedStatus!=='preview'||$('#unlockPanel')?.hidden)return false;
+ try{const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,timeout:20000});if(r.status==='paid'){unlockDone(e(publishedGift.name));return true;}}catch{}
+ return false;
+}
+async function welcomeBack(){
+ if(!publishedGift?.server||!payStartedRecently(publishedGift.id))return;
+ if(await recheckPayment())return;
+ const note=$('#payStatus');if(note&&!payBusy&&note.hidden){note.textContent='Welcome back. We checked: no payment has come through, so nothing was charged. '+publishedGift.name+'’s gift is still saved.'+keptLine();note.hidden=false;}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&publishedGift?.server&&payStartedRecently(publishedGift.id))welcomeBack();});
 function unlockGift(){startPayment();$('#unlockPanel')?.scrollIntoView({behavior:'smooth',block:'center'});}
 /* The unlock page plays the gift inside a phone. The frame (same origin) asks for the gift once it has loaded. */
 window.addEventListener('message',ev=>{
@@ -1038,7 +1067,7 @@ window.addEventListener('message',ev=>{
 /* Open a saved gift's share screen (used for gifts still waiting to be unlocked). */
 async function openSavedShare(id){
  const entry=libraryCache.find(v=>v.id===id);if(!entry)return;
- try{const r=await api('/api/gifts/'+id+'/owner',{key:entry.key});publishedGift=sanitizeGift(r.gift);publishedURL=r.url;publishedStatus=r.status||'paid';publishedExpiresAt=r.expiresAt||'';setOpensAt(r.opensAt);editing={id,key:entry.key,mode:'hosted',revision:r.revision};showShare();}
+ try{const r=await api('/api/gifts/'+id+'/owner',{key:entry.key});publishedGift=sanitizeGift(r.gift);publishedURL=r.url;publishedStatus=r.status||'paid';publishedExpiresAt=r.expiresAt||'';setOpensAt(r.opensAt);editing={id,key:entry.key,mode:'hosted',revision:r.revision};if((entry.waiting===true)!==(publishedStatus==='preview'))rememberGift({...entry,waiting:publishedStatus==='preview',expiresAt:r.expiresAt||entry.expiresAt});showShare();}
  catch(err){toast(err.message);}
 }
 async function portableGift(){const g=sanitizeGift(publishedGift);g.server=false;const clone=JSON.parse(JSON.stringify(g));const fields=clone.photos.map(p=>({object:p,key:'src'}));if(clone.voice)fields.push({object:clone,key:'voice'});if(clone.musicSrc)fields.push({object:clone,key:'musicSrc'});for(const f of fields){const src=f.object[f.key];if(!src.startsWith('http'))continue;let u;try{u=new URL(src);}catch{continue;}if(!mediaBase||!src.startsWith(mediaBase))continue;const r=await fetch(src,{cache:'no-store'});if(!r.ok)throw new Error('One uploaded file could not be packed. Please try again.');const blob=await r.blob();if(blob.size>3*1024*1024)throw new Error('One uploaded file is too large to pack safely.');f.object[f.key]=await readDataURL(blob);}return clone;}
