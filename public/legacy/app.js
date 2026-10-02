@@ -498,7 +498,7 @@ async function restoreDraft(){let saved;try{saved=await store('draft');}catch{}i
 function saveLibrary(){try{localStorage.setItem(LIBRARY_KEY,JSON.stringify(libraryCache));return true;}catch{toast('Save your private recovery link now. This browser cannot remember your gifts.');return false;}}
 function rememberGift(entry){libraryCache=libraryCache.filter(v=>v.id!==entry.id);libraryCache.unshift({...entry,at:new Date().toISOString()});libraryCache=libraryCache.slice(0,100);saveLibrary();}
 async function api(path,options={}){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),options.timeout||45000);try{const r=await fetch(path,{method:options.method||'GET',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.key?{Authorization:'Bearer '+options.key}:{})},body:options.body?JSON.stringify(options.body):undefined,signal:controller.signal,cache:'no-store',credentials:'omit'});let data;try{data=await r.json();}catch{throw new Error('The gift server returned an unexpected response. Your draft is still safe.');}if(!r.ok){const err=new Error(data.error||'The gift could not be saved.');err.status=r.status;throw err;}return data;}catch(err){if(err.name==='AbortError')throw new Error('The gift server is taking too long. Try again; your draft is still here.');throw err;}finally{clearTimeout(timeout);}}
-async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;paySimulated=paymentsRequired&&c.payments.simulated===true;payLinkDays=Number(c.payments?.linkDays)||365;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
+async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;paySimulated=paymentsRequired&&c.payments.simulated===true;payProvider=paymentsRequired?String(c.payments.provider||''):'';payTestMode=paymentsRequired&&c.payments.testMode===true;payLinkDays=Number(c.payments?.linkDays)||365;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
 function clearGiftHash(){try{const p=/^\/(g|for)\//.test(location.pathname)?'/':location.pathname;history.replaceState(null,'',p+location.search);}catch{}}
 function showView(view){if($('.skip-link'))$('.skip-link').hidden=view!=='home';stopPreviewAudio();showViewV1(view);updateResumeBanner();$('#myGiftsView').hidden=view!=='library';if(view==='library')$('#myGiftsView').hidden=false;const right=$('#headerRight');if(!right.querySelector('.my-gifts-link'))right.insertAdjacentHTML('afterbegin','<button class="nav-link my-gifts-link" data-v2="library">My little gifts</button>');if(view==='creator')setStep(wizardStep,false);if(view==='library'){document.title='Your little gifts · Kholona';right.innerHTML='<button class="nav-link pill-link" data-action="create">Make another little gift ♡</button>';}}
 async function openCreator(key='birthday'){
@@ -917,7 +917,20 @@ function updateUnlockTray(){
  const btn=$('.unlock-tray-btn',tray);btn.dataset.story=saved?'preview-unlock':'preview-save';
  btn.textContent=saved?(last?'Unlock & send':'Unlock')+(price?' · '+price:''):(last?'Save & continue':'Save');
 }
-let paySimulated=false;
+let paySimulated=false,payProvider='',payTestMode=false;
+/* Razorpay Checkout is loaded only when someone actually pays, so no other page ever talks to it. */
+function loadRazorpay(){
+ if(window.Razorpay)return Promise.resolve();
+ return new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://checkout.razorpay.com/v1/checkout.js';s.onload=ok;s.onerror=()=>no(new Error('We could not open the payment window. Check your connection (and any ad blocker) and try again. Nothing was charged.'));document.head.append(s);});
+}
+/* Opens Razorpay for the order the server made. Resolves with Razorpay's proof of payment; rejects {cancelled:true} if the window is closed. */
+function runRazorpay(r){
+ return loadRazorpay().then(()=>new Promise((ok,no)=>{
+  let settled=false;const done=(fn,v)=>{if(settled)return;settled=true;fn(v);};
+  const rz=new window.Razorpay({key:r.keyId,order_id:r.order.id,amount:r.order.amount,currency:r.order.currency,name:'Kholona',description:'A Kholona gift',theme:{color:'#aa5265'},retry:{enabled:true},modal:{confirm_close:true,ondismiss:()=>done(no,{cancelled:true})},handler:resp=>done(ok,resp)});
+  rz.open();
+ }));
+}
 /* The payment modal. It states the price, what is included and the refund rule, then takes the buyer to checkout. */
 function unlockGift(){
  if(!editing?.key||!publishedGift?.server)return;
@@ -929,7 +942,7 @@ function unlockGift(){
 <h2 id="payTitle">Unlock ${name}’s gift</h2>
 <div class="pay-price"><strong>${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
 <ul class="pay-list"><li>Your private link, ready to send the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li></ul>
-${paySimulated?'<p class="pay-test"><strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.</p>':'<p class="pay-methods" aria-label="Payment methods">UPI · Cards · Netbanking</p>'}
+${paySimulated?'<p class="pay-test"><strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.</p>':payTestMode?'<p class="pay-test"><strong>Test mode.</strong> Pay with Razorpay’s test card or test UPI. No real money moves.</p>':'<p class="pay-methods" aria-label="Payment methods">UPI · Cards · Netbanking</p>'}
 <p class="pay-error" id="payError" role="alert" hidden></p>
 <button type="button" class="btn btn-primary pay-btn" id="payGo">${paySimulated?'Continue (test mode)':'Pay '+e(price)}</button>
 <button type="button" class="pay-later" id="payLater">Not yet, keep it saved</button>
@@ -940,20 +953,37 @@ ${paySimulated?'<p class="pay-test"><strong>Test mode.</strong> Nothing is charg
  document.addEventListener('keydown',trap);
  $('#payClose').onclick=close;$('#payLater').onclick=close;
  $('.pay-backdrop',root).addEventListener('click',ev=>{if(ev.target.classList.contains('pay-backdrop')&&!$('#payGo')?.disabled)close();});
+ const finish=async()=>{
+  const owner=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});
+  publishedStatus='paid';publishedURL=owner.url;
+  $('#payBody').innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="payTitle">Unlocked. ${name} can open it now.</h2><p>Your private link is ready. Send it whenever you like.</p><button type="button" class="btn btn-primary pay-btn" id="payDone">Get my link</button></div>`;
+  $('#payClose').hidden=true;confetti(140);$('#payDone').focus();
+  $('#payDone').onclick=()=>{close();showShare();toast('Unlocked. Send it with love. ♡');};
+ };
+ const checkout=()=>api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
  $('#payGo').onclick=async()=>{
   const go=$('#payGo'),err=$('#payError'),label=go.textContent;
   go.disabled=true;go.classList.add('is-busy');go.textContent='Processing…';err.hidden=true;$('#payLater').disabled=true;
+  const reset=()=>{go.disabled=false;go.classList.remove('is-busy');go.textContent=label;$('#payLater').disabled=false;};
   try{
-   const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
+   let r=await checkout();
+   if(r.status!=='paid'){
+    if(!r.order||!r.keyId)throw new Error('We could not start the payment. Nothing was charged.');
+    go.textContent='Opening payment…';
+    const proof=await runRazorpay(r);
+    go.textContent='Confirming…';
+    r=await api('/api/gifts/'+editing.id+'/verify',{method:'POST',key:editing.key,body:proof,timeout:60000});
+   }
    if(r.status!=='paid')throw new Error('We could not confirm the payment. Nothing was unlocked.');
-   const owner=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});
-   publishedStatus='paid';publishedURL=owner.url;
-   $('#payBody').innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="payTitle">Unlocked. ${name} can open it now.</h2><p>Your private link is ready. Send it whenever you like.</p><button type="button" class="btn btn-primary pay-btn" id="payDone">Get my link</button></div>`;
-   $('#payClose').hidden=true;confetti(140);$('#payDone').focus();
-   $('#payDone').onclick=()=>{close();showShare();toast('Unlocked. Send it with love. ♡');};
+   await finish();
   }catch(ex){
-   go.disabled=false;go.classList.remove('is-busy');go.textContent=label;$('#payLater').disabled=false;
-   err.textContent=ex.message||'We could not take the payment. Your gift is still saved.';err.hidden=false;
+   reset();
+   if(ex&&ex.cancelled){
+    /* They closed the payment window. Nothing to report, but check in case the money did move. */
+    try{const again=await checkout();if(again.status==='paid')await finish();}catch{/* stay quiet: they can press Pay again */}
+    return;
+   }
+   err.textContent=(ex&&ex.message)||'We could not take the payment. Your gift is still saved.';err.hidden=false;
   }
  };
  $('#payGo').focus();

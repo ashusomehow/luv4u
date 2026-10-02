@@ -66,4 +66,5 @@ export const LIMITS = {
   media: { max: 80, window: 3600 },
   reply: { max: 20, window: 3600 },
   report: { max: 8, window: 3600 },
+  checkout: { max: 40, window: 3600 },
 } as const;

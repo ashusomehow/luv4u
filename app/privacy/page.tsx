@@ -24,7 +24,7 @@ export default function Privacy() {
           <strong>Replies.</strong> If the recipient sends a reaction or message back, we store it for you to read, together with a scrambled visitor code so one person can’t flood you. We don’t know who they are.
         </li>
         <li>
-          <strong>Payment details.</strong> When paid sending is on, payments are handled by our payment provider. We never see or store card, UPI or bank details; we keep a record that a gift was paid for.
+          <strong>Payments.</strong> Payments are taken by Razorpay. We never see or store your card, UPI or bank details. Razorpay may ask for details such as your phone number and email to take the payment and send a receipt, and handles them under its own privacy policy. We keep a record of each payment (the gift’s id, the amount, Razorpay’s order and payment ids, and the time) for accounting and tax purposes for as long as the law requires, even after the gift itself has been deleted. It holds no names or messages.
         </li>
         <li>
           <strong>Simple usage counts.</strong> To learn which steps confuse people we record events such as “opened the creator”. These carry a random per-tab code that cannot be linked across visits, the page
@@ -41,7 +41,7 @@ export default function Privacy() {
 
       <h2>Who else handles it</h2>
       <p>
-        We use hosting and database providers (Vercel and Supabase) to run the service, and a payment provider when paid sending is on. They process data for us under their own security commitments. Their servers
+        We use hosting and database providers (Vercel and Supabase) to run the service, and Razorpay (the payment provider) when paid sending is on. They process data for us under their own security commitments. Their servers
         may be outside India. We don’t sell your data and we don’t share it for advertising.
       </p>
 
