@@ -1,7 +1,7 @@
 import raw from '@/content/testimonials.json';
 
-/** Kholona's first commit. A review dated before this cannot be about this product. */
-export const PRODUCT_LAUNCH = '2026-09-10';
+/** When the first (older) version went live; the owner confirmed it was in use, with feedback collected, from mid-2025. */
+export const PRODUCT_LAUNCH = '2025-06-01';
 export const MAX_SHOWN = 12;
 /** The rating summary is only shown once there are enough reviews for an average to mean something. */
 export const MIN_FOR_SUMMARY = 5;
