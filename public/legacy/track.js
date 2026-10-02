@@ -5,7 +5,7 @@
    - Silent when: not http(s), inside a downloaded gift file, Do Not Track / Global Privacy Control is on.
    It observes clicks and view changes instead of hooking the gift engine, so the two stay decoupled. */
 (() => {
-  if (!/^https?:$/.test(location.protocol) || document.documentElement.hasAttribute('data-embedded-gift')) return;
+  if (!/^https?:$/.test(location.protocol) || document.documentElement.hasAttribute('data-embedded-gift') || location.pathname === '/preview-frame') return;
   if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true) return;
 
   const store = (k, v) => { try { if (v !== undefined) sessionStorage.setItem(k, v); return sessionStorage.getItem(k); } catch { return null; } };

@@ -44,15 +44,33 @@ Never paste the secret into chat, an issue or a commit. It lives only in Vercel 
 Test-mode and live-mode have separate keys *and* separate webhooks. Add the webhook in each mode you use.
 
 ## Test mode
-With `rzp_test_` keys the payment window shows "Test mode" and **no real money moves**. Use the test card and test UPI details from Razorpay's own documentation (search their docs for "test card details"). To check it works:
-1. Make a gift, press Unlock, pay with a test card or the test UPI success id. The gift unlocks and the link appears.
+With `rzp_test_` keys the unlock page shows "Test mode" and **no real money moves**. Use the test card and test UPI details from Razorpay's own documentation (search their docs for "test card details"). To check it works:
+1. Make a gift, press the Unlock button, pay with a test card or the test UPI success id. The gift unlocks and the link appears.
 2. In Razorpay Dashboard (test mode) → Transactions → Payments you see the payment, and in Supabase `select * from payments order by id desc;` shows `status = 'paid'`.
 3. Test the safety net: start a payment, close the tab right after paying, then open the gift's edit link and press Unlock: it should unlock. Check Dashboard → Webhooks for delivery status.
 
 **While you are on test keys, the public site hands out free links:** anyone can "pay" with a fake card. Fine before launch, since nobody is sending traffic yet; it must not last. Switch to live keys before you promote the site.
 
+## The unlock page and what happens when payment goes wrong
+After a gift is saved, the buyer lands on one page: a live phone preview (the real gift, playing in an isolated frame at `/preview-frame`, which only shows what the page hands it), the price, what is included, and one button. The button starts Razorpay directly; there is no second confirmation step. On phones it stays pinned to the bottom of the screen.
+
+Every failure ends in a plain message that says what happened to the money. All of these are covered by `npm run test:e2e`:
+
+| What happens | What the buyer sees | What really happened |
+|---|---|---|
+| Closes the Razorpay window | A calm note: nothing was charged, the gift is still saved, N days left (after a quiet re-check in case money moved) | Nothing charged |
+| Leaves and comes back later (same browser) | The home page shows "Noor’s gift is waiting · kept N more days" with a Finish button. On the unlock page, if checkout was opened before, it re-checks Razorpay first: unlocks if the money moved, otherwise "Welcome back… nothing has been paid yet" | Nothing lost |
+| Card declined / UPI failed | "That payment did not go through (reason)… returned automatically in 5–7 working days" | Razorpay's `payment.failed`; no payment recorded, gift stays locked |
+| Script blocked (ad blocker, offline) | "We could not open the payment window… Nothing was charged." | Nothing charged |
+| Paid, but our confirmation is rejected | "Nothing was unlocked. Reference: pay_…" | Pressing the button again finds the payment and unlocks, never charges twice |
+| Paid, then the network drops | "Payment received. Confirming it…", retries, then waits up to a minute and unlocks by itself | Verified on the server or by the webhook |
+| Still unconfirmed after that | "Please do not pay again… unlocks on its own… Reference: pay_…" and the button becomes *Check payment status* | The webhook or the next check unlocks it |
+| Payments not set up (no keys) | "Payments are not set up yet…" | Fails closed: nothing unlocks |
+
+If a buyer writes in with a reference and the gift is still locked, look the payment id up in Razorpay. If it was captured, either wait for the webhook or open the gift's edit link and press Unlock: that reconciles the gift against Razorpay. If it was not captured there is nothing to refund.
+
 ## Local development and preview deployments
-These have no Razorpay keys, so Unlock would answer "not set up". Set `PAYMENT_SIMULATE=true` in `.env.local` (or on the Vercel **Preview** environment): the payment window then says "Test mode" and unlocks without charging. It is ignored on the Vercel Production deployment, and ignored whenever Razorpay keys are present, so it can never give away gifts on the real site.
+These have no Razorpay keys, so Unlock would answer "not set up". Set `PAYMENT_SIMULATE=true` in `.env.local` (or on the Vercel **Preview** environment): the unlock page then says "Test mode" and unlocks without charging. It is ignored on the Vercel Production deployment, and ignored whenever Razorpay keys are present, so it can never give away gifts on the real site.
 
 ## Going live
 1. Complete Razorpay's activation (KYC, bank account, the website's Terms, Privacy, Refund and Contact pages, which exist).

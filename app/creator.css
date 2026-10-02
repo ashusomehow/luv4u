@@ -99,26 +99,74 @@ footer a{display:inline-flex;align-items:center;min-height:44px}
 .settings-line{min-height:44px}
 input[type=range]{min-height:44px}
 
-/* ---------- Saved but not unlocked: what is at stake, the price, the terms ---------- */
-.unlock-panel{margin:0 0 22px;padding:20px 22px 22px;border:1px solid var(--line);border-radius:22px;background:#fffdfa;text-align:left;box-shadow:0 14px 34px -26px rgba(67,45,50,.6)}
+/* ---------- Saved but not unlocked: the unlock page (live phone preview, price, one clear button) ---------- */
+.share-view.is-locked{max-width:560px}
+.share-view.is-locked>.share-art,.share-view.is-locked>.eyebrow,.share-view.is-locked>h2,.share-view.is-locked>.share-lead,.share-view.is-locked>.link-wrap,.share-view.is-locked>.share-privacy,.share-view.is-locked>.share-secondary{display:none}
+.unlock-panel{margin:0 0 22px;text-align:left;background:none;border:0;padding:0;box-shadow:none}
 .unlock-panel[hidden]{display:none}
-.unlock-gift{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:10px 12px;border-radius:16px;background:#f8ede9}
-.unlock-art{flex:none;width:52px;height:52px;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:#fff;color:var(--rose);font-family:var(--serif);font-size:26px}
-.unlock-art img{width:100%;height:100%;object-fit:cover}
-.unlock-gift-copy{display:flex;flex-direction:column;min-width:0;font-size:13px;color:var(--muted);line-height:1.4}
-.unlock-gift-copy strong{color:var(--ink);font-size:15px;font-weight:600}
-.unlock-panel h2{margin:0 0 8px;font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.2;color:var(--ink)}
-.unlock-panel p{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.6}
+.unlock-steps{display:flex;justify-content:center;gap:6px;margin:0 0 18px;padding:0;list-style:none;font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.unlock-steps li{display:flex;align-items:center;gap:6px}
+.unlock-steps li+li::before{content:'';width:18px;height:1px;background:var(--line);margin-right:2px}
+.unlock-steps span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#efe3de;color:#6a5258;font-size:11px;font-weight:700}
+.unlock-steps .done span{background:#8d3f51;color:#fff}
+.unlock-steps .now{color:var(--ink);font-weight:600}
+.unlock-steps .now span{background:#fff;border:1.5px solid #8d3f51;color:#8d3f51}
+.unlock-head{text-align:center;margin:0 0 18px}
+.unlock-head h2{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:clamp(28px,7vw,36px);line-height:1.15;color:var(--ink)}
+.unlock-head p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
+/* The phone */
+.phone{margin:0 auto 14px;display:flex;flex-direction:column;align-items:center}
+.phone-body{position:relative;width:min(270px,74vw);aspect-ratio:9/18.4;padding:9px;border-radius:44px;background:linear-gradient(150deg,#3a2f33,#120d0f 55%,#2a2125);box-shadow:0 0 0 1.5px #5b4a50 inset,0 2px 0 #ffffff1f inset,0 34px 60px -26px rgba(67,45,50,.75),0 12px 22px -14px rgba(67,45,50,.6)}
+.phone-key{position:absolute;width:3px;border-radius:2px;background:#2a2125}
+.phone-key-a{left:-3px;top:17%;height:6%}.phone-key-b{left:-3px;top:26%;height:11%}.phone-key-c{right:-3px;top:24%;height:15%}
+.phone-screen{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;background:#150f13;isolation:isolate}
+.phone-frame{display:block;width:100%;height:100%;border:0;background:#150f13}
+.phone-island{position:absolute;top:9px;left:50%;width:30%;height:22px;transform:translateX(-50%);border-radius:999px;background:#000;z-index:3;pointer-events:none}
+.phone-loading{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#150f13;color:#c0a5a1;font-family:var(--serif);font-style:italic;font-size:16px;transition:opacity .45s ease .15s}
+.phone-loading.is-done{opacity:0;pointer-events:none}
+.phone figcaption{margin:14px 0 4px;font-size:13px;color:var(--muted)}
+.phone-tools{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.phone-tools button{min-height:44px;padding:0 12px;font-size:13px;color:#6a3341;border-radius:999px}
+.phone-tools button:hover{background:#f3e8e4}
+.unlock-rest{display:contents}
+.unlock-made{margin:0 0 14px;text-align:center;font-size:13px;color:var(--muted)}
+/* Price and what is included */
+.unlock-card{margin:0 0 6px;padding:18px 20px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#fffdfa,#fdf3ee);box-shadow:0 14px 34px -26px rgba(67,45,50,.6)}
 .unlock-price{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
-.unlock-price strong{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1;color:var(--ink)}
-.unlock-price span{font-size:14px;color:var(--muted)}
-.unlock-list{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;color:var(--ink)}
-.unlock-list li::before{content:'✓';margin-right:10px;color:var(--rose);font-weight:700}
-.unlock-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 12px}
-.unlock-actions .btn{width:100%;min-height:54px;font-size:16px}
-.unlock-panel .unlock-loss{margin:0 0 8px;color:#8d3f51;font-weight:600;font-size:14px}
-.unlock-panel .unlock-note{margin:0;font-size:13px}
-@media(min-width:761px){.unlock-actions .btn{width:auto;min-width:280px}}
+.unlock-price strong{font-family:var(--serif);font-weight:400;font-size:44px;line-height:1;color:#8d3f51}
+.unlock-price span{font-size:14px;color:#5b4549}
+.unlock-list{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;color:var(--ink)}
+.unlock-list li{position:relative;padding-left:24px;line-height:1.45}
+.unlock-list li::before{content:'✓';position:absolute;left:0;top:0;color:#8d3f51;font-weight:700}
+.unlock-panel .unlock-trust{margin:0;padding:10px 12px;border-radius:12px;background:#f8ede9;font-size:13px;line-height:1.45;color:#5b4549}
+/* The button stays in reach while the page scrolls (phones) */
+.unlock-cta{position:sticky;bottom:0;z-index:5;margin:0 -25px 6px;padding:12px 25px max(12px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(253,248,244,0),rgba(253,248,244,.96) 22%);}
+.unlock-cta .pay-btn{width:100%;min-height:56px;font-size:17px}
+.unlock-panel .unlock-loss{margin:12px 0 0;text-align:center;color:#8d3f51;font-weight:600;font-size:13px}
+.unlock-panel .unlock-loss:empty{display:none}
+.pay-error{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#fbe6e6;color:#7a2330;font-size:13px;line-height:1.5}
+.pay-status{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#eef3ec;color:#2f4a33;font-size:13px;line-height:1.5}
+.pay-error[hidden],.pay-status[hidden]{display:none}
+.unlock-faq{border-top:1px solid var(--line);padding:2px 0}
+.unlock-faq summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink)}
+.unlock-faq p{margin:0 0 12px;font-size:13px;line-height:1.6;color:var(--muted)}
+.unlock-faq a{color:#8d3f51;text-decoration:underline}
+.unlock-panel .unlock-note{margin:12px 0 0;font-size:12px;line-height:1.55;color:#5b4549;text-align:center}
+.pay-done{text-align:center;padding:26px 0 8px}
+.pay-done h2{margin:14px 0 8px;font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.2;color:var(--ink)}
+.pay-done p{margin:0 0 18px;color:#5b4549;font-size:14px}
+.pay-check{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#8d3f51;color:#fff;font-size:32px;animation:payCheck .5s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes payCheck{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+/* Wide screens: the phone sits beside the pitch */
+@media(min-width:920px){
+ .share-view.is-locked{max-width:980px}
+ .unlock-panel{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);grid-template-rows:auto auto 1fr;column-gap:56px;align-items:start;grid-template-areas:"steps steps" "phone head" "phone rest"}
+ .unlock-steps{grid-area:steps;margin-bottom:26px}.unlock-head{grid-area:head;text-align:left}.phone{grid-area:phone;position:sticky;top:24px;margin:0}
+ .unlock-rest{display:block;grid-area:rest}.unlock-made{text-align:left}.unlock-cta{position:static;margin:16px 0 18px;padding:0;background:none}
+ .unlock-panel .unlock-note{text-align:left}
+ .phone-body{width:300px}
+}
+@media(prefers-reduced-motion:reduce){.phone-loading{transition:none}.pay-check{animation:none}}
 
 /* ---------- Last step: the price, said plainly ---------- */
 .price-line{margin:16px 0 0;padding:12px 14px;border-radius:14px;background:#f8ede9;color:var(--ink);font-size:14px;line-height:1.5}
@@ -137,3 +185,7 @@ input[type=range]{min-height:44px}
 #experience:has(.unlock-tray) .story-scroll{padding-bottom:96px}
 #experience:has(.unlock-tray.is-final) .story-scroll{padding-bottom:170px}
 @media(prefers-reduced-motion:reduce){.unlock-tray{transition:none}}
+
+/* Inside the phone on the unlock page: only the gift, none of the editing chrome */
+html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
+.pay-btn{width:100%;min-height:54px;font-size:16px}
