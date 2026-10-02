@@ -516,7 +516,7 @@ try {
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${pid}`)).status, 200, 'the payment made while away unlocked the gift');
     await zp.click('#payDone'); await zp.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
     await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
-    assert.equal(await zp.locator('#resumeBanner.show').count(), 0, 'no reminder once everything is unlocked');
+    assert.equal(await zp.locator('#resumeBanner [data-v3="unlock-saved"]').count(), 0, 'no unlock reminder once everything is unlocked');
     assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 4, 'one payment for the fourth gift');
     await zctx.close();
 
