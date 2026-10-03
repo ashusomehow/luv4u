@@ -344,6 +344,59 @@ try {
     await fctx.close();
   }
 
+  // 5d. Every gift, played the way a delighted recipient would: one gesture per moment, and the budget of touches never grows.
+  //     (Counts include the envelope and every optional "continue" shortcut, so they are an upper bound: most scenes carry on by themselves.)
+  {
+    const BUDGET = { birthday: 6, proposal: 7, love: 4, apology: 3, anniversary: 6, thanks: 4, congratulations: 4, missyou: 4 };
+    const play = async key => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
+      const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'journey-' + key);
+      await pg.goto(`${APP}/#demo=${key}`, { waitUntil: 'load' }); await pg.waitForSelector('#sealBtn');
+      const box = await pg.locator('#sealBtn').boundingBox();
+      await pg.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await pg.mouse.down();
+      await pg.waitForSelector('#sealGate', { state: 'detached', timeout: 8000 }); await pg.mouse.up();
+      let touches = 1;                                            // the envelope: one press and hold lights the room by itself
+      const picks = ['[data-v3="proposal-answer"][data-answer="yes"]:not([aria-pressed="true"])', '.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '.gratitude-petals:not(:has([aria-pressed="true"])) [data-v3="flower"]',
+        '[data-story="blow"]:not(.extinguished):not([disabled])', '[data-story="open-gift"]:not(.opened):not([disabled])', '[data-v3="untie-ribbon"]:not(.opened):not([disabled])', '[data-v3="send-hug"]:not([disabled])',
+        '[data-v3="reveal-question"]:not([disabled])', '#storyBook', '#storyScene .story-btn[data-story="next"]', '#storyScene .story-soft-skip[data-story="next"]'];
+      const sawLit = () => pg.evaluate(() => document.querySelector('#experience').classList.contains('lit'));
+      const deadline = Date.now() + 60000;
+      while (Date.now() < deadline) {
+        const cls = (await pg.locator('#storyScene').getAttribute('class')) || '';
+        if (/celebration-scene/.test(cls)) break;
+        let hit = false;
+        for (const sel of picks) { const l = pg.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click({ timeout: 3000 }).catch(() => {}); touches++; hit = true; break; } }
+        await pg.waitForTimeout(hit ? 500 : 300);
+      }
+      assert.match((await pg.locator('#storyScene').getAttribute('class')) || '', /celebration-scene/, `${key}: reached the ending`);
+      assert.equal(await sawLit(), true, `${key}: the room lit up by itself after the envelope`);
+      assert.ok(touches <= BUDGET[key], `${key}: ${touches} touches, budget ${BUDGET[key]}`);
+      return { pg, ctx, touches };
+    };
+    const first = await Promise.all(['birthday', 'love', 'apology', 'proposal'].map(play));
+    const second = await Promise.all(['anniversary', 'thanks', 'congratulations', 'missyou'].map(play));
+    const all = Object.fromEntries([...first, ...second].map((r, i) => [['birthday', 'love', 'apology', 'proposal', 'anniversary', 'thanks', 'congratulations', 'missyou'][i], r]));
+    // the ending: one touch to answer, replay without a tap
+    const b = all.birthday.pg;
+    assert.equal(await b.locator('[data-v2="quick-react"]').count(), 4, 'one touch answers: four feelings on the ending itself');
+    await b.locator('[data-v2="quick-react"]').nth(2).click();
+    await b.waitForFunction(() => /straight to|Sent to/.test(document.querySelector('#finaleSent')?.textContent || ''));
+    await b.locator('[data-story="replay"]').click();
+    await b.waitForSelector('#storyScene.cake-scene', { timeout: 8000 });   // lit again with no tap at all
+    // the apology never moves on by itself: that pace belongs to the reader
+    const a = all.apology.pg; await a.goto('about:blank'); await a.goto(`${APP}/#demo=apology`, { waitUntil: 'load' }); await a.waitForSelector('#sealBtn');
+    const abox = await a.locator('#sealBtn').boundingBox(); await a.mouse.move(abox.x + abox.width / 2, abox.y + abox.height / 2); await a.mouse.down();
+    await a.waitForSelector('#sealGate', { state: 'detached', timeout: 8000 }); await a.mouse.up();
+    await a.waitForSelector('#storyScene.welcome-scene', { timeout: 8000 }); await a.waitForTimeout(6500);
+    assert.match((await a.locator('#storyScene').getAttribute('class')) || '', /welcome-scene/, 'an apology waits for the reader');
+    // a bouquet and a row of hearts each answer to a single touch
+    const th = await (await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true })).newPage(); watch(th, 'bouquet');
+    await th.goto(`${APP}/#demo=thanks`, { waitUntil: 'load' }); await th.waitForSelector('#sealBtn');
+    await th.evaluate(() => document.querySelector('#sealSkip').click()); await th.waitForSelector('#storyScene.bouquet-scene', { timeout: 9000 });
+    await th.locator('[data-v3="flower"]').first().click(); await th.waitForFunction(() => document.querySelectorAll('.thanks-card').length === 3, null, { timeout: 12000 });
+    for (const r of [...first, ...second]) await r.ctx.close();
+  }
+
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());
   await page.getByRole('button', { name: 'Remove gift' }).first().click(); await page.waitForTimeout(1200);
