@@ -231,3 +231,24 @@ html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
 @keyframes noteGlow{0%{box-shadow:0 0 0 3px rgba(214,38,93,.35);background:#fdf3ee}100%{box-shadow:0 0 0 0 rgba(214,38,93,0)}}
 @media(prefers-reduced-motion:reduce){.note-fresh{animation:none}}
 #noteDetail .input-help{display:none}
+
+/* The preview is a real phone layout (390 x 844) scaled to fit the mockup: nothing is cut off */
+.phone-body{aspect-ratio:auto;width:min(290px,78vw)}
+.phone-screen{height:auto;aspect-ratio:390/844}
+.phone-frame{position:absolute;left:0;top:0;width:390px;height:844px;transform-origin:0 0;transform:scale(var(--ps,.7))}
+@media(min-width:920px){.phone-body{width:320px}}
+/* The ending of the preview: say what comes next, with a button that pays */
+.embed-nudge{position:absolute;left:14px;right:14px;bottom:max(16px,env(safe-area-inset-bottom));z-index:60;padding:16px 16px 14px;border-radius:22px;background:rgba(255,253,250,.97);box-shadow:0 18px 44px -18px rgba(43,25,41,.6);text-align:center;animation:cardIn .6s ease both}
+.embed-nudge p{margin:0 0 12px;font-size:15px;line-height:1.5;color:#432d32}
+.embed-nudge button{width:100%;min-height:50px;border-radius:999px;color:#fff;font-size:15px;font-weight:600;background:linear-gradient(135deg,#d92a5f 0%,#c42a74 60%,#a62f92 100%);box-shadow:0 12px 24px -12px rgba(214,38,93,.7)}
+html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
+/* The link, shown once it is copied */
+.paid-link{width:100%;max-width:420px;margin:0 auto 14px;text-align:center;font-size:13px}
+.paid-link[hidden]{display:none}
+/* The logo mark, small, beside the wordmark */
+.logo-mark{flex:none;width:30px;height:30px;margin-right:9px;align-self:center;border-radius:9px;box-shadow:0 3px 10px -3px rgba(214,38,93,.4)}
+.wordmark .logo-mark{margin-top:-2px}
+@media(max-width:760px){.wordmark .logo-mark{width:26px;height:26px;margin-right:7px}}
+.experience-brand .logo-mark{display:inline-block;width:20px;height:20px;margin:0 7px 3px 0;vertical-align:middle;border-radius:6px;box-shadow:none;opacity:.9}
+.legal-brand{display:inline-flex;align-items:center}
+.legal-brand .logo-mark{width:26px;height:26px;margin-right:8px}

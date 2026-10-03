@@ -54,6 +54,8 @@ With `rzp_test_` keys the unlock page shows "Test mode" and **no real money move
 ## The unlock page and what happens when payment goes wrong
 After a gift is saved, the buyer lands on one page: a live phone preview (the real gift, playing in an isolated frame at `/preview-frame`, which only shows what the page hands it), the price, what is included, and one button. The button starts Razorpay directly; there is no second confirmation step. On phones it stays pinned to the bottom of the screen.
 
+The phone preview runs the gift at a real 390 x 844 phone layout, scaled down to fit the mockup, so nothing is cut off. When it reaches its ending, a card inside the phone says "This is what X will feel. Unlock it to get the link and send it" and its button starts the payment on the page. The moment a payment is confirmed the private link is loaded and copied to the clipboard (where the browser allows it; otherwise the button says "Copy my link"), and shown on screen.
+
 Every failure ends in a plain message that says what happened to the money. All of these are covered by `npm run test:e2e`:
 
 | What happens | What the buyer sees | What really happened |

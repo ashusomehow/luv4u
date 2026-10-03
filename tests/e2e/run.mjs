@@ -259,6 +259,8 @@ try {
   // Lower sections fade in as they scroll into view; let them settle so we measure the final colours.
   for (let y = 0; y <= 7000; y += 700) { await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y); await page.waitForTimeout(120); }
   await page.waitForTimeout(1200); await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' })); await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => { const i = document.querySelector('.wordmark .logo-mark'); return !!i && i.complete && i.naturalWidth > 0; }), true, 'the small logo mark shows beside the wordmark');
+  assert.equal((await fetch(`${APP}/icon.svg`)).status, 200);
   await contrast('landing');
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForSelector('#recipientName'); await contrast('step 1');
   await page.fill('#recipientName', 'Sarah'); await page.waitForTimeout(600); await contrast('creator');
@@ -397,6 +399,35 @@ try {
     for (const r of [...first, ...second]) await r.ctx.close();
   }
 
+  // 5e. The preview on the payment page: every gift plays to its very end inside the phone, and the end nudges to unlock.
+  {
+    const KEYS = ['birthday', 'proposal', 'love', 'apology', 'anniversary', 'thanks', 'congratulations', 'missyou'];
+    const HARNESS = '<!doctype html><meta charset="utf-8"><body style="margin:0"><iframe id="f" src="/preview-frame" style="width:390px;height:844px;border:0"></iframe><script>window.__unlock=0;window.addEventListener("message",ev=>{if(ev.data&&ev.data.type==="kholona-embed-ready")ev.source.postMessage({type:"kholona-embed-play",gift:window.__g,price:"₹199"},location.origin);if(ev.data&&ev.data.type==="kholona-embed-unlock")window.__unlock++;});</script></body>';
+    const playInPhone = async key => {
+      const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, userAgent: NORMAL_UA }); const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'phone-' + key);
+      await pg.route('**/__harness', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: HARNESS }));
+      await pg.addInitScript(g => { window.__g = g; }, { version: 3, id: 'a'.repeat(24), name: 'Priya', occasion: key, vibe: key === 'apology' ? 'Emotional' : 'Cute', message: 'A few words for you.', sender: 'Ashu', photos: [], memories: [], voice: '', music: 'none', fun: 'none', server: true });
+      await pg.goto(`${APP}/__harness`, { waitUntil: 'load' });
+      const fr = pg.frameLocator('#f'); await fr.locator('#storyScene').waitFor({ timeout: 10000 });
+      await fr.locator('[data-story="light"]').click();
+      const picks = ['[data-v3="proposal-answer"][data-answer="yes"]:not([aria-pressed="true"])', '.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '.gratitude-petals:not(:has([aria-pressed="true"])) [data-v3="flower"]',
+        '[data-story="blow"]:not(.extinguished):not([disabled])', '[data-story="open-gift"]:not(.opened):not([disabled])', '[data-v3="untie-ribbon"]:not(.opened):not([disabled])', '[data-v3="send-hug"]:not([disabled])',
+        '[data-v3="reveal-question"]:not([disabled])', '#storyBook', '#storyScene .story-btn[data-story="next"]', '#storyScene .story-soft-skip[data-story="next"]'];
+      const deadline = Date.now() + 70000; let scene = '';
+      while (Date.now() < deadline) {
+        scene = (await fr.locator('#storyScene').getAttribute('class')) || '';
+        if (/celebration-scene|reply-scene/.test(scene) && await fr.locator('.embed-nudge').count()) break;
+        for (const sel of picks) { const l = fr.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click({ timeout: 2000 }).catch(() => {}); break; } }
+        await pg.waitForTimeout(600);
+      }
+      assert.ok(await fr.locator('.embed-nudge').count(), `${key}: the preview reached its end (stopped at ${scene})`);
+      assert.match(await fr.locator('.embed-nudge button').innerText(), /Unlock & get link · ₹199/, `${key}: the ending nudges to unlock`);
+      await fr.locator('.embed-nudge button').click(); await pg.waitForFunction(() => window.__unlock === 1);
+      await ctx.close();
+    };
+    await Promise.all(KEYS.slice(0, 4).map(playInPhone)); await Promise.all(KEYS.slice(4).map(playInPhone));
+  }
+
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());
   await page.getByRole('button', { name: 'Remove gift' }).first().click(); await page.waitForTimeout(1200);
@@ -455,6 +486,21 @@ try {
   await owner.setViewportSize(vp ?? { width: 1280, height: 900 });
   if (process.env.E2E_SHOTS) await owner.screenshot({ path: process.env.E2E_SHOTS + '/unlock-desktop.png' });
   assert.match(await (await fetch(`${LOCKED_APP}/preview-frame`)).text(), /name="robots" content="noindex/, 'the preview frame page is never indexed');
+  // the preview is a real phone layout scaled to fit, so nothing is cut off
+  const geo = await owner.evaluate(() => { const f = document.querySelector('#phoneFrame'); return [f.offsetWidth, f.getBoundingClientRect().width]; });
+  assert.equal(geo[0], 390, 'the preview runs at a true phone width'); assert.ok(geo[1] < 340 && geo[1] > 200, 'and is scaled to fit the mockup: ' + geo[1]);
+  // it plays to the end, and the ending says what comes next with a button that starts payment
+  for (let i = 0; i < 40; i++) {
+    const cls = (await phone.locator('#storyScene').getAttribute('class')) || '';
+    if (/celebration-scene/.test(cls)) break;
+    for (const sel of ['.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '#storyScene .story-btn[data-story="next"]', '#storyScene .story-soft-skip[data-story="next"]']) { const l = phone.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click({ timeout: 2000 }).catch(() => {}); break; } }
+    await owner.waitForTimeout(700);
+  }
+  await phone.locator('.embed-nudge').waitFor({ timeout: 10000 });
+  assert.match(await phone.locator('.embed-nudge').innerText(), /Priya|Noor[\s\S]*Unlock & get link · ₹199|Unlock it to get the link/);
+  assert.match(await phone.locator('.embed-nudge button').innerText(), /Unlock & get link · ₹199/);
+  await phone.locator('.embed-nudge button').click();
+  await owner.waitForFunction(() => /Payments are not set up yet/.test(document.querySelector('#payError')?.textContent || ''));   // the preview's button started the payment on the page
   await owner.waitForTimeout(1300); await owner.evaluate(axeSource);
   const lockedBad = await owner.evaluate(async () => (await axe.run(document, { runOnly: ['color-contrast'] })).violations.flatMap(v => v.nodes.map(n => { const d = n.any[0].data; return `${n.target.join(' ').slice(0, 50)} ${d.fgColor} on ${d.bgColor} ${d.contrastRatio}`; })));
   assert.deepEqual(lockedBad, [], `colour contrast on the locked share screen: ${JSON.stringify(lockedBad)}`);
@@ -499,7 +545,7 @@ try {
   //    by a stub that either "closes the window" or "pays" through the mock (which signs like Razorpay does).
   {
     assert.deepEqual((await (await fetch(`${RZP_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365, provider: 'razorpay', testMode: true });
-    const zctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
+    const zctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA, permissions: ['clipboard-read', 'clipboard-write'] });
     await zctx.route('https://checkout.razorpay.com/v1/checkout.js', route => route.fulfill({ contentType: 'application/javascript', body: `
       window.Razorpay = function (o) { const on = {}; this.on = (ev, fn) => { on[ev] = fn; }; this.open = async () => {
         window.__rzpOptions = { key: o.key, order_id: o.order_id, amount: o.amount, currency: o.currency, name: o.name, description: o.description };
@@ -537,6 +583,10 @@ try {
     await zp.evaluate(() => { window.__rzpMode = 'pay'; delete window.__rzpOptions; });
     await zp.click('#payGo'); await zp.waitForSelector('#payDone');
     assert.match(await zp.locator('.pay-done').innerText(), /Unlocked/);
+    // the link is loaded and copied for them the moment the payment is confirmed
+    await zp.waitForFunction(() => /link is copied|Tap the button to copy/.test(document.querySelector('#paidNote')?.textContent || ''));
+    const paidLink = await zp.inputValue('#paidLink'); assert.match(paidLink, /\/g\/[a-f0-9]{24}$/, 'the link is shown');
+    if (/link is copied/.test(await zp.locator('#paidNote').innerText())) assert.equal(await zp.evaluate(() => navigator.clipboard.readText()), paidLink, 'and it is already on the clipboard');
     await zp.click('#payDone'); await zp.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${zid}`)).status, 200, 'the recipient link opens after payment');
     let st = await state();
