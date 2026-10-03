@@ -57,8 +57,9 @@
     if (pick) { occasion = pick.dataset.chooseOccasion || occasion; send('occasion_selected', { kind: pick.classList.contains('hero-chip') ? 'chip' : pick.classList.contains('occasion-card') ? 'card' : 'other' }); return; }
     const campaign = el.closest('[data-campaign]');
     if (campaign) { occasion = campaign.dataset.campaign || occasion; send('occasion_selected', { kind: 'page_link' }); return; }
-    if (el.closest('#wizardNext')) send('wizard_next', { label: el.closest('#wizardNext').textContent.trim().slice(0, 40) });
-    else if (el.closest('#createGiftBtn')) send('publish_clicked');
+    if (el.closest('[data-v2="note-shuffle"]')) send('note_shuffled');
+    else if (el.closest('#dockNudge') || el.closest('[data-v2^="nudge-"]')) send('media_nudge_clicked');
+    else if (el.closest('#createGiftBtn')) send('publish_clicked', { kind: 'button' });
     else if (el.closest('#copyGiftLink')) send('link_copied');
     else if (el.closest('#whatsappGift')) send('whatsapp_clicked');
     else if (el.closest('#downloadGift')) send('download_clicked');

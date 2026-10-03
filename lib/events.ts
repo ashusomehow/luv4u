@@ -5,7 +5,9 @@ export const EVENT_NAMES = [
   'page_view',
   'occasion_selected',
   'creator_opened',
-  'wizard_next',
+  'wizard_next', // retired with the three-step creator; kept so old cached pages are still accepted
+  'note_shuffled',
+  'media_nudge_clicked',
   'publish_clicked',
   'gift_published',
   'preview_opened',

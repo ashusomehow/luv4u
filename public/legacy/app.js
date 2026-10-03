@@ -517,57 +517,72 @@ async function openCreator(key='birthday'){
   wizardStep=0;populateForm();showView('creator');setStep(0,true);saveDraft();
  }finally{occasionSwitchBusy=false;}
 }
-/* Three steps: 1 name + mood, 2 words + photos (all optional), 3 preview + get the link. */
-const STEP_COUNT=3;
+/* One page, not three steps. The name, a ready-made note you can see and change, photos and a voice note, and the way forward all
+   stay on screen; the unlock page that follows is the preview. "Steps" are now just places to scroll to. */
+const STEP_COUNT=1;
 let noteOpenedOnce=false;
-/* "Create" becomes "Save & continue" when the gift is unlocked afterwards. */
-const createLabel=()=>editing?.mode==='hosted'?'Save gift changes '+icon('heart'):paymentsRequired?'Save & continue '+icon('arrow'):'Create My Gift '+icon('spark');
+/* Saving is free and the next screen is the preview, so the button says that. */
+const createLabel=()=>editing?.mode==='hosted'?'Save gift changes '+icon('heart'):paymentsRequired?'Create & preview '+icon('arrow'):'Create My Gift '+icon('spark');
+const moodLines={Romantic:'Rose & candlelight',Cute:'Soft pink',Funny:'Warm amber',Emotional:'Quiet dusk',Crazy:'Bold terracotta',Elegant:'Muted gold'};
+const moodLine=()=>occasionKey(draft)==='birthday'?THEMES[draft.vibe].line:moodLines[draft.vibe]||'';
 function setStep(step,focus=true){
- if(step>0&&!draft.name.trim())step=0;
- wizardStep=Math.max(0,Math.min(STEP_COUNT-1,step));
- $$('.wizard-panel').forEach((el,i)=>el.hidden=i!==wizardStep);
- $$('[data-wizard-step]').forEach((b,i)=>{b.setAttribute('aria-current',i===wizardStep?'step':'false');b.disabled=i>0&&!draft.name.trim();});
- const o=occasionOf(draft),birth=occasionKey(draft)==='birthday',last=wizardStep===STEP_COUNT-1;
- const titles=[
-  [birth?'Who’s your<br><em>birthday person?</em>':o.title,birth?'A name is all you need. The rest is icing.':o.intro],
-  ['Add a little<br><em>you.</em>','Your '+o.short.toLowerCase()+' is already complete. A note, a photo or your voice makes it yours.'],
-  ['Take a look.<br><em>Then send it.</em>','See it the way they will, then get your link.']
- ];
+ wizardStep=0;
+ $$('.wizard-panel').forEach(el=>el.hidden=false);
+ const o=occasionOf(draft),birth=occasionKey(draft)==='birthday',named=!!draft.name.trim();
  updateOccasionUI();
- $('.creator-head h2').innerHTML=titles[wizardStep][0];$('.creator-head>p').textContent=titles[wizardStep][1];
- $('#wizardBack').hidden=wizardStep===0;$('#wizardNext').hidden=last;
- $('#wizardNext').innerHTML=(wizardStep===0?'Next: your words':'Next: preview & send')+' '+icon('arrow');
- /* One way forward per step: the full-screen preview is what step 3 is for, so it only appears there. */
- $('#createGiftBtn').hidden=!last;$('#createGiftBtn').innerHTML=createLabel();
- $('#dockPreview').hidden=!draft.name.trim()||!last;
- $('#wizardNext').classList.add('wizard-next');
- if(last){renderReview();updatePriceLine();}
- updateMiniPreview();
- /* The note is the heart of the gift: open it the first time someone reaches this step. */
- if(wizardStep===1&&!noteOpenedOnce){noteOpenedOnce=true;for(const id of ['noteDetail','photosDetail']){const d=$('#'+id);if(d)d.open=true;}}
- if(wizardStep===1)renderMediaStatus();
- if(focus&&currentView==='creator'){window.scrollTo({top:0,behavior:reducedMotion?'auto':'smooth'});const target=wizardStep===0?$('#recipientName'):$('.creator-head h2');target.setAttribute('tabindex','-1');target.focus({preventScroll:true});}
+ $('.creator-head h2').innerHTML=birth?'Who’s your<br><em>birthday person?</em>':o.title;
+ $('.creator-head>p').textContent=birth?'A name is all you need. We’ll write the rest, and you can change every word.':o.intro;
+ $('#createGiftBtn').hidden=false;$('#createGiftBtn').innerHTML=createLabel();
+ $('#dockPreview').hidden=!named;
+ updatePriceLine();updateMiniPreview();autoNote();renderMediaStatus();
+ /* The note is the heart of the gift: open it, and the photos, the first time. */
+ if(!noteOpenedOnce){noteOpenedOnce=true;for(const id of ['noteDetail','photosDetail']){const d=$('#'+id);if(d)d.open=true;}}
+ if(!focus||currentView!=='creator')return;
+ if(step<=0){window.scrollTo({top:0,behavior:reducedMotion?'auto':'smooth'});const target=$('#recipientName');target.focus({preventScroll:true});}
+ else{const target=step===1?$('#touchesEditor'):$('#moreOptions');target?.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'start'});}
 }
-function advanceWizard(){if(!draft.name.trim()){setStep(0,false);validateForm();return;}stopPreviewAudio();if(wizardStep===1)askAboutMedia(()=>setStep(2));else setStep(wizardStep+1);}
-/* Photos and a voice note change how a gift feels more than anything else, and they sit in folded sections that are easy to miss.
-   So leaving step 2 with neither asks once, and leaving them out is a choice the person makes. */
-let mediaDecided=false,statusTimer=0;
-function askAboutMedia(proceed){
- if(mediaDecided||draft.photos.length||draft.voice){proceed();return;}
- const previous=document.activeElement,root=$('#modalRoot'),name=e(draft.name.trim()||'them');
- root.innerHTML=`<div class="modal-backdrop"><section class="modal media-ask" role="dialog" aria-modal="true" aria-labelledby="mediaTitle"><h2 id="mediaTitle">Add something only you have?</h2><p>A photo or your own voice is what makes ${name} stop and smile. Right now this gift is words only.</p><div class="media-ask-actions"><button type="button" class="btn btn-primary" id="askPhotos">Add a photo</button><button type="button" class="btn btn-secondary" id="askVoice">Add a voice note</button></div><button type="button" class="media-skip" id="askSkip">Continue with words only</button></section></div>`;
- const close=()=>{root.innerHTML='';document.removeEventListener('keydown',trap);previous?.focus?.();};
- const trap=ev=>{if(ev.key==='Escape')close();if(ev.key==='Tab'){const bs=$$('button',root),first=bs[0],last=bs[bs.length-1];if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus();}else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus();}}};
- document.addEventListener('keydown',trap);
- $('#askPhotos').onclick=()=>{close();chooseTouches('photosDetail');setTimeout(()=>$('#photoUpload')?.focus({preventScroll:true}),300);};
- $('#askVoice').onclick=()=>{close();chooseTouches('voiceDetail');};
- $('#askSkip').onclick=()=>{mediaDecided=true;close();proceed();};
- $('#askPhotos').focus();
+/* "Next" no longer exists: the only way forward is to create the gift. */
+function advanceWizard(){if(!draft.name.trim()){setStep(0,true);validateForm();return;}stopPreviewAudio();publishGift();}
+let statusTimer=0;
+/* ---- Smart default: a ready-made note, written for this person, that you can see, shuffle and edit. ----
+   It follows the name and the mood until the sender writes their own words, and is never used for an apology (words matter there). */
+let autoNoteTimer=0;
+function scheduleAutoNote(){clearTimeout(autoNoteTimer);autoNoteTimer=setTimeout(()=>autoNote(),220);}
+function autoNote(step=0){
+ const ta=$('#personalMessage');if(!ta||!draft.name.trim()||occasionKey(draft)==='apology')return;
+ const st=getTemplateState(ta),cur=ta.value;
+ if(cur.trim()&&cur!==st.owned)return;                 /* they wrote their own words */
+ if(!cur.trim()&&st.manual&&!step)return;              /* they cleared it on purpose */
+ const opts=messageOptions(ta,'note');if(!opts.length)return;
+ st.autoIndex=(((st.autoIndex||0)+step)%opts.length+opts.length)%opts.length;
+ const text=opts[st.autoIndex].text;if(cur===text)return;
+ st.manual=false;applyingMessageTemplate=true;
+ try{ta.value=text;st.owned=text;ta.dispatchEvent(new Event('input',{bubbles:true}));}finally{applyingMessageTemplate=false;}
+ ta.classList.remove('note-fresh');void ta.offsetWidth;ta.classList.add('note-fresh');
+ refreshMessageTemplates();
 }
+/* A restored draft whose note is still one of our own suggestions keeps following the name. */
+function adoptOwnedNote(){
+ const ta=$('#personalMessage');if(!ta||!ta.value.trim())return;
+ const st=getTemplateState(ta),i=messageOptions(ta,'note').findIndex(o=>o.text===ta.value);
+ if(i>=0){st.owned=ta.value;st.autoIndex=i;}
+}
+function prefillSender(){
+ if(editing||draft.sender.trim()||!$('#senderName'))return;
+ try{const saved=localStorage.getItem('kholona.sender');if(saved){draft.sender=saved.slice(0,40);$('#senderName').value=draft.sender;}}catch{}
+}
+/* Photos and a voice note change how a gift feels more than anything else. They sit open on the page, and when neither is added a short,
+   skippable card says so right above the button: leaving them out is a visible choice, not a missed step. */
+function renderMediaNudge(){const n=$('#dockNudge');if(!n)return;n.hidden=!(draft.name.trim()&&!draft.photos.length&&!draft.voice);}
 /* A plain status on each of the three "make it yours" sections, so nothing is hidden behind a fold without saying so. */
 function renderMediaStatus(){
- const rows=[['noteDetail',draft.message.trim()?'Written':'We’ll add a note',!!draft.message.trim()],['photosDetail',draft.photos.length?draft.photos.length+(draft.photos.length===1?' photo':' photos'):'Not added yet',!!draft.photos.length],['voiceDetail',draft.voice?'Added':'Not added yet',!!draft.voice]];
+ const ta=$('#personalMessage'),own=ta&&ta.value.trim()&&ta.value!==getTemplateState(ta).owned;
+ const rows=[['noteDetail',draft.message.trim()?(own?'Your words':'Ready-made · edit freely'):'We’ll add a note',!!draft.message.trim()],['photosDetail',draft.photos.length?draft.photos.length+(draft.photos.length===1?' photo':' photos'):'Not added yet',!!draft.photos.length],['voiceDetail',draft.voice?'Added':'Not added yet',!!draft.voice]];
  for(const [id,text,done] of rows){const summary=$('#'+id+' summary');if(!summary)continue;let tag=$('.detail-status',summary);if(!tag){tag=document.createElement('span');tag.className='detail-status';summary.insertBefore(tag,$('.detail-chevron',summary));}tag.textContent=(done?'✓ ':'')+text;tag.classList.toggle('done',done);}
+ const shuffle=$('#noteShuffle'),hint=$('#noteHint');
+ if(shuffle){shuffle.hidden=!!own||occasionKey(draft)==='apology';}
+ if(hint){hint.textContent=occasionKey(draft)==='apology'?'Your own words matter most here. Write what you really want to say.':!draft.name.trim()?'Type a name and we’ll write a first version for you.':own?'Your words. Nothing to change unless you want to.':'Written for '+draft.name.trim()+'. Change any word, or try another.';}
+ renderMediaNudge();
 }
 for(const type of ['input','change','click'])document.addEventListener(type,()=>{clearTimeout(statusTimer);statusTimer=setTimeout(()=>{if($('#photosDetail'))renderMediaStatus();},120);});
 function touchCount(){return [!!draft.message.trim(),!!draft.photos.length,draft.memories.some(m=>m.text.trim()),!!draft.voice,draft.music!=='none',draft.fun!=='none',!!(draft.finalMessage.trim()||draft.finalUrl),occasionHasExtras()].filter(Boolean).length;}
@@ -577,20 +592,13 @@ function chooseTouches(detailId){
  const target=document.getElementById(detailId||'noteDetail');
  if(target){const group=target.closest('#moreTouches');if(group)group.open=true;target.open=true;target.querySelector('summary').focus({preventScroll:true});target.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'start'});}
 }
-function skipTouches(){if(wizardStep!==1)return;stopPreviewAudio();setStep(2);}
+function skipTouches(){stopPreviewAudio();}
 /* Compact live card on the words & photos step; phones only (desktop has the side preview). Kept off step 1 so the name field never jumps while typing. */
-function updateMiniPreview(){
- const box=$('#miniPreview');if(!box)return;
- const name=draft.name.trim(),o=occasionOf(draft),photo=draft.photos[0];
- box.hidden=!name||currentView!=='creator'||wizardStep!==1;
- if(box.hidden)return;
- const note=draft.message.trim();
- box.innerHTML=`<span class="mini-art" aria-hidden="true">${photo?`<img src="${e(photo.src)}" alt="" style="${cropStyle(photo)}" referrerpolicy="no-referrer">`:e(o.symbol)}</span><span class="mini-copy"><strong>${e(o.short)} for ${e(name)}</strong><span>${e(note?note.slice(0,70)+(note.length>70?'…':''):draft.vibe+' mood · a ready-made note is tucked in')}</span></span>`;
-}
+function updateMiniPreview(){const box=$('#miniPreview');if(box)box.hidden=true;/* the note and the dock already show it, and a card here would shift the name field */}
 
 function validateForm(){if(!draft.name.trim())setStep(0,false);for(const id of ['voiceUrl','musicUrl','finalUrl']){const input=$('#'+id);if(input.value.trim()&&!safeWebURL(input.value)){setStep(1,false);}}return validateFormV1();}
-function updatePreview(){updatePreviewV1();if(!$('#wizardNext'))return;$('#wizardNext').classList.toggle('is-ready',!!draft.name.trim());$('#vibePreviewLine').textContent=occasionKey(draft)==='birthday'?THEMES[draft.vibe].line:'';$('#editorRoom').dataset.vibe=draft.vibe;$('#editorRoom').style.filter=draft.vibe==='Elegant'?'saturate(.55)':draft.vibe==='Crazy'?'saturate(1.15)':'';$$('[data-wizard-step]').forEach((b,i)=>b.disabled=i>0&&!draft.name.trim());$('#quizFields').hidden=draft.fun!=='quiz';if(wizardStep===2&&currentView==='creator')renderReview();updateMiniPreview();updateOccasionUI();}
-function populateForm(){populateFormV1();if(!$('#musicVolume'))return;$('#musicVolume').value=Math.round((draft.volume??.24)*100);$('#volumeReadout').textContent=Math.round((draft.volume??.24)*100)+'%';$('#replyPhone').value=draft.replyPhone||'';$('#branchToggle').checked=draft.branch!==false;$('#motionToggle').checked=draft.motion!==false;$('#sharePreviewToggle').checked=draft.sharePreview!==false;$('#quizQuestion').value=draft.quizQuestion||'';$('#quizAnswer').value=draft.quizAnswer||'';for(let i=0;i<2;i++)$('#quizDecoy'+i).value=draft.quizOptions?.[i]||'';updateOccasionUI();renderOccasionDetails(true);installMessageTemplates();refreshMessageTemplates();updateDelivery();}
+function updatePreview(){updatePreviewV1();if(!$('#createGiftBtn'))return;$('#createGiftBtn').classList.toggle('is-ready',!!draft.name.trim());$('#vibePreviewLine').textContent=moodLine();$('#editorRoom').dataset.vibe=draft.vibe;$('#editorRoom').style.filter=draft.vibe==='Elegant'?'saturate(.55)':draft.vibe==='Crazy'?'saturate(1.15)':'';$('#quizFields').hidden=draft.fun!=='quiz';updateMiniPreview();updateOccasionUI();renderMediaNudge();if($('#dockPreview'))$('#dockPreview').hidden=!draft.name.trim();}
+function populateForm(){populateFormV1();if(!$('#musicVolume'))return;$('#musicVolume').value=Math.round((draft.volume??.24)*100);$('#volumeReadout').textContent=Math.round((draft.volume??.24)*100)+'%';$('#replyPhone').value=draft.replyPhone||'';$('#branchToggle').checked=draft.branch!==false;$('#motionToggle').checked=draft.motion!==false;$('#sharePreviewToggle').checked=draft.sharePreview!==false;$('#quizQuestion').value=draft.quizQuestion||'';$('#quizAnswer').value=draft.quizAnswer||'';for(let i=0;i<2;i++)$('#quizDecoy'+i).value=draft.quizOptions?.[i]||'';updateOccasionUI();renderOccasionDetails(true);installMessageTemplates();adoptOwnedNote();prefillSender();refreshMessageTemplates();updateDelivery();}
 function updateDelivery(){if(!$('#deliverySelect'))return;$('#deliverySelect').closest('.quiet-field').hidden=paymentsRequired;$('#hostedOption').disabled=!backendReady;$('#deliverySelect').value=editing?.mode==='hosted'?'hosted':delivery;$('#deliverySelect').disabled=editing?.mode==='hosted';$('#expiryField').hidden=(editing?.mode==='hosted'?'hosted':delivery)!=='hosted'||paymentsRequired;$('#scheduleField').hidden=(editing?.mode==='hosted'?'hosted':delivery)!=='hosted';$('#deliveryStatus').hidden=backendReady;$('#deliveryStatus').classList.toggle('offline',!backendReady);$('#deliveryStatus').textContent=backendReady?'':'Short links are not available right now, so your gift will be a file or a long link you can send.';$('#backendPublishNote').textContent=delivery==='hosted'?'Photos and audio are uploaded when you create your gift. Anyone with the link can open it.':'Large media gifts are shared as a downloadable HTML file. Short, text-only gifts can travel in a link.';}
 /* Scheduled delivery: the creator picks a moment in their own time zone; the server stores it as an exact instant. */
 const localInput=iso=>{const d=new Date(iso),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;};
@@ -629,7 +637,7 @@ document.addEventListener('click',ev=>{if(ev.target.id==='clearOpensAt'){const f
 function renderReview(){renderOccasionReview();}
 function installWizard(){
  if($('#giftForm').dataset.v2Installed==='true'){ $('#vibeGrid').innerHTML=VIBES.map(v=>`<button type="button" class="vibe-btn" data-vibe="${v.name}" aria-pressed="false"><span class="vibe-icon" aria-hidden="true">${v.symbol}</span><strong>${v.name}</strong><span class="vibe-caption">${THEMES[v.name].caption}</span></button>`).join(''); return; }
- const form=$('#giftForm'),sections=$$('.form-section',form);const nav=document.createElement('nav');nav.className='wizard-steps';nav.setAttribute('aria-label','Birthday gift creation steps');nav.innerHTML=['Name & mood','Words & photos','Preview & send'].map((label,i)=>`${i?'<span class="step-rule" aria-hidden="true"></span>':''}<button type="button" data-wizard-step="${i}" aria-current="${i===0?'step':'false'}" aria-label="Step ${i+1} of 3: ${label}"><i aria-hidden="true">${i+1}</i>${label}</button>`).join('');$('.creator-head').before(nav);$('.creator-head').after(Object.assign(document.createElement('div'),{id:'miniPreview',className:'mini-preview',hidden:true}));
+ const form=$('#giftForm'),sections=$$('.form-section',form);$('.creator-head').after(Object.assign(document.createElement('div'),{id:'miniPreview',className:'mini-preview',hidden:true}));
  const panels=[0,1,2].map(i=>{const el=document.createElement('section');el.className='wizard-panel';el.dataset.step=i;el.hidden=i!==0;return el;});
  panels[0].append(sections[0]);panels[0].insertAdjacentHTML('beforeend','<p class="step-help">Your partner. Your best friend. Your mum.<br>Whoever makes your ordinary days a little brighter.</p>');
  panels[0].append(sections[1]);panels[0].insertAdjacentHTML('beforeend','<p class="vibe-preview-line" id="vibePreviewLine"></p><p class="step-count-note">Just their name. A beautiful birthday, even without the extras.</p>');
@@ -641,10 +649,11 @@ function installWizard(){
  more.innerHTML=`<summary><span class="detail-icon">${icon('plus')}</span><span><span class="detail-title">More little touches</span><span class="detail-subtitle" style="display:block">Memories, a soundtrack, a playful surprise, a last surprise</span></span><span class="detail-chevron">${icon('chevron')}</span></summary><div class="detail-body"></div>`;
  pers.insertBefore($('#voiceDetail',pers),$('#memoriesDetail',pers));$('#memoriesDetail',pers).before(more);
  for(const id of ['memoriesDetail','musicDetail','funDetail','finalDetail'])$('.detail-body',more).append($('#'+id,pers));
- panels[2].innerHTML=`<div id="reviewSummary"></div><p class="price-line" id="priceLine" hidden></p><details class="more-options" id="moreOptions"><summary><span>More options</span><span class="detail-chevron">${icon('chevron')}</span></summary><div class="more-options-body"><div class="quiet-field"><label class="field-label" for="deliverySelect">Link type</label><select id="deliverySelect"><option value="hosted" id="hostedOption" disabled>Short link (recommended)</option><option value="portable">Standalone: long link or downloadable file</option></select></div><div class="quiet-field" id="expiryField" hidden><label class="field-label" for="expiryDays">Keep the link live for</label><select id="expiryDays"><option value="0">No expiry</option><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option></select><p class="privacy-small">After that the link stops working. Downloaded copies cannot be recalled.</p></div><div class="quiet-field" id="scheduleField" hidden><label class="field-label" for="opensAt">Let it open at a set time</label><div class="schedule-row"><input type="datetime-local" id="opensAt" class="text-input" aria-describedby="opensAtHelp"><button type="button" class="schedule-clear" id="clearOpensAt" hidden>Clear</button></div><p class="privacy-small" id="opensAtHelp">Until then the link shows a “not yet” page. Leave it empty to open right away. Up to 120 days ahead.</p></div><label class="settings-line"><input type="checkbox" id="sharePreviewToggle" checked><span>Show their name in link previews<small>Previews and the downloadable artwork show the name, never private photos or messages.</small></span></label></div></details><div class="service-label offline" id="deliveryStatus" hidden></div><p class="backend-publish-note" id="backendPublishNote"></p>`;
+ panels[2].innerHTML=`<div id="reviewSummary" hidden></div><p class="price-line" id="priceLine" hidden></p><details class="more-options" id="moreOptions"><summary><span>More options</span><span class="detail-chevron">${icon('chevron')}</span></summary><div class="more-options-body"><div class="quiet-field"><label class="field-label" for="deliverySelect">Link type</label><select id="deliverySelect"><option value="hosted" id="hostedOption" disabled>Short link (recommended)</option><option value="portable">Standalone: long link or downloadable file</option></select></div><div class="quiet-field" id="expiryField" hidden><label class="field-label" for="expiryDays">Keep the link live for</label><select id="expiryDays"><option value="0">No expiry</option><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option></select><p class="privacy-small">After that the link stops working. Downloaded copies cannot be recalled.</p></div><div class="quiet-field" id="scheduleField" hidden><label class="field-label" for="opensAt">Let it open at a set time</label><div class="schedule-row"><input type="datetime-local" id="opensAt" class="text-input" aria-describedby="opensAtHelp"><button type="button" class="schedule-clear" id="clearOpensAt" hidden>Clear</button></div><p class="privacy-small" id="opensAtHelp">Until then the link shows a “not yet” page. Leave it empty to open right away. Up to 120 days ahead.</p></div><label class="settings-line"><input type="checkbox" id="sharePreviewToggle" checked><span>Show their name in link previews<small>Previews and the downloadable artwork show the name, never private photos or messages.</small></span></label></div></details><div class="service-label offline" id="deliveryStatus" hidden></div><p class="backend-publish-note" id="backendPublishNote"></p>`;
  panels.forEach(p=>form.append(p));
  $('#vibeGrid').innerHTML=VIBES.map(v=>`<button type="button" class="vibe-btn" data-vibe="${v.name}" aria-pressed="${v.name===draft.vibe}"><span class="vibe-icon" aria-hidden="true">${v.symbol}</span><strong>${v.name}</strong><span class="vibe-caption">${THEMES[v.name].caption}</span></button>`).join('');
- $('.dock-buttons').innerHTML=`<button type="button" class="wizard-back" id="wizardBack" data-v2="wizard-back" hidden>← Back</button><button type="button" class="btn btn-secondary" id="dockPreview" data-action="preview" hidden>${icon('eye')} Preview</button><button type="button" class="btn btn-primary" id="wizardNext" data-v2="wizard-next">Next: your words ${icon('arrow')}</button><button type="button" class="btn btn-primary" id="createGiftBtn" data-action="publish" hidden>Create My Gift ${icon('spark')}</button>`;
+ $('.editor-dock').insertAdjacentHTML('afterbegin','<button type="button" class="dock-nudge" id="dockNudge" data-v2="nudge-photo" hidden><span aria-hidden="true">📷</span> Words only so far. <u>Add a photo or voice note</u></button>');
+ $('.dock-buttons').innerHTML=`<button type="button" class="btn btn-secondary" id="dockPreview" data-action="preview" hidden>${icon('eye')} Peek</button><button type="button" class="btn btn-primary" id="createGiftBtn" data-action="publish">${createLabel()}</button>`;
  $('#musicDetail .detail-body').insertAdjacentHTML('beforeend',`<div class="audio-preview"><button type="button" class="btn btn-secondary btn-small" id="previewMusic" data-v2="preview-music">${icon('music')} Listen a little</button><label for="musicVolume">Volume <span id="volumeReadout">24%</span></label><input type="range" id="musicVolume" min="0" max="65" value="24" aria-label="Background music volume"></div>`);
  $('#moreOptions .more-options-body').insertAdjacentHTML('beforeend','<div class="field-gap"><label class="field-label" for="replyPhone">Get replies on WhatsApp <small>Optional</small></label><input class="text-input" type="tel" id="replyPhone" inputmode="tel" maxlength="18" placeholder="Country code + number, e.g. 919876543210"><p class="input-help">Their thank-you can then come straight to your WhatsApp. Your number becomes part of the gift link, so only add one you are happy to share.</p></div>');
  $('#funChoices').insertAdjacentHTML('beforeend','<button type="button" class="surprise-choice" data-fun="gifts" aria-pressed="false"><span>🎁</span>Pick a mystery gift</button>');
@@ -653,6 +662,11 @@ function installWizard(){
  $('#creatorView').insertAdjacentHTML('afterend','<main id="myGiftsView" class="view my-gifts-view" hidden><button class="back-link" data-action="home">← Back to the little magic</button><div class="eyebrow" style="margin-top:20px">Your little corner of the internet</div><h1>Gifts you’ve<br><em>put your heart into.</em></h1><p class="my-gifts-intro">No account needed. This browser remembers your gifts. Save each private recovery link to edit from another device. Keep those links just for you.</p><div id="savedGiftList"></div><button class="btn btn-primary" data-action="create">Make another little gift ♡</button></main>');
  document.body.insertAdjacentHTML('beforeend','<dialog class="crop-dialog" id="cropDialog" aria-labelledby="cropTitle"><h2 id="cropTitle">A little closer.</h2><p>Drag to frame your photo, or use the sliders. The original stays safely in your draft.</p><div class="crop-window" id="cropWindow"><img id="cropImage" alt="Photo crop preview" draggable="false"><span class="crop-guides" aria-hidden="true"></span></div><div class="crop-controls"><label>Left / right <input type="range" id="cropX" min="0" max="100" value="50"></label><label>Up / down <input type="range" id="cropY" min="0" max="100" value="50"></label><label>A little zoom <input type="range" id="cropZoom" min="1" max="2" step=".01" value="1"></label></div><div class="crop-actions"><button class="btn btn-secondary btn-small" data-v2="cancel-crop">Keep it as it was</button><button class="btn btn-primary btn-small" data-v2="save-crop">That’s the moment ♡</button></div></dialog>');
  // Copy is descriptive in both connected and standalone mode.
+ {const pz=$('#photosDetail .detail-body'),alt=document.createElement('details');alt.className='alt-source';alt.innerHTML='<summary>Use an image link instead</summary>';alt.append($('.or-line',pz),$('.inline-field',pz));$('.upload-zone',pz).after(alt);}
+ {const vb=$('#voiceDetail .detail-body'),alt=document.createElement('details');alt.className='alt-source';alt.innerHTML='<summary>Use an audio link instead</summary>';alt.append($('label[for=voiceUrl]',vb),$('#voiceUrl'));$('.or-line',vb).remove();vb.prepend($('.recorder-row',vb),$('.upload-zone',vb));vb.append(alt);}
+ {const ta=$('#personalMessage');ta.insertAdjacentHTML('afterend','<div class="note-tools"><button type="button" class="note-shuffle" id="noteShuffle" data-v2="note-shuffle">↻ Try another</button><span class="note-hint" id="noteHint" role="status"></span></div>');}
+ $('#panelOneIntro')||panels[1].insertAdjacentHTML('afterbegin','<div class="make-theirs" id="panelOneIntro"><h3>Make it <em>theirs</em></h3><span>All optional</span></div>');
+ $('#recipientName').setAttribute('enterkeyhint','go');$('#recipientName').setAttribute('autocapitalize','words');
  $('#photosDetail .input-help').textContent='Photos are compressed on your device. Crop and reorder them below. They upload only when you choose a server-backed gift.';
  $('#voiceDetail .input-help').textContent='Recording asks for your microphone. Your note stays in the draft until you create a gift. You can listen before sending.';
  $('#giftForm').dataset.v2Installed='true';
@@ -835,7 +849,7 @@ async function publishGift(){
  publishedStatus='paid';publishedGift={...g,id:hexToken(12),server:false};const encoded=await encodeGift(publishedGift);const candidate=buildGiftURL(encoded);publishedURL=candidate.length<=8000?candidate:'';
  await store('gift:'+publishedGift.id,publishedGift).catch(()=>{toast('This browser cannot keep this gift. Download its HTML before closing.');});editing={mode:'portable',id:publishedGift.id};rememberGift({id:publishedGift.id,name:g.name,vibe:g.vibe,occasion:g.occasion,mode:'portable',url:publishedURL});
  }
- await store('lastGift',publishedGift).catch(()=>{});showShare();saveDraft();
+ await store('lastGift',publishedGift).catch(()=>{});try{if(g.sender)localStorage.setItem('kholona.sender',g.sender);}catch{}showShare();saveDraft();
  }catch(err){toast(err.message||'The ribbon got tangled. Your draft is still here.');}finally{publishing=false;btn.disabled=false;btn.innerHTML=createLabel();}
 }
 function showShare(){
@@ -1102,7 +1116,7 @@ async function downloadGiftHTML(){
 async function nativeShare(){if(!publishedURL||!publicHosting())return;const data={title:occasionOf(publishedGift).label+(publishedGift.sharePreview===false?' for you':' for '+publishedGift.name),text:'Psst… I made you a little Kholona. Kholo na, when you have a quiet moment. ♡',url:publishedURL};try{if(navigator.share)await navigator.share(data);else await copyText(publishedURL);}catch(err){if(err.name!=='AbortError')toast('Sharing is unavailable here. Copy the little link instead.');}}
 async function shareCover(){if(!coverData)return;const blob=await (await fetch(coverData)).blob();const file=new File([blob],'a-little-gift.png',{type:'image/png'});try{if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:occasionOf(publishedGift).label,text:publishedURL||'A little world, made just for you.'});else{downloadBlob(blob,'a-little-gift.png');toast('Artwork saved. Attach it with the gift link in your message.');}}catch(err){if(err.name!=='AbortError')toast('This browser cannot share artwork directly. Use Save the little artwork.');}}
 async function showLibrary(){clearGiftHash();showView('library');$('#savedGiftList').innerHTML=libraryCache.length?libraryCache.map(entry=>`<article class="saved-gift"><span aria-hidden="true">${THEMES[entry.vibe]?.symbol||'♡'}</span><div><h2>For ${e(entry.name||'your person')}.</h2><p>${e(occasionOf(entry).short)} · ${e(entry.vibe||'A little')} · ${entry.mode==='hosted'?'A live little world':'A standalone keepsake'}${entry.at?' · '+e(new Date(entry.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</p><div class="saved-actions"><button data-v2="edit-saved" data-id="${e(entry.id)}">Open & edit</button><button data-v2="copy-saved" data-id="${e(entry.id)}">${entry.url?'Copy gift link':'Open gift file options'}</button>${entry.mode==='hosted'?`<button data-v2="stats" data-id="${e(entry.id)}">Little replies</button><button data-v2="copy-recovery" data-id="${e(entry.id)}">Private recovery link</button>`:''}<button class="danger" data-v2="delete-saved" data-id="${e(entry.id)}">${entry.mode==='hosted'?'Remove gift':'Forget here'}</button></div><div class="saved-stats" id="stats-${e(entry.id)}" hidden></div></div></article>`).join(''):'<p class="empty-shelf">No ribbons tied just yet.<br>Your first little gift belongs right here.</p>';}
-async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);publishedStatus=result.status||'paid';publishedExpiresAt=result.expiresAt||'';setOpensAt(result.opensAt);editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
+async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);publishedStatus=result.status||'paid';publishedExpiresAt=result.expiresAt||'';setOpensAt(result.opensAt);editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt,waiting:publishedStatus==='preview'});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
 async function showStats(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const root=$('#stats-'+id);root.hidden=false;root.textContent='Opening the little postbox…';try{const stats=await api('/api/gifts/'+id+'/stats',{key:entry.key});const counts=stats.reactions.map(r=>`${e(r.reaction)} ${r.count}`).join(' · ')||'No emoji replies yet';root.innerHTML=`${stats.status==='preview'?`<p><strong>Waiting to be unlocked.</strong> Only you can see this gift until then. <button type="button" data-v3="unlock-saved" data-id="${e(id)}">Unlock & get link</button></p>`:''}<p>${stats.opens} ${stats.opens===1?'opening':'openings'} · ${counts}</p><p class="privacy-small">Approximate openings, deduplicated per browser session. Replies are anonymous; we don’t verify who sends them.</p>${stats.replies.length?stats.replies.map(r=>`<blockquote>${e(r.reaction)} ${e(r.message||'A little feeling, sent back with love.')}</blockquote>`).join(''):'<p>Nothing here yet. Give them a little room to smile.</p>'}${stats.expiresAt?'<p>Expires '+e(new Date(stats.expiresAt).toLocaleString())+'</p>':''}`;}catch(err){root.textContent=err.message;}}
 async function deleteSaved(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const message=entry.mode==='hosted'?'Remove this gift? Its live link, uploaded media and replies will stop being available. Downloaded copies cannot be recalled.':'Forget this gift in this browser? Links and already-downloaded copies will still work.';if(!window.confirm(message))return;try{if(entry.mode==='hosted')await api('/api/gifts/'+id,{method:'DELETE',key:entry.key});await removeStored('gift:'+id).catch(()=>{});libraryCache=libraryCache.filter(v=>v.id!==id);saveLibrary();if(editing?.id===id)editing=null;showLibrary();toast('A little space on the shelf.');}catch(err){toast(err.message);}}
 function visitorToken(){const k='luv4u.visitor.'+gift.id;try{let value=sessionStorage.getItem(k);if(!/^[a-f0-9]{32}$/.test(value||'')){value=hexToken(16);sessionStorage.setItem(k,value);}return value;}catch{if(!window.__luvVisitor)window.__luvVisitor=hexToken(16);return window.__luvVisitor;}}
@@ -1124,12 +1138,12 @@ async function startBlowing(){
 }
 function bindV2(){
  document.addEventListener('click',async event=>{
- const step=event.target.closest('[data-wizard-step]');if(step){event.preventDefault();const to=+step.dataset.wizardStep;if(to===2&&wizardStep<2){if(wizardStep===0)setStep(1);else advanceWizard();}else setStep(to);return;}
+ 
  const crop=event.target.closest('[data-crop]');if(crop){openCrop(+crop.dataset.crop);return;}
  const move=event.target.closest('[data-move]');if(move){const [kind,i,delta]=move.dataset.move.split(':');moveItem(kind,+i,+i+(+delta));return;}
  const b=event.target.closest('[data-v2]');if(!b)return;event.preventDefault();const id=b.dataset.id;
  switch(b.dataset.v2){
- case'wizard-next':advanceWizard();break;case'wizard-back':setStep(wizardStep-1);break;case'skip-extras':skipTouches();break;case'choose-touches':chooseTouches();break;case'choose-touch':chooseTouches(b.dataset.detail);break;case'edit-touches':chooseTouches();break;
+ case'wizard-next':advanceWizard();break;case'wizard-back':setStep(0);break;case'note-shuffle':autoNote(1);break;case'nudge-photo':chooseTouches('photosDetail');setTimeout(()=>$('#photoUpload')?.click(),0);break;case'nudge-voice':chooseTouches('voiceDetail');break;case'skip-extras':skipTouches();break;case'choose-touches':chooseTouches();break;case'choose-touch':chooseTouches(b.dataset.detail);break;case'edit-touches':chooseTouches();break;
  case'library':showLibrary();break;case'preview-music':previewMusic();break;case'cancel-crop':closeCrop(false);break;case'save-crop':closeCrop(true);break;
  case'choose-path':choosePath(b.dataset.path);break;case'pick-gift':pickMystery(b);break;case'custom-quiz':customQuiz(b);break;
  case'reveal-quiz':{const right=$('[data-right=true]');if(right){$('#quizHint').textContent='A tiny hint: '+gift.quizAnswer+'. Give it a tap. ♡';}break;}
@@ -1142,7 +1156,14 @@ function bindV2(){
  case'copy-saved':{const entry=libraryCache.find(v=>v.id===id);if(!entry)break;if(entry.url)copyText(entry.url);else{try{publishedGift=await store('gift:'+id);if(!publishedGift)throw new Error('This gift is no longer saved in the browser.');publishedURL='';showShare();}catch(err){toast(err.message);}}break;}
  }
  });
- $('#giftForm').addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();if(wizardStep<3)advanceWizard();else publishGift();},true);
+ $('#giftForm').addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();/* Enter creates the gift only from the name field; in any other field it must never send someone off mid-sentence. */if(document.activeElement===$('#recipientName'))advanceWizard();},true);
+ $('#recipientName').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();advanceWizard();}});
+ $('#giftForm').addEventListener('input',event=>{
+  const id=event.target.id;
+  if(id==='personalMessage'&&!applyingMessageTemplate){const st=getTemplateState(event.target);st.manual=!event.target.value.trim();renderMediaStatus();}
+  if(id==='recipientName'||id==='senderName')scheduleAutoNote();
+ });
+ document.addEventListener('click',event=>{if(event.target.closest('[data-vibe]'))setTimeout(()=>autoNote(),0);});
  $('#giftForm').addEventListener('input',event=>{const el=event.target;const simple={replyPhone:'replyPhone',quizQuestion:'quizQuestion',quizAnswer:'quizAnswer'};if(simple[el.id])draft[simple[el.id]]=el.value;if(el.id.startsWith('quizDecoy')){draft.quizOptions=draft.quizOptions||[];draft.quizOptions[+el.id.slice(-1)]=el.value;}if(el.id==='musicVolume'){draft.volume=+el.value/100;$('#volumeReadout').textContent=el.value+'%';if(previewAudio)previewAudio.volume=draft.volume;if(previewGain)previewGain.gain.value=draft.volume*.2;}if(el.id==='branchToggle')draft.branch=el.checked;if(el.id==='motionToggle')draft.motion=el.checked;if(el.id==='sharePreviewToggle')draft.sharePreview=el.checked;saveDraft();});
  $('#giftForm').addEventListener('change',event=>{if(event.target.id==='deliverySelect'){delivery=event.target.value;updateDelivery();}if(event.target.id==='expiryDays')event.target.dataset.changed='true';});
  $('#giftForm').addEventListener('click',event=>{if(event.target.closest('[data-music]'))stopPreviewAudio();if(event.target.closest('[data-vibe]')&&(previewAudio||previewMelody))stopPreviewAudio();const b=event.target.closest('[data-remove-audio]');if(b){if(b.dataset.removeAudio==='voice')$('#voiceUrl').value='';else{$('#musicUrl').value='';stopPreviewAudio();}}});
@@ -1357,7 +1378,7 @@ function bindMessageTemplates(){
 $('#vibeGrid').innerHTML=VIBES.map(v=>`<button type="button" class="vibe-btn" data-vibe="${v.name}" aria-pressed="${v.name===draft.vibe}"><span class="vibe-icon" aria-hidden="true">${v.symbol}</span>${v.name}</button>`).join('');
 $('#homeRoomBg').innerHTML=portraitSVG('home-room');$('#editorRoomBg').innerHTML=portraitSVG('editor-room');$('#homeCandle').innerHTML=cakeSVG('home-cake');$('#editorCake').innerHTML=cakeSVG('editor-cake');
 document.addEventListener('click',event=>{
- const button=event.target.closest('[data-action]');if(!button)return;event.preventDefault();switch(button.dataset.action){case'home':goHome();break;case'create':browseGifts();break;case'preview':previewGift();break;case'publish':publishGift();break;case'edit':wizardStep=1;populateForm();showView('creator');break;}
+ const button=event.target.closest('[data-action]');if(!button)return;event.preventDefault();switch(button.dataset.action){case'home':goHome();break;case'create':browseGifts();break;case'preview':previewGift();break;case'publish':publishGift();break;case'edit':wizardStep=0;populateForm();showView('creator');setStep(0,false);break;}
 });
 $('#giftForm').addEventListener('submit',event=>{event.preventDefault();publishGift();});
 $('#giftForm').addEventListener('input',event=>{
@@ -1581,7 +1602,7 @@ function updateOccasionUI(){
  $('.preview-aside>.eyebrow').textContent='A peek inside their '+(birth?'birthday':'little gift');
  $('#previewLiveTag').textContent=draft.name.trim()?`${draft.name.trim()}’s little ${o.short.toLowerCase()} is ready`:'Their little world is almost ready';
  $('#dockNote').textContent=draft.name.trim()?o.label+' · for '+draft.name.trim()+'.':'A name. That’s all the magic needs.';
- $('#vibePreviewLine').textContent=birth?THEMES[draft.vibe].line:'';
+ $('#vibePreviewLine').textContent=moodLine();
  /* For a birthday the mood rewrites the words. For every other gift it sets the colours and soft sounds, so it is offered as a look, and says so. */
  const captions={Romantic:'Rose & candlelight',Cute:'Soft pink',Funny:'Warm amber',Emotional:'Quiet dusk',Crazy:'Bold terracotta',Elegant:'Muted gold'};
  $('#vibeGrid').classList.toggle('is-look',!birth);
@@ -1598,10 +1619,10 @@ function updateOccasionUI(){
  $('#branchToggle').closest('label').hidden=!birth;$('#funDetail').hidden=key==='apology';$('#funMessage').placeholder=birth?'You’re my favorite person in the whole birthday universe.':key==='apology'?'A little thought, held with care.':'A small secret, just for you.';
  $('#quizFields .input-help').textContent='Leave this blank for a ready-made '+(birth?'birthday':'little')+' question. Wrong guesses get a friendly hint, never a dead end.';
  $('#finalDetail .detail-title').textContent=key==='apology'?'One final thought':'One last surprise';
-  $('.wizard-steps').setAttribute('aria-label',o.label+' creation steps');renderOccasionDetails();
+  renderOccasionDetails();
 }
 function installOccasions(){
- if(!$('#occasionRibbon'))$('.wizard-steps').insertAdjacentHTML('beforebegin','<div class="occasion-ribbon" id="occasionRibbon"><span class="occasion-ribbon-label" id="occasionRibbonLabel"></span><button type="button" data-v3="change-gift">Change gift</button></div>');
+ if(!$('#occasionRibbon'))$('.creator-head').insertAdjacentHTML('beforebegin','<div class="occasion-ribbon" id="occasionRibbon"><span class="occasion-ribbon-label" id="occasionRibbonLabel"></span><button type="button" data-v3="change-gift">Change gift</button></div>');
  if(!$('#occasionGuide'))$('[data-step="0"]').insertAdjacentHTML('beforeend','<aside class="occasion-guide" id="occasionGuide" aria-label="A preview of the recipient journey"></aside>');
  if(!$('#occasionDetail'))$('#noteDetail').insertAdjacentHTML('afterend','<details class="detail" id="occasionDetail" hidden></details>');
  $('#editorRoom .portrait-title h2').innerHTML='<span id="previewGreeting">Happy Birthday,</span><br><em id="previewName">your person.</em>';

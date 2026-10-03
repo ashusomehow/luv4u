@@ -189,3 +189,45 @@ input[type=range]{min-height:44px}
 /* Inside the phone on the unlock page: only the gift, none of the editing chrome */
 html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
 .pay-btn{width:100%;min-height:54px;font-size:16px}
+
+/* ---------- One-page creator: name, a visible ready-made note, photos and voice, one button ---------- */
+.creator .step-help,.creator .step-count-note{display:none}
+.creator .wizard-panel{min-height:0}
+.creator .vibe-grid,.creator .vibe-grid.is-look{display:flex;flex-wrap:wrap;gap:8px}
+.creator .vibe-grid .vibe-btn{flex:0 0 auto;min-height:44px;padding:0 15px;flex-direction:row;align-items:center;justify-content:center;gap:8px;border-radius:999px;text-align:center}
+.creator .vibe-grid .vibe-btn .vibe-icon{position:static;font-size:16px}
+.creator .vibe-grid .vibe-btn strong{font-size:13px;font-weight:600}
+.creator .vibe-grid .vibe-caption{display:none}
+.creator .vibe-grid.is-look .vibe-btn::before{width:16px;height:16px}
+.creator .vibe-preview-line{margin:12px 0 4px;font-size:15px;min-height:22px}
+.make-theirs{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 0 10px;padding-top:20px;border-top:1px solid var(--line)}
+.make-theirs h3{margin:0;font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:-.3px;color:var(--ink)}
+.make-theirs h3 em{color:var(--rose)}
+.make-theirs span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6a3341}
+.note-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 0}
+.note-shuffle{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid #c78e98;background:#fff;color:#8d3f51;font-size:13px;font-weight:600}
+.note-shuffle:hover{background:#f8ede9}
+.note-shuffle[hidden]{display:none}
+.note-hint{flex:1 1 180px;font-size:12px;line-height:1.5;color:#5b4549}
+.alt-source{margin:10px 0 0}
+.alt-source summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#6a3341;text-decoration:underline;text-underline-offset:4px}
+.alt-source[open] summary{margin-bottom:6px}
+.media-nudge{margin:18px 0 12px;padding:14px 16px;border:1px dashed #c78e98;border-radius:18px;background:#fdf3ee}
+.media-nudge[hidden]{display:none}
+.media-nudge p{margin:0 0 10px;font-size:13px;line-height:1.55;color:#432d32}
+.media-nudge-actions{display:flex;gap:8px;flex-wrap:wrap}
+/* One line in the sticky bar: leaving photos and voice out is visible right beside the button, never a missed step */
+.dock-nudge{display:block;width:100%;max-width:510px;margin:0 auto 8px;min-height:36px;padding:2px 6px;text-align:center;font-size:12px;line-height:1.4;color:#5b4549}
+.dock-nudge[hidden]{display:none}
+.dock-nudge u{color:#8d3f51;font-weight:600;text-underline-offset:3px}
+@media(min-width:761px){.dock-nudge{max-width:1064px;text-align:right}}
+.creator #personalMessage{min-height:150px;field-sizing:content;max-height:320px}
+@media(max-width:760px){.creator .occasion-guide{display:none}}
+.creator .vibe-grid.is-look .vibe-btn{flex-direction:row;min-height:44px;padding:0 15px;text-align:center}
+.creator .vibe-grid.is-look .vibe-caption{display:none}
+.creator .vibe-grid.is-look .vibe-btn strong{font-size:13px}
+/* A quiet glow when the ready-made note is written or swapped, so the change is noticed without any sound or movement of the page */
+.note-fresh{animation:noteGlow 1s ease-out}
+@keyframes noteGlow{0%{box-shadow:0 0 0 3px rgba(170,82,101,.35);background:#fdf3ee}100%{box-shadow:0 0 0 0 rgba(170,82,101,0)}}
+@media(prefers-reduced-motion:reduce){.note-fresh{animation:none}}
+#noteDetail .input-help{display:none}
