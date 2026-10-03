@@ -56,3 +56,28 @@
 .report-link:hover{color:#fff3e6}
 .report-line{margin:18px 0 0;text-align:center}
 .report-line .report-link{color:#6f5b60}
+
+/* ---------- Gift 2.0: touch feedback, one-touch moments, a finale worth answering ---------- */
+.burst-ring{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid rgba(255,226,180,.95);box-shadow:0 0 26px rgba(255,208,140,.65),inset 0 0 14px rgba(255,208,140,.5);pointer-events:none;z-index:70;animation:burstRing 1.15s cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes burstRing{from{transform:scale(.4);opacity:1}to{transform:scale(15);opacity:0}}
+.rise-balloon{position:absolute;bottom:-90px;left:var(--x);width:34px;height:44px;margin-left:-17px;border-radius:50% 50% 46% 46%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),transparent 38%),var(--c);opacity:.9;pointer-events:none;z-index:7;transform:scale(var(--s));animation:riseBalloon 5.6s cubic-bezier(.3,.1,.6,1) var(--d) forwards}
+.rise-balloon::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:52px;background:rgba(150,110,100,.45)}
+@keyframes riseBalloon{0%{transform:translate(0,0) scale(var(--s))}50%{transform:translate(14px,-62vh) scale(var(--s)) rotate(4deg)}100%{transform:translate(-8px,-130vh) scale(var(--s)) rotate(-4deg);opacity:0}}
+.finale-react{margin:18px 0 2px;text-align:center}
+.finale-react-title{margin:0;font-family:var(--serif);font-style:italic;font-size:19px}
+.finale-react .reactions{margin:12px auto 6px}
+.finale-sent{min-height:22px;margin:4px 0 0;font-size:13px;line-height:1.5}
+.finale-links{display:flex;flex-wrap:wrap;gap:0 18px;justify-content:center;margin:2px 0 0}
+.finale-links .story-soft-skip{margin-top:6px}
+.gratitude-cards{display:grid;gap:10px;width:100%;max-width:440px;margin:14px auto 4px;min-height:24px;text-align:center}
+.gratitude-hint{margin:0;font-size:14px;line-height:1.6;opacity:.85}
+.thanks-card{margin:0;padding:12px 16px;border-radius:16px;background:#fff8ed;border:1px solid #e0cfb8;color:#6d5058;font-family:var(--serif);font-size:16px;line-height:1.5;animation:cardIn .7s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.story-soft-skip.is-ready{animation:cardIn .6s ease both}
+.storybook{cursor:pointer}
+@media(prefers-reduced-motion:reduce){.burst-ring,.rise-balloon{display:none}.thanks-card,.story-soft-skip.is-ready{animation:none}}
+.lw{opacity:0;animation:lwIn .7s ease forwards;animation-delay:var(--d)}
+@keyframes lwIn{from{opacity:0;filter:blur(3px)}to{opacity:1;filter:none}}
+.message-scene .letter-paper{animation:letterRise .95s cubic-bezier(.2,.8,.2,1) both}
+@keyframes letterRise{from{opacity:0;transform:translateY(34px) scale(.96) rotateX(14deg)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.lw,.message-scene .letter-paper{animation:none;opacity:1;filter:none}}

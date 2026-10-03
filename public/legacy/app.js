@@ -152,7 +152,7 @@ let homeOccasion='love',journeyReply='',proposalAnswer='',openedNotes=new Set(),
 let backendOccasions=['birthday'];
 const occasionDrafts=new Map();
 
-const emptyDraft = () => ({occasion:'birthday',proposalKind:'relationship',proposalQuestion:'',reasons:[],commitment:'',togetherSince:'',milestone:'',reunionMessage:'',name:'',vibe:'Cute',message:'',sender:'',photos:[],memories:[],voice:'',voiceName:'',music:'none',musicSrc:'',musicName:'',volume:.24,branch:true,motion:true,sharePreview:true,replyPhone:'',quizQuestion:'',quizAnswer:'',quizOptions:[],fun:'none',funMessage:'',finalMessage:'',finalUrl:''});
+const emptyDraft = () => ({occasion:'birthday',proposalKind:'relationship',proposalQuestion:'',reasons:[],commitment:'',togetherSince:'',milestone:'',reunionMessage:'',name:'',vibe:'Cute',message:'',sender:'',photos:[],memories:[],voice:'',voiceName:'',music:'none',musicSrc:'',musicName:'',volume:.24,branch:false,motion:true,sharePreview:true,replyPhone:'',quizQuestion:'',quizAnswer:'',quizOptions:[],fun:'none',funMessage:'',finalMessage:'',finalUrl:''});
 let draft=emptyDraft(), currentView='home', publishedGift=null, publishedURL='', previewReturn='creator', gift=null, scenes=[], sceneIndex=0, transitionBusy=false, experienceToken=0, saveTimer, toastTimer, localStorageOkay=true, photoBusy=false;
 let micStream=null, micFrame=null, micTimeout=null, mediaRecorder=null, recordedChunks=[], recordInterval=null, recordingSeconds=0, recordingGeneration=0;
 let musicAudio=null, audioContext=null, masterGain=null, melodyTimer=null, melodyVoices=[], soundMuted=false, musicDucked=false, scratchCleanup=null, confettiFrame=null, voiceWasMusicPlaying=false, activeAudioNodes=new Set();
@@ -341,6 +341,45 @@ function tone(frequency,when=0,duration=.8,volume=.15,type='sine',isMelody=false
 function chime(kind='soft'){
  if(soundMuted)return;if(kind==='wish'){[523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,i*.12,1.6,.13));}else if(kind==='pop'){tone(350,0,.11,.15);tone(720,.04,.17,.07);}else{tone(659.25,0,.85,.12);tone(987.77,.13,1.2,.08);}
 }
+/* ---- A richer sound and touch kit. Everything is synthesised, short and soft, and silent when muted. ---- */
+function noise(duration=.4,freq=1800,volume=.05,type='bandpass'){
+ if(soundMuted||!ensureAudio())return;
+ try{const n=Math.floor(audioContext.sampleRate*duration),buf=audioContext.createBuffer(1,n,audioContext.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const src=audioContext.createBufferSource(),f=audioContext.createBiquadFilter(),g=audioContext.createGain();src.buffer=buf;f.type=type;f.frequency.value=freq;g.gain.value=volume;src.connect(f);f.connect(g);g.connect(masterGain);src.start();}catch{}
+}
+function sfx(kind,i=0){
+ if(soundMuted)return;
+ const up=[523.25,587.33,659.25,783.99,880,1046.5,1174.66];
+ switch(kind){
+  case'spark':[1318.5,1760,2349.3].forEach((f,k)=>tone(f,k*.07,.45,.07));break;
+  case'glow':noise(.9,900,.035,'lowpass');[261.63,329.63,392,523.25].forEach((f,k)=>tone(f,k*.05,2.2,.06));break;
+  case'whoosh':noise(.55,1400,.06);break;
+  case'pop':tone(350,0,.11,.15);tone(720,.04,.17,.07);break;
+  case'note':tone(up[i%up.length],0,1.1,.11);tone(up[i%up.length]*2,.02,.7,.04);break;
+  case'bloom':up.slice(0,5).forEach((f,k)=>tone(f,k*.08,1,.08));break;
+  case'page':noise(.22,3200,.05,'highpass');break;
+  case'heartbeat':tone(70,0,.16,.22);tone(60,.2,.2,.18);tone(70,.9,.16,.2);tone(60,1.1,.2,.16);break;
+  case'fanfare':[523.25,659.25,783.99,1046.5].forEach((f,k)=>tone(f,k*.06,1.7,.1));tone(130.81,0,1.6,.12);noise(.5,2600,.04);break;
+  case'wish':chime('wish');break;
+  default:chime('soft');
+ }
+}
+const buzz=pattern=>{if(reducedMotion)return;try{navigator.vibrate?.(pattern);}catch{}};
+const originOf=el=>{const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};};
+/* A ring of light that spreads from the thing that was just touched. */
+function ring(el){const exp=$('#experience');if(!exp||!el||reducedMotion||gift?.motion===false)return;const o=originOf(el),h=document.createElement('i');h.className='burst-ring';h.style.left=o.x+'px';h.style.top=o.y+'px';exp.append(h);setTimeout(()=>h.remove(),1300);}
+function balloons(n=7){
+ const exp=$('#experience');if(!exp||reducedMotion||gift?.motion===false)return;const colors=['#c78792','#dec4a0','#b4bba0','#f1d4b2','#b47582','#e0b6bc'];
+ for(let i=0;i<n;i++){const b=document.createElement('i');b.className='rise-balloon';b.style.cssText=`--x:${6+Math.random()*88}%;--c:${colors[i%colors.length]};--d:${(Math.random()*.9).toFixed(2)}s;--s:${(.8+Math.random()*.6).toFixed(2)}`;exp.append(b);setTimeout(()=>b.remove(),6800);}
+}
+/* After a payoff moment the gift carries on by itself. Never for an apology (that pace is theirs), and never under reduced motion;
+   a small "continue" stays for anyone who wants to go sooner. */
+let autoTimer=0;
+const clearAuto=()=>{clearTimeout(autoTimer);autoTimer=0;};
+function autoAdvance(ms,scene){
+ clearAuto();if(reducedMotion||gift.occasion==='apology')return;const token=experienceToken;
+ autoTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!==scene||transitionBusy)return;chime('soft');goToScene(sceneIndex+1);},ms);
+}
+const softNext=text=>`<button class="story-soft-skip is-ready" data-story="next">${e(text)} ${icon('arrow')}</button>`;
 function startMusicV1(){
  stopMusic();if(!gift||soundMuted||gift.music==='none')return;
  if(gift.music==='custom'&&gift.musicSrc){musicAudio=new Audio(gift.musicSrc);musicAudio.loop=true;musicAudio.volume=musicDucked?.07:.24;musicAudio.preload='none';musicAudio.addEventListener('error',()=>{if(currentView==='experience')toast("The soundtrack couldn't load. The little magic is still here.");},{once:true});musicAudio.play().catch(()=>{if(currentView==='experience')toast('Tap the sound button to try the soundtrack.');});return;}
@@ -389,7 +428,7 @@ function cleanupExperienceV1(){
 function previewGiftV1(){if(!validateForm())return;previewScrollY=window.scrollY;startExperience(collectGift(),{preview:true,returnView:'creator'});}
 function exitPreview(){const ret=previewReturn,scroll=previewScrollY;if(ret==='share')showShare();else if(ret==='home'){showView('home');requestAnimationFrame(()=>{window.scrollTo(0,scroll);$('[data-v3=home-demo]')?.focus({preventScroll:true});});}else{showView('creator');requestAnimationFrame(()=>window.scrollTo(0,scroll));}}
 async function goToScene(index){
- if(transitionBusy||index<0||index>=scenes.length)return;transitionBusy=true;const token=experienceToken;stopBlowing();if(scratchCleanup){scratchCleanup();scratchCleanup=null;}const voice=$('#recipientVoice');if(voice)voice.pause();duckMusic(false);const scene=$('#storyScene');scene.classList.add('leaving');await sleep(360);if(token!==experienceToken)return;sceneIndex=index;renderScene();transitionBusy=false;
+ if(transitionBusy||index<0||index>=scenes.length)return;transitionBusy=true;clearAuto();clearInterval(storyAuto);const token=experienceToken;stopBlowing();if(scratchCleanup){scratchCleanup();scratchCleanup=null;}const voice=$('#recipientVoice');if(voice)voice.pause();duckMusic(false);const scene=$('#storyScene');scene.classList.add('leaving');await sleep(360);if(token!==experienceToken)return;sceneIndex=index;renderScene();transitionBusy=false;
 }
 function renderSceneV1(){
  const type=scenes[sceneIndex],s=$('#storyScene'),name=e(gift.name);s.className='story-scene '+type+'-scene';popCount=0;scratchDone=false;
@@ -477,7 +516,7 @@ let reelTimer=0,mediaBase='',paymentsRequired=false,publishedStatus='paid',payPr
 const LIBRARY_KEY='luv4u.library.v2';
 const hexToken=n=>{const bytes=new Uint8Array(n);crypto.getRandomValues(bytes);return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');};
 const clamp=(v,min,max,fallback)=>Number.isFinite(Number(v))?Math.min(max,Math.max(min,Number(v))):fallback;
-function sanitizeGift(d,needName=true){const x=sanitizeGiftV1(d,needName);x.version=3;x.server=d.server===true;x.volume=clamp(d.volume,0,.65,.24);x.branch=d.branch!==false;x.motion=d.motion!==false;x.sharePreview=d.sharePreview!==false;x.replyPhone=cleanText(d.replyPhone,18).replace(/\D/g,'');x.fun=['none','balloons','scratch','quiz','gifts'].includes(d.fun)?d.fun:'none';x.quizQuestion=cleanText(d.quizQuestion,140);x.quizAnswer=cleanText(d.quizAnswer,80);x.quizOptions=(Array.isArray(d.quizOptions)?d.quizOptions:[]).slice(0,3).map(v=>cleanText(v,80));x.photos=x.photos.map((p,i)=>({...p,x:clamp(d.photos[i]?.x,0,100,50),y:clamp(d.photos[i]?.y,0,100,50),zoom:clamp(d.photos[i]?.zoom,1,2,1)}));x.occasion=Object.hasOwn(OCCASIONS,d.occasion)?d.occasion:'birthday';
+function sanitizeGift(d,needName=true){const x=sanitizeGiftV1(d,needName);x.version=3;x.server=d.server===true;x.volume=clamp(d.volume,0,.65,.24);x.branch=d.branch===true;x.motion=d.motion!==false;x.sharePreview=d.sharePreview!==false;x.replyPhone=cleanText(d.replyPhone,18).replace(/\D/g,'');x.fun=['none','balloons','scratch','quiz','gifts'].includes(d.fun)?d.fun:'none';x.quizQuestion=cleanText(d.quizQuestion,140);x.quizAnswer=cleanText(d.quizAnswer,80);x.quizOptions=(Array.isArray(d.quizOptions)?d.quizOptions:[]).slice(0,3).map(v=>cleanText(v,80));x.photos=x.photos.map((p,i)=>({...p,x:clamp(d.photos[i]?.x,0,100,50),y:clamp(d.photos[i]?.y,0,100,50),zoom:clamp(d.photos[i]?.zoom,1,2,1)}));x.occasion=Object.hasOwn(OCCASIONS,d.occasion)?d.occasion:'birthday';
  if(x.occasion==='proposal'){x.proposalKind=Object.hasOwn(PROPOSAL_QUESTIONS,d.proposalKind)?d.proposalKind:'relationship';x.proposalQuestion=cleanText(d.proposalQuestion,140);}
  if(['love','thanks'].includes(x.occasion))x.reasons=(Array.isArray(d.reasons)?d.reasons:[]).slice(0,3).map(v=>cleanText(v,160));
  if(x.occasion==='apology'){x.commitment=cleanText(d.commitment,300);x.fun='none';x.branch=false;if(!['Emotional','Elegant'].includes(x.vibe))x.vibe='Emotional';}
@@ -598,7 +637,7 @@ function updateMiniPreview(){const box=$('#miniPreview');if(box)box.hidden=true;
 
 function validateForm(){if(!draft.name.trim())setStep(0,false);for(const id of ['voiceUrl','musicUrl','finalUrl']){const input=$('#'+id);if(input.value.trim()&&!safeWebURL(input.value)){setStep(1,false);}}return validateFormV1();}
 function updatePreview(){updatePreviewV1();if(!$('#createGiftBtn'))return;$('#createGiftBtn').classList.toggle('is-ready',!!draft.name.trim());$('#vibePreviewLine').textContent=moodLine();$('#editorRoom').dataset.vibe=draft.vibe;$('#editorRoom').style.filter=draft.vibe==='Elegant'?'saturate(.55)':draft.vibe==='Crazy'?'saturate(1.15)':'';$('#quizFields').hidden=draft.fun!=='quiz';updateMiniPreview();updateOccasionUI();renderMediaNudge();if($('#dockPreview'))$('#dockPreview').hidden=!draft.name.trim();}
-function populateForm(){populateFormV1();if(!$('#musicVolume'))return;$('#musicVolume').value=Math.round((draft.volume??.24)*100);$('#volumeReadout').textContent=Math.round((draft.volume??.24)*100)+'%';$('#replyPhone').value=draft.replyPhone||'';$('#branchToggle').checked=draft.branch!==false;$('#motionToggle').checked=draft.motion!==false;$('#sharePreviewToggle').checked=draft.sharePreview!==false;$('#quizQuestion').value=draft.quizQuestion||'';$('#quizAnswer').value=draft.quizAnswer||'';for(let i=0;i<2;i++)$('#quizDecoy'+i).value=draft.quizOptions?.[i]||'';updateOccasionUI();renderOccasionDetails(true);installMessageTemplates();adoptOwnedNote();prefillSender();refreshMessageTemplates();updateDelivery();}
+function populateForm(){populateFormV1();if(!$('#musicVolume'))return;$('#musicVolume').value=Math.round((draft.volume??.24)*100);$('#volumeReadout').textContent=Math.round((draft.volume??.24)*100)+'%';$('#replyPhone').value=draft.replyPhone||'';$('#branchToggle').checked=draft.branch===true;$('#motionToggle').checked=draft.motion!==false;$('#sharePreviewToggle').checked=draft.sharePreview!==false;$('#quizQuestion').value=draft.quizQuestion||'';$('#quizAnswer').value=draft.quizAnswer||'';for(let i=0;i<2;i++)$('#quizDecoy'+i).value=draft.quizOptions?.[i]||'';updateOccasionUI();renderOccasionDetails(true);installMessageTemplates();adoptOwnedNote();prefillSender();refreshMessageTemplates();updateDelivery();}
 function updateDelivery(){if(!$('#deliverySelect'))return;$('#deliverySelect').closest('.quiet-field').hidden=paymentsRequired;$('#hostedOption').disabled=!backendReady;$('#deliverySelect').value=editing?.mode==='hosted'?'hosted':delivery;$('#deliverySelect').disabled=editing?.mode==='hosted';$('#expiryField').hidden=(editing?.mode==='hosted'?'hosted':delivery)!=='hosted'||paymentsRequired;$('#scheduleField').hidden=(editing?.mode==='hosted'?'hosted':delivery)!=='hosted';$('#deliveryStatus').hidden=backendReady;$('#deliveryStatus').classList.toggle('offline',!backendReady);$('#deliveryStatus').textContent=backendReady?'':'Short links are not available right now, so your gift will be a file or a long link you can send.';$('#backendPublishNote').textContent=delivery==='hosted'?'Photos and audio are uploaded when you create your gift. Anyone with the link can open it.':'Large media gifts are shared as a downloadable HTML file. Short, text-only gifts can travel in a link.';}
 /* Scheduled delivery: the creator picks a moment in their own time zone; the server stores it as an exact instant. */
 const localInput=iso=>{const d=new Date(iso),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;};
@@ -692,9 +731,9 @@ function buildScenes(g){
  const kind=occasionKey(g),content=g.vibe==='Emotional'?['memories','photos','message']:['message','photos','memories'];
  const core=content.filter(t=>t==='message'||t==='photos'&&g.photos.length||t==='memories'&&g.memories.some(m=>m.text.trim()));
  let list;
- if(kind==='birthday')list=['opening','birthday','cake',...(g.branch?['choice']:[]),'gift',...core];
- else if(kind==='apology')list=['opening','welcome','gift','message',...(g.commitment?.trim()?['accountability']:[]),...core.filter(t=>t!=='message')];
- else {const interaction={proposal:'gift',love:'hearts',anniversary:'storybook',thanks:'bouquet',congratulations:'ribbon',missyou:'distance'}[kind];list=['opening','welcome',interaction,...core];}
+ if(kind==='birthday')list=['opening','cake',...(g.branch?['choice']:[]),'gift',...core];
+ else if(kind==='apology')list=['opening','welcome','message',...(g.commitment?.trim()?['accountability']:[]),...core.filter(t=>t!=='message')];
+ else {const interaction={love:'hearts',anniversary:'storybook',thanks:'bouquet',congratulations:'ribbon',missyou:'distance'}[kind];list=['opening',...(interaction?[interaction]:[]),...core];}
  if(g.voice)list.push('voice');if(g.fun!=='none'&&kind!=='apology')list.push('fun');
  if(kind==='missyou'&&g.reunionMessage?.trim())list.push('reunion');
  if(kind==='proposal')list.push('proposal');
@@ -715,8 +754,9 @@ function mountSeal(){
  const hold=reducedMotion?1:1000;let raf=0,start=0,done=false;
  const open=()=>{
   if(done)return;done=true;cancelAnimationFrame(raf);gate.style.setProperty('--p',1);gate.classList.add('opening');hint.textContent='Opening…';
-  ensureAudio();chime('wish');try{navigator.vibrate?.(35);}catch{}
-  const finish=()=>{gate.remove();scroll.inert=false;$('#lightTrigger')?.focus({preventScroll:true});};
+  ensureAudio();chime('wish');buzz(35);
+  const finish=()=>{gate.remove();scroll.inert=false;};
+  setTimeout(()=>lightUp(),reducedMotion?0:650);
   if(reducedMotion){finish();return;}
   setTimeout(()=>gate.classList.add('gone'),1100);setTimeout(finish,1650);
  };
@@ -731,7 +771,7 @@ function mountSeal(){
  $('#sealSkip').onclick=open;
  btn.focus({preventScroll:true});
 }
-function cleanupExperience(){clearInterval(reelTimer);clearTimeout(finaleTimer);stopTilt();tiltEnabled=true;cleanupExperienceV1();}
+function cleanupExperience(){clearAuto();clearInterval(storyAuto);cascading=false;clearInterval(reelTimer);clearTimeout(finaleTimer);stopTilt();tiltEnabled=true;cleanupExperienceV1();}
 function previewGift(){stopPreviewAudio();previewGiftV1();}
 function renderScene(){renderSceneCore();updateUnlockTray();}
 function renderSceneCore(){
@@ -741,14 +781,14 @@ function renderSceneCore(){
  renderSceneV1();const s=$('#storyScene');
  if(type==='opening'){$('.story-title',s).innerHTML=t.opening;$('.story-eyebrow',s).textContent='A little world. Just for '+gift.name+(gift.sender?', from '+gift.sender:'')+'.';s.insertAdjacentHTML('beforeend','<p class="lighting-caption" id="lightingCaption">First, a spark. Then, the whole little room.</p>');}
  if(type==='birthday'){$('.story-description',s).textContent=t.birthday;$('.birthday-heart',s).textContent=t.symbol;}
- if(type==='cake'){$('.story-title',s).innerHTML=t.cake;$('#cakeDescription').textContent=t.cakeNote;$('#birthdayCake').style.filter=gift.vibe==='Elegant'?'saturate(.35)':gift.vibe==='Funny'?'hue-rotate(24deg)':gift.vibe==='Crazy'?'saturate(1.2)':'none';}
+ if(type==='cake'){$('.story-title',s).innerHTML=`Happy Birthday,<span class="name-line${gift.name.length>18?' long-name':''}"><em>${e(gift.name)}.</em></span>`;$('.story-eyebrow',s).textContent='Now, make a wish';s.insertAdjacentHTML('afterbegin','<svg class="birthday-garland" viewBox="0 0 180 50" fill="none" aria-hidden="true"><path d="M6 14q85 50 169 0" stroke="#b69473" stroke-width=".9"/><path d="m20 20 18 8-15 15 0-12Zm34 13 18 4-9 16-4-13Zm35 5 18-1-8 17-5-12Zm35-5 17-5 0 21-7-11Zm32-10 14-7 4 19-11-8Z" fill="#c395a0" opacity=".66"/></svg>');$('#cakeDescription').textContent=t.cakeNote;$('#birthdayCake').style.filter=gift.vibe==='Elegant'?'saturate(.35)':gift.vibe==='Funny'?'hue-rotate(24deg)':gift.vibe==='Crazy'?'saturate(1.2)':'none';}
  if(type==='gift'){$('.story-title',s).innerHTML=t.gift;}
- if(type==='message'){const button=$('[data-story=next]',s);if(button)button.innerHTML=(scenes[sceneIndex+1]==='gift'?'Your little gift is still waiting':'There’s a little more')+' '+icon('arrow');}
+ if(type==='message'){writeLetter(s);const button=$('[data-story=next]',s);if(button)button.innerHTML=(scenes[sceneIndex+1]==='gift'?'Your little gift is still waiting':'There’s a little more')+' '+icon('arrow');}
  if(type==='photos'){$$('.polaroid img',s).forEach((img,i)=>{const wrap=document.createElement('div');wrap.className='polaroid-media';img.before(wrap);wrap.append(img);img.style.cssText=cropStyle(gift.photos[i]);});}
  if(type==='celebration'){
  $('.story-title',s).innerHTML=t.finalTitle;$('.story-description',s).textContent='Happy Birthday, '+gift.name+'. '+t.symbol;
  const description=$('.story-description',s);description.insertAdjacentHTML('afterend',`<p class="finale-words" aria-label="${e(t.ending)}">${t.ending.split(' ').map((w,i)=>`<span class="fw" aria-hidden="true" style="--w:${i}">${e(w)}</span>`).join(' ')}</p>${gift.photos.length&&!reducedMotion?finaleReel():gift.photos.length?`<div class="finale-montage" aria-label="A few of your favorite moments">${gift.photos.map((p,i)=>`<figure class="finale-photo" style="--delay:${i*.18}s"><div><img src="${e(p.src)}" alt="${e(p.caption||'A favorite memory')}" style="${cropStyle(p)}" referrerpolicy="no-referrer"></div></figure>`).join('')}</div>`:''}`);
- const token=experienceToken;startReel(token);finaleTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!=='celebration')return;confetti(gift.vibe==='Crazy'?130:gift.vibe==='Elegant'?48:95);swellMusic();},reducedMotion?0:650);
+ const token=experienceToken;startReel(token);finaleTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!=='celebration')return;sfx('fanfare');buzz([30,40,80]);confetti(gift.vibe==='Crazy'?130:gift.vibe==='Elegant'?48:95);swellMusic();},reducedMotion?0:650);decorateFinale(s);
  }
  if(type==='reply'){
  mountMessageTemplates($('#recipientReply'),'reply');
@@ -760,14 +800,44 @@ function renderSceneCore(){
  if(type==='reply'&&reportLink())s.insertAdjacentHTML('beforeend','<p class="report-line">'+reportLink()+'</p>');
  adaptOccasionScene(type,s);
 }
+/* The letter writes itself, word by word, in about three seconds however long it is, and can be read as it appears. */
+function writeLetter(s){
+ const el=$('.letter-text',s);if(!el||reducedMotion||gift.motion===false)return;
+ const words=el.textContent.split(/(\s+)/),total=words.filter(w=>w.trim()).length,step=Math.min(55,3200/Math.max(total,1));let n=0;
+ el.innerHTML=words.map(w=>w.trim()?`<span class="lw" style="--d:${Math.round(n++*step)}ms">${e(w)}</span>`:e(w)).join('');sfx('page');
+}
 function choosePath(path){if(transitionBusy||scenes[sceneIndex]!=='choice')return;const pos=scenes.indexOf(path,sceneIndex+1);if(pos<0)return;scenes.splice(pos,1);scenes.splice(sceneIndex+1,0,path);chime();goToScene(sceneIndex+1);}
 async function lightUp(){
- if(transitionBusy||scenes[sceneIndex]!=='opening')return;const token=experienceToken,exp=$('#experience');ensureAudio();enableTilt(true);
- if(lightStage===0){transitionBusy=true;lightStage=1;exp.classList.add('sparked');chime('soft');const b=$('#lightTrigger');b.disabled=true;$('#lightingCaption').textContent=gift.vibe==='Funny'?'Oh good. We paid the electricity bill.':'There it is. Your first little light.';await sleep(700);if(token!==experienceToken)return;b.disabled=false;b.innerHTML='<span class="switch-orb">'+icon('bulb')+'</span><span>One more touch. Let it all in ✨</span>';b.setAttribute('aria-label',gift.occasion==='birthday'?'Light up the whole birthday room':'Let the whole little room light up');transitionBusy=false;return;}
- transitionBusy=true;$('#lightTrigger').disabled=true;exp.classList.add('lit','lighting');chime('wish');startMusic();$('meta[name="theme-color"]').content='#f5e6df';await sleep(2300*THEMES[gift.vibe].speed);if(token!==experienceToken)return;exp.classList.remove('lighting');sceneIndex=1;renderScene();transitionBusy=false;
+ if(transitionBusy||scenes[sceneIndex]!=='opening')return;
+ const token=experienceToken,exp=$('#experience');transitionBusy=true;ensureAudio();enableTilt(true);
+ const trigger=$('#lightTrigger');if(trigger)trigger.disabled=true;
+ exp.classList.add('sparked');sfx('spark');buzz(18);
+ const caption=$('#lightingCaption');if(caption)caption.textContent=gift.vibe==='Funny'?'Oh good. We paid the electricity bill.':'There it is. Your first little light.';
+ await sleep(650);if(token!==experienceToken)return;
+ exp.classList.add('lit','lighting');sfx('glow');buzz([10,40,24]);startMusic();$('meta[name="theme-color"]').content='#f5e6df';
+ await sleep(1750*THEMES[gift.vibe].speed);if(token!==experienceToken)return;
+ exp.classList.remove('lighting');sceneIndex=1;renderScene();transitionBusy=false;
 }
-async function blowCandles(){const cake=$('#birthdayCake');if(!cake||cake.classList.contains('extinguished'))return;cake.classList.add('extinguished');cake.disabled=true;stopBlowing();const token=experienceToken;$('#blowMic').hidden=true;$('#cakeInstruction').textContent='A little wish, tucked into the dark. ♡';$('.story-title',$('#storyScene')).innerHTML=gift.vibe==='Funny'?'Excellent blowing.<br><em>Very professional.</em>':'Keep it <em>close.</em>';$('#cakeDescription').textContent=gift.vibe==='Crazy'?'Your outrageous wish has been submitted to the universe.':'Some wishes don’t need to be said out loud.';const exp=$('#experience');exp.classList.add('candle-pause');duckMusic(true);await sleep(1100);if(token!==experienceToken)return;exp.classList.remove('candle-pause');chime('wish');duckMusic(false);await sleep(650);if(token!==experienceToken||scenes[sceneIndex]!=='cake')return;$('#cakeAfter').className='wish-success';$('#cakeAfter').innerHTML=storyButton(scenes[sceneIndex+1]==='choice'?'A little curiosity next':'Now, your little gift');}
-async function openPresent(){await openPresentV1();if($('#giftAfter')?.firstElementChild){const next=scenes[sceneIndex+1];$('#giftAfter').innerHTML=storyButton(next==='message'?'Read your little note':next==='memories'?'A few pieces of our story':next==='photos'?'Look what I kept':'There’s a little more');}}
+async function blowCandles(){
+ const cake=$('#birthdayCake');if(!cake||cake.classList.contains('extinguished'))return;
+ cake.classList.add('extinguished');cake.disabled=true;stopBlowing();sfx('whoosh');buzz(30);
+ const token=experienceToken;$('#blowMic').hidden=true;$('#cakeInstruction').textContent='A little wish, tucked into the dark. ♡';
+ $('.story-title',$('#storyScene')).innerHTML=gift.vibe==='Funny'?'Excellent blowing.<br><em>Very professional.</em>':'Keep it <em>close.</em>';
+ $('#cakeDescription').textContent=gift.vibe==='Crazy'?'Your outrageous wish has been submitted to the universe.':'Some wishes don’t need to be said out loud.';
+ const exp=$('#experience');exp.classList.add('candle-pause');duckMusic(true);await sleep(1000);if(token!==experienceToken)return;
+ exp.classList.remove('candle-pause');duckMusic(false);sfx('fanfare');buzz([25,40,70]);ring(cake);confetti(gift.vibe==='Crazy'?120:80,originOf(cake));balloons();
+ await sleep(500);if(token!==experienceToken||scenes[sceneIndex]!=='cake')return;
+ $('#cakeAfter').className='wish-success';$('#cakeAfter').innerHTML=softNext(scenes[sceneIndex+1]==='choice'?'A little curiosity next':'Now, your little gift');autoAdvance(2600,'cake');
+}
+async function openPresent(){
+ const box=$('#birthdayGift');if(!box||box.classList.contains('opened'))return;
+ box.classList.add('opened');box.disabled=true;const token=experienceToken;sfx('pop');buzz(20);ring(box);
+ $('#giftInstruction').textContent='The best things don’t fit in a box. ♡';
+ await sleep(280);if(token!==experienceToken)return;sfx('fanfare');buzz([20,30,50]);confetti(85,originOf(box));
+ await sleep(1000);if(token!==experienceToken||scenes[sceneIndex]!=='gift')return;
+ const next=scenes[sceneIndex+1];
+ $('#giftAfter').innerHTML=softNext(next==='message'?'Read your little note':next==='memories'?'A few pieces of our story':next==='photos'?'Look what I kept':'There’s a little more');autoAdvance(1100,'gift');
+}
 function renderFun(){
  if(gift.occasion!=='birthday'&&gift.fun==='quiz'&&!(gift.quizQuestion.trim()&&gift.quizAnswer.trim()))return `${sceneTitle('A very little question.<br><em>An easy little answer.</em>','This little world has a favorite person')}<p class="story-description">Who is this little world made for?</p><div class="quiz-options">${[gift.name,gift.name+', of course','Wonderfully '+gift.name].map((t,i)=>`<button class="quiz-option" data-quiz="${i}">${e(t)}</button>`).join('')}</div><div id="funAfter"></div>`;
  if(gift.fun==='gifts')return `${sceneTitle('Three little ribbons.<br><em>Follow your instinct.</em>','A tiny birthday mystery')}<p class="story-description">Pick the one that calls your name.<br>They all have a little love inside.</p><div class="choose-gifts">${['The shy one','The sparkly one','The wild card'].map((label,i)=>`<button class="mini-present" data-v2="pick-gift" data-pick="${i}" aria-label="Open mystery gift ${i+1}">${giftSVG('mystery-'+i)}<span>${label}</span></button>`).join('')}</div><div id="funAfter" aria-live="polite"></div>`;
@@ -1143,7 +1213,7 @@ function bindV2(){
  const move=event.target.closest('[data-move]');if(move){const [kind,i,delta]=move.dataset.move.split(':');moveItem(kind,+i,+i+(+delta));return;}
  const b=event.target.closest('[data-v2]');if(!b)return;event.preventDefault();const id=b.dataset.id;
  switch(b.dataset.v2){
- case'wizard-next':advanceWizard();break;case'wizard-back':setStep(0);break;case'note-shuffle':autoNote(1);break;case'nudge-photo':chooseTouches('photosDetail');setTimeout(()=>$('#photoUpload')?.click(),0);break;case'nudge-voice':chooseTouches('voiceDetail');break;case'skip-extras':skipTouches();break;case'choose-touches':chooseTouches();break;case'choose-touch':chooseTouches(b.dataset.detail);break;case'edit-touches':chooseTouches();break;
+ case'wizard-next':advanceWizard();break;case'quick-react':quickReact(b);break;case'pass-on':passOn();break;case'wizard-back':setStep(0);break;case'note-shuffle':autoNote(1);break;case'nudge-photo':chooseTouches('photosDetail');setTimeout(()=>$('#photoUpload')?.click(),0);break;case'nudge-voice':chooseTouches('voiceDetail');break;case'skip-extras':skipTouches();break;case'choose-touches':chooseTouches();break;case'choose-touch':chooseTouches(b.dataset.detail);break;case'edit-touches':chooseTouches();break;
  case'library':showLibrary();break;case'preview-music':previewMusic();break;case'cancel-crop':closeCrop(false);break;case'save-crop':closeCrop(true);break;
  case'choose-path':choosePath(b.dataset.path);break;case'pick-gift':pickMystery(b);break;case'custom-quiz':customQuiz(b);break;
  case'reveal-quiz':{const right=$('[data-right=true]');if(right){$('#quizHint').textContent='A tiny hint: '+gift.quizAnswer+'. Give it a tap. ♡';}break;}
@@ -1412,7 +1482,7 @@ $('#previewPublished').addEventListener('click',()=>{if(!publishedGift)return;pr
 $('#homeCandle').addEventListener('click',()=>{if(homeOccasion!=='birthday'){previewOccasion(homeOccasion);return;}const cake=$('#homeCandle');if(cake.classList.contains('extinguished')){cake.classList.remove('extinguished');$('#homeCandleHint').textContent='another little wish? go on.';cake.setAttribute('aria-label','Make a little wish and blow out the candles');return;}cake.classList.add('extinguished');cake.setAttribute('aria-label','Relight the birthday candles');$('#homeCandleHint').textContent='your little wish is on its way ♡';chime('wish');const r=cake.getBoundingClientRect();confetti(30,{x:r.x+r.width/2,y:r.y+30});});
 $('#experience').addEventListener('click',event=>{
  const balloon=event.target.closest('[data-balloon]');if(balloon){popBalloon(balloon);return;}const quiz=event.target.closest('[data-quiz]');if(quiz){answerQuiz(quiz);return;}const r=event.target.closest('[data-reaction]');if(r){selectReaction(r.dataset.reaction);return;}
- const button=event.target.closest('[data-story]');if(!button)return;switch(button.dataset.story){case'light':lightUp();break;case'next':chime();goToScene(sceneIndex+1);break;case'blow':blowCandles();break;case'microphone':startBlowing();break;case'open-gift':openPresent();break;case'sound':toggleSound();break;case'exit-preview':exitPreview();break;case'preview-unlock':exitPreview();unlockGift();break;case'preview-save':exitPreview();publishGift();break;case'reveal-scratch':revealScratch();break;case'prepare-reply':prepareReply();break;case'share-reply':shareReply();break;case'copy-reply':copyText(replySharedText,'Your little thank-you is copied. Send it back with love.');break;case'whatsapp-reply':whatsappReply();break;case'replay':{const data=gift,preview=isPreview,ret=previewReturn;startExperience(data,{preview,returnView:ret,skipSeal:true});break;}case'make-your-own':browseGifts();break;}
+ const button=event.target.closest('[data-story]');if(!button)return;switch(button.dataset.story){case'light':lightUp();break;case'next':chime();goToScene(sceneIndex+1);break;case'blow':blowCandles();break;case'microphone':startBlowing();break;case'open-gift':openPresent();break;case'sound':toggleSound();break;case'exit-preview':exitPreview();break;case'preview-unlock':exitPreview();unlockGift();break;case'preview-save':exitPreview();publishGift();break;case'reveal-scratch':revealScratch();break;case'prepare-reply':prepareReply();break;case'share-reply':shareReply();break;case'copy-reply':copyText(replySharedText,'Your little thank-you is copied. Send it back with love.');break;case'whatsapp-reply':whatsappReply();break;case'replay':{const data=gift,preview=isPreview,ret=previewReturn;startExperience(data,{preview,returnView:ret,skipSeal:true});setTimeout(()=>lightUp(),250);break;}case'make-your-own':browseGifts();break;}
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBlowing();if(mediaRecorder)stopRecording(true);if(musicAudio)musicAudio.pause();if(audioContext?.state==='running')audioContext.suspend().catch(()=>{});cancelAnimationFrame(confettiFrame);$('#confettiCanvas').hidden=true;}else if(currentView==='experience'&&$('#experience').classList.contains('lit')&&!soundMuted){ensureAudio();if(musicAudio)musicAudio.play().catch(()=>{});}});
 window.addEventListener('pagehide',()=>{stopBlowing();stopRecording(false);stopMusic();});
@@ -1681,13 +1751,13 @@ function renderOccasionScene(type){
  if(type==='welcome')s.innerHTML=`<div class="occasion-welcome-art">${occasionArt(occasionArtFor(gift),'welcome-object')}</div>${sceneTitle(`${e(o.greeting)}<span class="name-line${gift.name.length>18?' long-name':''}"><em>${name}.</em></span>`,e(o.eyebrow))}<p class="story-description">${e(o.welcome)}</p>${gift.occasion==='congratulations'&&gift.milestone?`<p class="achievement-note">${e(gift.milestone)}</p>`:''}${storyButton(gift.occasion==='apology'?'Read when you’re ready':gift.occasion==='love'?'There are a few little reasons':gift.occasion==='thanks'?'A little bouquet for you':gift.occasion==='anniversary'?'Open our little story':gift.occasion==='missyou'?'Catch a little hug':'Step a little closer')}${gift.occasion==='apology'?'<button class="story-soft-skip" data-v3="quiet-close">Not right now. I need some space.</button>':''}`;
  if(type==='gift')s.innerHTML=`${sceneTitle(gift.occasion==='apology'?'A few words.<br><em>Said with care.</em>':'Some words,<br><em>sealed with a little courage.</em>',gift.occasion==='apology'?'No expectations tucked inside':'A little note, from the heart')}<button class="story-object" data-v3="open-note" aria-label="Unfold the personal note">${occasionArt('envelope','story-envelope')}<span class="object-tap">${icon('hand')}</span></button><p class="story-footnote soft" id="noteInstruction">${gift.occasion==='apology'?'Unfold it whenever you’re ready.':'A little envelope. A lot inside.'}</p><div id="occasionAfter" aria-live="polite"></div>`;
  if(type==='hearts'){
-  openedNotes=new Set();s.innerHTML=`${sceneTitle('A few little reasons.<br><em>All of them you.</em>','Three paper hearts, folded with love')}<p class="story-description">Each little heart has something to tell you.</p><div class="heart-notes">${[0,1,2].map(i=>`<button class="heart-note" data-v3="heart-note" data-note="${i}" aria-pressed="false" aria-label="Unfold heart ${i+1}"><span aria-hidden="true">♡</span><small>open me · 0${i+1}</small></button>`).join('')}</div><p class="note-progress" id="noteProgress" role="status">0 of 3 little hearts unfolded</p>${storyButton('Keep a little love with me')}`;
+  openedNotes=new Set();s.innerHTML=`${sceneTitle('A few little reasons.<br><em>All of them you.</em>','Three paper hearts, folded with love')}<p class="story-description">Touch one. They’ll all unfold.</p><div class="heart-notes">${[0,1,2].map(i=>`<button class="heart-note" data-v3="heart-note" data-note="${i}" aria-pressed="false" aria-label="Unfold heart ${i+1}"><span aria-hidden="true">♡</span><small>open me · 0${i+1}</small></button>`).join('')}</div><p class="note-progress" id="noteProgress" role="status">Touch a heart</p><div id="occasionAfter" aria-live="polite"></div>`;
  }
  if(type==='bouquet'){
-  openedNotes=new Set();s.innerHTML=`${sceneTitle('A little bouquet.<br><em>For a lot of kindness.</em>','One flower. One little thank-you.')}<div class="gratitude-bouquet" id="gratitudeBouquet" data-bloomed="0">${occasionArt('bouquet','gratitude-bouquet')}</div><div class="gratitude-petals" role="group" aria-label="Open each gratitude flower">${[0,1,2].map(i=>`<button data-v3="flower" data-note="${i}" aria-pressed="false" aria-label="Open thank-you flower ${i+1}">${['✿','❀','✾'][i]}</button>`).join('')}</div><p class="gratitude-message" id="gratitudeMessage" aria-live="polite">Tap a little flower.<br>There’s a thank-you inside.</p><p class="note-progress" id="noteProgress" role="status">0 of 3 thank-yous gathered</p>${storyButton('Keep the bouquet close')}`;
+  openedNotes=new Set();s.innerHTML=`${sceneTitle('A little bouquet.<br><em>For a lot of kindness.</em>','One flower. One little thank-you.')}<div class="gratitude-bouquet" id="gratitudeBouquet" data-bloomed="0">${occasionArt('bouquet','gratitude-bouquet')}</div><div class="gratitude-petals" role="group" aria-label="Open each gratitude flower">${[0,1,2].map(i=>`<button data-v3="flower" data-note="${i}" aria-pressed="false" aria-label="Open thank-you flower ${i+1}">${['✿','❀','✾'][i]}</button>`).join('')}</div><div class="gratitude-cards" id="gratitudeMessage" aria-live="polite"><p class="gratitude-hint">Touch a little flower.<br>All three thank-yous are inside.</p></div><p class="note-progress" id="noteProgress" role="status"></p><div id="occasionAfter" aria-live="polite"></div>`;
  }
  if(type==='storybook'){
-  chapterIndex=0;s.innerHTML=`${sceneTitle('Our little story.<br><em>Still unfolding.</em>','A few pages worth keeping')}${gift.togetherSince?`<p class="story-date">Since ${e(new Intl.DateTimeFormat('en',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(gift.togetherSince+'T12:00:00Z')))}</p>`:''}<article class="storybook" id="storyBook" aria-live="polite"></article><button class="btn story-btn" data-v3="turn-page" id="turnPage">Turn the little page ${icon('arrow')}</button><button class="story-soft-skip" data-story="next">Read the note inside</button>`;paintStoryPage();
+  chapterIndex=0;s.innerHTML=`${sceneTitle('Our little story.<br><em>Still unfolding.</em>','A few pages worth keeping')}${gift.togetherSince?`<p class="story-date">Since ${e(new Intl.DateTimeFormat('en',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(gift.togetherSince+'T12:00:00Z')))}</p>`:''}<article class="storybook" id="storyBook" data-v3="turn-page" aria-live="polite"></article><p class="story-footnote soft">The pages turn on their own. Touch the book to turn one sooner.</p><button class="btn story-btn" data-v3="turn-page" id="turnPage">Turn the little page ${icon('arrow')}</button><button class="story-soft-skip" data-story="next">Read the note inside</button>`;paintStoryPage();startStoryAuto();
  }
  if(type==='ribbon')s.innerHTML=`${sceneTitle('A little ribbon.<br><em>A very big well done.</em>','Go on. This moment belongs to you.')}<button class="story-object" data-v3="untie-ribbon" aria-label="Untie your celebration ribbon">${occasionArt('medal','achievement-ribbon')}<span class="object-tap">${icon('hand')}</span></button><p class="story-footnote soft" id="ribbonInstruction">Tap to untie your little celebration.</p><div id="occasionAfter" aria-live="polite"></div>`;
  if(type==='distance')s.innerHTML=`${sceneTitle('A paper hug.<br><em>All the way to you.</em>','Some little things can cross the distance')}<div class="distance-route" id="distanceRoute">${occasionArt('plane','travelling-hug')}<div class="distance-label"><span>from over here</span><span>to lovely you</span></div></div><button class="btn story-btn" data-v3="send-hug" id="sendPaperHug">Catch your paper hug ${icon('heart')}</button><div id="occasionAfter" aria-live="polite"></div>`;
@@ -1704,54 +1774,98 @@ function renderOccasionScene(type){
   s.innerHTML=`<div class="${quiet?'quiet-stamp':'celebration-halo'}" aria-hidden="true">${o.symbol}</div>${sceneTitle(title,gift.occasion==='apology'?'Your feelings. Your time.':'Made with a little heart')}<p class="finale-words" aria-label="${e(ending)}">${ending.split(' ').map((w,i)=>`<span class="fw" aria-hidden="true" style="--w:${i}">${e(w)}</span>`).join(' ')}</p>${gift.photos.length&&gift.occasion!=='apology'&&!quiet&&!reducedMotion?finaleReel():gift.photos.length&&gift.occasion!=='apology'?`<div class="finale-montage" aria-label="A few little moments to keep">${gift.photos.map((p,i)=>`<figure class="finale-photo" style="--delay:${i*.18}s"><div><img src="${e(p.src)}" alt="${e(p.caption||'A favorite moment')}" style="${cropStyle(p)}" referrerpolicy="no-referrer"></div></figure>`).join('')}</div>`:''}<p class="final-dedication">Made especially for you. ${gift.occasion==='apology'?'With care.':'♡'}${gift.sender?'<br><span style="font-size:14px">From '+e(gift.sender)+'.</span>':''}</p>${storyButton(gift.occasion==='apology'||gift.occasion==='proposal'?'Leave a reply, only if you’d like':'Send a little feeling back')}${quiet?'<button class="story-soft-skip" data-v3="finish-reading">Finish here. No reply needed.</button>':''}`;
   $$('.finale-photo img',s).forEach(img=>img.addEventListener('error',()=>img.closest('figure').hidden=true,{once:true}));
   startReel(experienceToken);
-  if(!quiet){const token=experienceToken;finaleTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!==type)return;confetti(gift.occasion==='congratulations'?100:46);swellMusic();},reducedMotion?0:600);}
+  if(!quiet){const token=experienceToken;finaleTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!==type)return;sfx('fanfare');buzz([30,40,80]);confetti(gift.occasion==='congratulations'?100:46);swellMusic();},reducedMotion?0:600);}
+  if(gift.occasion!=='apology'&&!(gift.occasion==='proposal'&&proposalAnswer!=='yes'))decorateFinale(s,{quick:true,festive:!quiet});
  }
  finishOccasionRender(type);return true;
 }
+/* The ending asks one thing: how did it feel? One touch sends the feeling to whoever made it. */
+function decorateFinale(s,{quick=true,festive=true}={}){
+ const next=$('[data-story=next]',s);if(!next)return;
+ next.className='story-soft-skip';next.innerHTML='Or write a few words '+icon('arrow');
+ if(quick)next.insertAdjacentHTML('beforebegin',`<div class="finale-react"><p class="finale-react-title">How did that feel?</p><div class="reactions" role="group" aria-label="Tell ${e(gift.sender||'them')} how it felt. One touch sends it.">${GENERIC_REACTIONS.map(([emoji,label])=>`<button type="button" class="reaction-btn" data-v2="quick-react" data-reaction="${emoji}" aria-label="${label}. Sends it now." aria-pressed="false">${emoji}</button>`).join('')}</div><p class="finale-sent" id="finaleSent" role="status"></p></div>`);
+ next.insertAdjacentHTML('afterend',`<div class="finale-links"><button type="button" class="story-soft-skip" data-story="replay">↻ Watch it again</button>${navigator.share?'<button type="button" class="story-soft-skip" data-v2="pass-on">Share the feeling</button>':''}<button type="button" class="story-soft-skip" data-story="make-your-own">Make someone’s day</button></div>`);
+ if(festive){
+  balloons(6);let last=0;
+  s.addEventListener('pointerdown',ev=>{if(ev.target.closest('button,a,input,textarea,audio'))return;const now=Date.now();if(now-last<220)return;last=now;confetti(28,{x:ev.clientX,y:ev.clientY});sfx('pop');buzz(8);});
+ }
+}
+let quickSent=0;
+async function quickReact(button){
+ const value=button.dataset.reaction,note=$('#finaleSent');buzz(18);
+ if(isPreview){note.textContent='In the real gift, this sends '+value+' straight to '+(gift.sender||'the person who made it')+'.';return;}
+ if(!gift.server){note.textContent='Lovely. Add a few words below to share your reply.';return;}
+ if(quickSent>=3){note.textContent='Sent. They’ll love it. ♡';return;}
+ try{await api('/api/gifts/'+gift.id+'/reactions',{method:'POST',body:{visitor:visitorToken(),reaction:value,message:''}});quickSent++;note.textContent='Sent to '+(gift.sender||'them')+'. Their day just got better. ♡';ring(button);sfx('wish');buzz([20,40,40]);if(!gift.occasion||!['apology','missyou'].includes(gift.occasion))confetti(34,originOf(button));}
+ catch(err){note.textContent='Not sent. '+err.message;}
+}
+async function passOn(){try{await navigator.share({title:'I just opened a Kholona ♡',text:(gift.sender?gift.sender+' made me':'Someone made me')+' a little world on Kholona. Make one for someone you love:',url:location.origin+'/?utm_source=recipient&utm_medium=finale'});}catch{}}
 function openOccasionNote(button){
  if(button.classList.contains('opened'))return;button.classList.add('opened');button.disabled=true;chime();
  $('#noteInstruction').textContent=gift.occasion==='apology'?'Take it at your own pace.':'A little courage, all unfolded.';
  $('#occasionAfter').innerHTML=storyButton('Read the words inside');
 }
-function openHeartNote(button){
- const i=Number(button.dataset.note);if(openedNotes.has(i))return;openedNotes.add(i);
+let cascading=false,storyAuto=0;
+function revealHeart(button,i){
  const text=gift.reasons?.[i]?.trim()||OCCASIONS.love.reasons[i];
- button.classList.add('revealed');button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','Heart '+(i+1)+': '+text);
+ openedNotes.add(i);button.classList.add('revealed');button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','Heart '+(i+1)+': '+text);
  button.innerHTML='<span aria-hidden="true">♡</span><p>'+e(text)+'</p>';
- $('#noteProgress').textContent=openedNotes.size+' of 3 little hearts unfolded';chime('soft');
 }
-function pickFlower(button){
- const i=Number(button.dataset.note);openedNotes.add(i);button.setAttribute('aria-pressed','true');
- $('#gratitudeBouquet').dataset.bloomed=String(openedNotes.size);$('#gratitudeMessage').textContent=gift.reasons?.[i]?.trim()||OCCASIONS.thanks.reasons[i];
- $('#noteProgress').textContent=openedNotes.size+' of 3 thank-yous gathered';chime('soft');
+/* One touch, three reasons: they unfold one after another, each with a rising note, and the way on appears at the end. */
+async function openHeartNote(){
+ if(cascading||openedNotes.size>=3)return;cascading=true;const token=experienceToken,buttons=$$('.heart-note');
+ for(let i=0;i<buttons.length;i++){
+  if(token!==experienceToken||scenes[sceneIndex]!=='hearts'){cascading=false;return;}
+  revealHeart(buttons[i],i);$('#noteProgress').textContent=(i+1)+' of 3';sfx('note',i);buzz(12);ring(buttons[i]);
+  await sleep(i<buttons.length-1?1300:800);
+ }
+ cascading=false;if(token!==experienceToken)return;
+ $('#noteProgress').textContent='All three. All of them you.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep a little love with me');
+}
+async function pickFlower(){
+ if(cascading||openedNotes.size>=3)return;cascading=true;const token=experienceToken,buttons=$$('[data-v3=flower]'),box=$('#gratitudeMessage');box.innerHTML='';
+ for(let i=0;i<buttons.length;i++){
+  if(token!==experienceToken||scenes[sceneIndex]!=='bouquet'){cascading=false;return;}
+  openedNotes.add(i);buttons[i].setAttribute('aria-pressed','true');$('#gratitudeBouquet').dataset.bloomed=String(i+1);
+  box.insertAdjacentHTML('beforeend','<p class="thanks-card">'+e(gift.reasons?.[i]?.trim()||OCCASIONS.thanks.reasons[i])+'</p>');
+  sfx('note',i);buzz(12);ring(buttons[i]);await sleep(i<buttons.length-1?1600:800);
+ }
+ cascading=false;if(token!==experienceToken)return;
+ $('#noteProgress').textContent='Three thank-yous, gathered.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep the bouquet close');
 }
 function paintStoryPage(){
  const pages=[['Our beginning','Every story has a little beginning. I’m glad ours found its way here.'],['The everyday','The familiar smiles. The little conversations. The ordinary moments that slowly become a life.'],['What comes next','More days to discover. More little things to learn about each other. More pages to write, together.']];
  const [title,text]=pages[chapterIndex];$('#storyBook').innerHTML=`<span class="book-ribbon" aria-hidden="true"></span><span class="page-number">OUR LITTLE STORY · 0${chapterIndex+1} / 03</span><h2>${title}</h2><p>${text}</p>`;
  $('#turnPage').innerHTML=(chapterIndex===2?'And a note for this chapter':'Turn the little page')+' '+icon('arrow');
 }
-function turnStoryPage(){if(chapterIndex>=2){goToScene(sceneIndex+1);return;}chapterIndex++;paintStoryPage();chime('soft');}
+function startStoryAuto(){
+ clearInterval(storyAuto);if(reducedMotion)return;const token=experienceToken;
+ storyAuto=setInterval(()=>{if(token!==experienceToken||scenes[sceneIndex]!=='storybook'||chapterIndex>=2){clearInterval(storyAuto);return;}chapterIndex++;paintStoryPage();sfx('page');buzz(10);},5200);
+}
+function turnStoryPage(){if(chapterIndex>=2){goToScene(sceneIndex+1);return;}chapterIndex++;paintStoryPage();sfx('page');buzz(10);startStoryAuto();}
 function untieRibbon(button){
  if(button.classList.contains('opened'))return;button.classList.add('opened');button.disabled=true;$('#ribbonInstruction').textContent='A well-earned moment. Let yourself enjoy it.';
  $('#occasionAfter').innerHTML=`<div class="occasion-reveal"><p>${e(gift.milestone||'Here’s to the effort, the courage, and the little steps that got you here.')}</p></div>${storyButton('There’s a little cheering inside')}`;
- confetti(42);chime('wish');
+ sfx('fanfare');buzz([20,30,60]);ring(button);confetti(100,originOf(button));balloons(5);autoAdvance(5400,'ribbon');
 }
 async function sendPaperHug(button){
- if(button.disabled)return;button.disabled=true;$('#distanceRoute').classList.add('sent');const token=experienceToken;chime('soft');
- await sleep(gift.motion?900:0);if(token!==experienceToken||scenes[sceneIndex]!=='distance')return;
- button.hidden=true;$('#occasionAfter').innerHTML=`<div class="occasion-reveal"><p>A little hug, delivered to your corner of the world. Keep it as long as you need.</p></div>${storyButton('A note came with it')}`;
+ if(button.disabled)return;button.disabled=true;$('#distanceRoute').classList.add('sent');const token=experienceToken;sfx('whoosh');buzz(25);
+ await sleep(gift.motion?900:0);if(token!==experienceToken||scenes[sceneIndex]!=='distance')return;sfx('heartbeat');buzz([40,80,40,260,40,80,40]);
+ button.hidden=true;$('#occasionAfter').innerHTML=`<div class="occasion-reveal"><p>A little hug, delivered to your corner of the world. Keep it as long as you need.</p></div>${storyButton('A note came with it')}`;autoAdvance(5000,'distance');
 }
 function revealProposal(button){
  if(button.disabled)return;button.disabled=true;$('#storyScene').classList.add('question-revealed');$('#proposalInstruction').hidden=true;const reveal=$('#proposalReveal');reveal.hidden=false;
- reveal.innerHTML=`<h2 class="proposal-question" tabindex="-1">${e(proposalQuestion(gift))}</h2><div class="proposal-responses" role="group" aria-label="Your answer, entirely your choice">${[['yes','Yes, I’d love to'],['talk','Let’s talk about it'],['no','Not for me']].map(([key,label])=>`<button data-v3="proposal-answer" data-answer="${key}" aria-pressed="false">${label}</button>`).join('')}</div><p class="proposal-response-note" id="proposalResponseNote" role="status">Choose only what feels true. Nothing is sent until you choose to share your reply.</p><div id="proposalContinue"></div>`;
+ sfx('bloom');buzz(25);ring(button);reveal.innerHTML=`<h2 class="proposal-question" tabindex="-1">${e(proposalQuestion(gift))}</h2><div class="proposal-responses" role="group" aria-label="Your answer, entirely your choice">${[['yes','Yes, I’d love to'],['talk','Let’s talk about it'],['no','Not for me']].map(([key,label])=>`<button data-v3="proposal-answer" data-answer="${key}" aria-pressed="false">${label}</button>`).join('')}</div><p class="proposal-response-note" id="proposalResponseNote" role="status">Choose only what feels true. Nothing is sent until you choose to share your reply.</p><div id="proposalContinue"></div>`;
  $('.proposal-question',reveal).focus({preventScroll:true});chime('soft');
 }
 function chooseProposalAnswer(button){
+ if(button.getAttribute('aria-pressed')==='true')return;
  proposalAnswer=button.dataset.answer;
  journeyReply=proposalAnswer==='yes'?'Yes, I’d love to. Thank you for asking with so much care. ♡':proposalAnswer==='talk'?'Thank you for asking. I’d like to talk about it before I answer.':'Thank you for asking so thoughtfully. I don’t feel the same way, and I wanted to be honest with you.';
  $$('[data-v3=proposal-answer]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
  $('#proposalResponseNote').textContent='Your choice is here, just for you. You can edit it before sharing, or keep it private.';
- $('#proposalContinue').innerHTML=storyButton('Keep going, at my pace');chime('soft');
+ $('#proposalContinue').innerHTML=storyButton('Keep going, at my pace');
+ if(proposalAnswer==='yes'){sfx('fanfare');buzz([25,40,70]);confetti(80);balloons(5);autoAdvance(3200,'proposal');}else{clearAuto();chime('soft');}
 }
 function showQuietFinish(){
  const s=$('#storyScene');s.className='story-scene quiet-finish-scene';
