@@ -12,7 +12,7 @@
 
 /* ---------- The main buttons breathe: a soft ring, compositor-only, calm enough to ignore ---------- */
 .pulse-cta,#wizardNext.is-ready,.unlock-tray-btn{position:relative}
-.pulse-cta::after,#wizardNext.is-ready::after{content:'';position:absolute;inset:0;border-radius:inherit;border:2px solid #aa5265;opacity:0;pointer-events:none;animation:ctaRing 3.2s ease-out 1.4s infinite}
+.pulse-cta::after,#wizardNext.is-ready::after{content:'';position:absolute;inset:0;border-radius:inherit;border:2px solid #bb4161;opacity:0;pointer-events:none;animation:ctaRing 3.2s ease-out 1.4s infinite}
 @keyframes ctaRing{0%{transform:scale(1);opacity:.5}55%,100%{transform:scale(1.1,1.32);opacity:0}}
 .btn:active,.hero-chip:active,.resume-btn:active,.unlock-tray-btn:active{transform:translateY(1px) scale(.985);transition-duration:.1s}
 
@@ -33,13 +33,13 @@
 .resume-banner.show{visibility:visible;transform:none;transition:transform .3s cubic-bezier(.2,.7,.2,1)}
 .resume-copy{flex:1;min-width:0;display:flex;flex-direction:column;font-size:13px;line-height:1.4;color:var(--muted)}
 .resume-copy strong{color:var(--ink);font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.resume-btn{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:#aa5265;color:#fff;font-size:14px;font-weight:600;text-decoration:none}
-.resume-btn:hover,.resume-btn:focus-visible{background:#8d3f51}
+.resume-btn{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:#bb4161;color:#fff;font-size:14px;font-weight:600;text-decoration:none}
+.resume-btn:hover,.resume-btn:focus-visible{background:#9c304e}
 .resume-close{flex:none;width:44px;height:44px;border-radius:50%;color:var(--muted);font-size:22px;line-height:1}
 @media(min-width:761px){.resume-banner{left:auto;right:24px;width:min(440px,calc(100% - 48px))}}
 
 /* ---------- Honest price strip (only when payments are on) ---------- */
-.price-strip{max-width:1152px;margin:48px auto;padding:28px 32px;display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:center;border:1px solid var(--line);border-radius:28px;background:linear-gradient(135deg,#f8ede9,#fbf4e6)}
+.price-strip{max-width:1152px;margin:48px auto;padding:28px 32px;display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:center;border:1px solid var(--line);border-radius:28px;background:linear-gradient(135deg,#f9ece8,#fcf4e5)}
 .price-strip h2{margin:0 0 8px;font-family:var(--serif);font-weight:400;font-size:34px;line-height:1.15;letter-spacing:-.4px;color:var(--ink)}
 .price-strip p{margin:0 0 12px;color:var(--muted);font-size:15px}
 .price-strip ul{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px;color:var(--ink)}
@@ -69,7 +69,7 @@
 
 /* ---------- "Try it before you decide": the demo is a real button next to the main one ---------- */
 .hero-demo{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:12px 0 0;padding:0 18px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font-size:14px;transition:border-color .2s,background .2s}
-.hero-demo:hover,.hero-demo:focus-visible{border-color:var(--rose);background:#f8ebe8}
+.hero-demo:hover,.hero-demo:focus-visible{border-color:var(--rose);background:#f9eae7}
 .hero-demo .icon{width:16px;height:16px;color:var(--rose)}
 /* the main button and the demo share one row (stacked and centred on phones) */
 .hero-cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px}

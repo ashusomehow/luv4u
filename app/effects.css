@@ -5,8 +5,8 @@
 .hero-cta{align-items:flex-start;gap:14px 18px}
 .cta-main{display:flex;flex-direction:column;align-items:stretch;gap:10px;min-width:236px}
 .cta-main .btn{width:100%;min-height:60px;padding:16px 32px;font-size:17px;font-weight:600;letter-spacing:.005em}
-.cta-free{display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--serif);font-style:italic;font-size:16px;letter-spacing:.02em;color:#8d3f51}
-.cta-free::before,.cta-free::after{content:'';flex:1;max-width:44px;height:1px;background:linear-gradient(90deg,transparent,#c99aa4)}
+.cta-free{display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--serif);font-style:italic;font-size:16px;letter-spacing:.02em;color:#9c304e}
+.cta-free::before,.cta-free::after{content:'';flex:1;max-width:44px;height:1px;background:linear-gradient(90deg,transparent,#d291a2)}
 .cta-free::after{transform:scaleX(-1)}
 .hero-cta .hero-demo{align-self:flex-start;min-height:60px;padding:0 22px}
 @media(max-width:760px){
@@ -16,21 +16,21 @@
 }
 
 /* ---------- Primary buttons: depth, a light sweep on hover, a soft glow ---------- */
-.btn-primary,.unlock-tray-btn{background:linear-gradient(180deg,#aa5265 0%,#95455a 100%);box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 10px 22px -12px rgba(141,63,81,.75);overflow:visible}
-.btn-primary:hover:not(:disabled),.unlock-tray-btn:hover{background:linear-gradient(180deg,#9c4a5d 0%,#853a4d 100%);box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 16px 30px -12px rgba(141,63,81,.85)}
+.btn-primary,.unlock-tray-btn{background:linear-gradient(180deg,#bb4161 0%,#a43658 100%);box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 10px 22px -12px rgba(156,48,78,.75);overflow:visible}
+.btn-primary:hover:not(:disabled),.unlock-tray-btn:hover{background:linear-gradient(180deg,#ac3a5a 0%,#932c4b 100%);box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 16px 30px -12px rgba(156,48,78,.85)}
 .btn-primary::before,.unlock-tray-btn::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.28) 50%,transparent 62%);background-size:260% 100%;background-position:130% 0;background-repeat:no-repeat;opacity:0}
 .btn-primary:hover:not(:disabled)::before,.unlock-tray-btn:hover::before{opacity:1;animation:sheen .8s cubic-bezier(.2,.7,.2,1) forwards}
 @keyframes sheen{from{background-position:130% 0}to{background-position:-30% 0}}
 .btn-primary .icon{transition:transform .3s cubic-bezier(.2,.7,.2,1)}
 .btn-primary:hover:not(:disabled) .icon{transform:rotate(18deg) scale(1.15)}
-.btn-primary:focus-visible{box-shadow:0 0 0 4px rgba(170,82,101,.25)}
+.btn-primary:focus-visible{box-shadow:0 0 0 4px rgba(187,65,97,.25)}
 .btn-primary.is-busy{cursor:progress}
 .btn-primary.is-busy::after{content:'';position:absolute;right:18px;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;inset:auto 18px auto auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* Secondary and quiet buttons */
 .btn-secondary{transition:transform .22s var(--ease),background .22s,border-color .22s,box-shadow .22s}
-.btn-secondary:hover:not(:disabled){border-color:#c99aa4;box-shadow:0 10px 22px -16px rgba(141,63,81,.6)}
+.btn-secondary:hover:not(:disabled){border-color:#d291a2;box-shadow:0 10px 22px -16px rgba(156,48,78,.6)}
 
 /* ---------- Cards and chips ---------- */
 .occasion-card{transition:transform .28s var(--ease),box-shadow .28s var(--ease)}
@@ -39,7 +39,7 @@
 .hero-chip{transition:transform .2s var(--ease),border-color .2s,background .2s,box-shadow .2s}
 .hero-chip:hover{transform:translateY(-2px);box-shadow:0 10px 18px -14px rgba(67,45,50,.55)}
 .hero-demo{transition:border-color .2s,background .2s,transform .2s var(--ease),box-shadow .2s}
-.hero-demo:hover{transform:translateY(-2px);box-shadow:0 10px 18px -14px rgba(141,63,81,.5)}
+.hero-demo:hover{transform:translateY(-2px);box-shadow:0 10px 18px -14px rgba(156,48,78,.5)}
 
 @media(prefers-reduced-motion:reduce){
   .btn-primary:hover:not(:disabled)::before,.unlock-tray-btn:hover::before{animation:none;opacity:0}
@@ -52,41 +52,41 @@
 .field-hint{margin-left:8px;font-weight:400;font-size:13px;color:#5b4549}
 .reply-share-panel{display:flex;flex-direction:column;align-items:center;gap:8px}
 .reply-alt{min-height:44px;padding:0 10px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:4px}
-.reply-alt:hover{color:#8d3f51}
+.reply-alt:hover{color:#9c304e}
 .share-cover-note{margin:10px 0 0;text-align:center;font-size:13px;color:#5b4549}
 
 /* ---------- Look picker, media status, and the "add something only you have" prompt ---------- */
 .vibe-grid.is-look{grid-template-columns:repeat(3,1fr)}
 .vibe-grid.is-look .vibe-btn{flex-direction:column;gap:4px;min-height:64px;padding:10px 6px;text-align:center}
 .vibe-grid.is-look .vibe-icon{display:none}
-.vibe-grid.is-look .vibe-btn::before{content:'';width:22px;height:22px;border-radius:50%;background:var(--sw,#aa5265);box-shadow:0 0 0 2px #fff inset,0 0 0 1px rgba(67,45,50,.18)}
+.vibe-grid.is-look .vibe-btn::before{content:'';width:22px;height:22px;border-radius:50%;background:var(--sw,#bb4161);box-shadow:0 0 0 2px #fff inset,0 0 0 1px rgba(67,45,50,.18)}
 .vibe-grid.is-look .vibe-caption{display:block;max-width:none;font-size:12px}
-.vibe-btn[data-vibe=Romantic]{--sw:#aa5265}.vibe-btn[data-vibe=Cute]{--sw:#ad6879}.vibe-btn[data-vibe=Funny]{--sw:#ae773f}.vibe-btn[data-vibe=Emotional]{--sw:#8e716f}.vibe-btn[data-vibe=Crazy]{--sw:#ae6050}.vibe-btn[data-vibe=Elegant]{--sw:#8d7954}
-.detail-status{margin:0 10px 0 auto;padding:3px 10px;border-radius:999px;background:#f3e8e4;color:#5b4549;font-size:12px;white-space:nowrap}
-.detail-status.done{background:#e3efe2;color:#2b5530}
+.vibe-btn[data-vibe=Romantic]{--sw:#bb4161}.vibe-btn[data-vibe=Cute]{--sw:#bb5a77}.vibe-btn[data-vibe=Funny]{--sw:#c2732b}.vibe-btn[data-vibe=Emotional]{--sw:#966867}.vibe-btn[data-vibe=Crazy]{--sw:#c0513e}.vibe-btn[data-vibe=Elegant]{--sw:#997b48}
+.detail-status{margin:0 10px 0 auto;padding:3px 10px;border-radius:999px;background:#f4e7e3;color:#5b4549;font-size:12px;white-space:nowrap}
+.detail-status.done{background:#e2f0e1;color:#265a2c}
 .media-ask{width:min(100%,420px);padding:26px;border-radius:22px}
 .media-ask h2{margin:0 0 10px;font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.2}
 .media-ask p{margin:0 0 18px;font-size:15px;color:#5b4549;line-height:1.6}
 .media-ask-actions{display:grid;gap:10px}
 .media-skip{display:block;width:100%;min-height:44px;margin-top:8px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:4px}
-.media-skip:hover{color:#8d3f51}
+.media-skip:hover{color:#9c304e}
 
 /* ---------- Photo upload is the front door to a more personal gift: readable and obvious ---------- */
-.upload-zone{padding:28px 16px;font-size:16px;font-weight:600;color:#5b4549;border-color:#c99aa4;background:#fbf0e9}
-.upload-zone:hover{background:#f4e3dc}
-.upload-zone .icon{width:30px;height:30px;color:#8d3f51}
+.upload-zone{padding:28px 16px;font-size:16px;font-weight:600;color:#5b4549;border-color:#d291a2;background:#fcefe8}
+.upload-zone:hover{background:#f6e2da}
+.upload-zone .icon{width:30px;height:30px;color:#9c304e}
 .upload-zone small{font-size:13px;font-weight:400;color:#5b4549}
 .or-line{font-size:13px;color:#5b4549}
 
 .footer-links{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px}
 .footer-links a{color:#5b4549;padding:10px 0;text-decoration:none}
-.footer-links a:hover{color:#8d3f51;text-decoration:underline}
+.footer-links a:hover{color:#9c304e;text-decoration:underline}
 
 /* ---------- Scheduled delivery ---------- */
 .schedule-row{display:flex;gap:8px;align-items:center}
 .schedule-row .text-input{flex:1;min-height:48px}
 .schedule-clear{min-height:44px;padding:0 12px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:3px}
-.share-scheduled{margin:14px auto 0;max-width:520px;padding:12px 16px;border-radius:14px;background:#fff6dc;color:#5e4a12;font-size:14px;line-height:1.55;text-align:center}
+.share-scheduled{margin:14px auto 0;max-width:520px;padding:12px 16px;border-radius:14px;background:#fff6dc;color:#664e0a;font-size:14px;line-height:1.55;text-align:center}
 
 /* The landing view paints immediately: a fade-in on the first screen delays the headline (the largest paint). */
 main#homeView.view{animation:none}

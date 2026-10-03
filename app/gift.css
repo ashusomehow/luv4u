@@ -1,28 +1,28 @@
 /* The recipient's experience: the sealed envelope that opens it, and the ending. */
 
 /* ---------- Sealed envelope ---------- */
-.seal-gate{position:absolute;inset:0;z-index:60;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 38%,#3d2330 0%,#1d1319 55%,#150f13 100%);color:#fff3e6;transition:opacity .55s ease,transform .55s var(--ease)}
+.seal-gate{position:absolute;inset:0;z-index:60;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 38%,#3d2330 0%,#1d1319 55%,#150f13 100%);color:#fff2e6;transition:opacity .55s ease,transform .55s var(--ease)}
 .seal-gate.gone{opacity:0;transform:scale(1.05);pointer-events:none}
 .seal-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;width:min(100%,360px)}
-.seal-kicker{margin:0 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#e7c0c5}
+.seal-kicker{margin:0 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#edbac3}
 .seal-address{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:26px}
-.seal-to{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#e7c0c5}
-.seal-name{font-family:var(--serif);font-style:italic;font-size:clamp(36px,9vw,48px);line-height:1.15;color:#fff3e6;overflow-wrap:anywhere}
-.seal-from{font-family:var(--serif);font-style:italic;font-size:18px;color:#e7c0c5;margin-top:4px}
+.seal-to{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#edbac3}
+.seal-name{font-family:var(--serif);font-style:italic;font-size:clamp(36px,9vw,48px);line-height:1.15;color:#fff2e6;overflow-wrap:anywhere}
+.seal-from{font-family:var(--serif);font-style:italic;font-size:18px;color:#edbac3;margin-top:4px}
 .seal-stage{position:relative;width:min(300px,76vw);aspect-ratio:300/215;perspective:900px}
-.seal-envelope{position:absolute;inset:0;border-radius:6px;background:#ead0c2;box-shadow:0 30px 60px -24px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.08) inset}
-.seal-letter{position:absolute;left:8%;right:8%;top:9%;bottom:10%;display:grid;place-items:center;border-radius:4px;background:#fffaf0;color:#c28a98;font-size:34px;transition:transform .9s var(--ease) .35s;z-index:2}
-.seal-front{position:absolute;inset:0;z-index:3;border-radius:6px;background:linear-gradient(135deg,#f0d9cc,#e2c2b3);clip-path:polygon(0 0,50% 58%,100% 0,100% 100%,0 100%)}
-.seal-flap{position:absolute;left:0;right:0;top:0;height:62%;z-index:4;background:linear-gradient(180deg,#e6c8b9,#d9b5a5);clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top center;border-radius:6px 6px 0 0}
-.seal-btn{position:absolute;left:50%;top:62%;z-index:5;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d26079,#9b3450 60%,#7d2740);color:#ffe9e1;box-shadow:0 10px 18px -6px rgba(60,10,25,.8),0 0 0 3px rgba(255,255,255,.1) inset;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;animation:sealBreathe 2.4s ease-in-out infinite;transition:transform .2s var(--ease)}
-.seal-btn:focus-visible{outline:3px solid #ffe2b8;outline-offset:6px}
+.seal-envelope{position:absolute;inset:0;border-radius:6px;background:#f0cdbc;box-shadow:0 30px 60px -24px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.08) inset}
+.seal-letter{position:absolute;left:8%;right:8%;top:9%;bottom:10%;display:grid;place-items:center;border-radius:4px;background:#fffaf0;color:#cd7f96;font-size:34px;transition:transform .9s var(--ease) .35s;z-index:2}
+.seal-front{position:absolute;inset:0;z-index:3;border-radius:6px;background:linear-gradient(135deg,#f5d6c7,#ebbdaa);clip-path:polygon(0 0,50% 58%,100% 0,100% 100%,0 100%)}
+.seal-flap{position:absolute;left:0;right:0;top:0;height:62%;z-index:4;background:linear-gradient(180deg,#ecc4b3,#e3af9b);clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top center;border-radius:6px 6px 0 0}
+.seal-btn{position:absolute;left:50%;top:62%;z-index:5;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e64c75,#ae214f 60%,#8c183f);color:#ffe8e1;box-shadow:0 10px 18px -6px rgba(69,1,25,.8),0 0 0 3px rgba(255,255,255,.1) inset;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;animation:sealBreathe 2.4s ease-in-out infinite;transition:transform .2s var(--ease)}
+.seal-btn:focus-visible{outline:3px solid #ffe0b8;outline-offset:6px}
 .seal-heart{font-size:30px;line-height:1}
 .seal-ring{position:absolute;inset:-9px;width:calc(100% + 18px);height:calc(100% + 18px);transform:rotate(-90deg);pointer-events:none}
-.seal-ring circle{fill:none;stroke:#ffe2b8;stroke-width:4;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:calc(100 - var(--p,0) * 100)}
+.seal-ring circle{fill:none;stroke:#ffe0b8;stroke-width:4;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:calc(100 - var(--p,0) * 100)}
 .seal-gate.holding .seal-btn{animation:sealHold .14s linear infinite;transform:scale(.94)}
-.seal-hint{margin:26px 0 0;font-size:15px;color:#f3dcd5;min-height:1.6em}
-.seal-skip{min-height:44px;padding:0 14px;font-size:14px;color:#e7c0c5;text-decoration:underline;text-underline-offset:4px}
-.seal-skip:hover{color:#fff3e6}
+.seal-hint{margin:26px 0 0;font-size:15px;color:#f7d9d1;min-height:1.6em}
+.seal-skip{min-height:44px;padding:0 14px;font-size:14px;color:#edbac3;text-decoration:underline;text-underline-offset:4px}
+.seal-skip:hover{color:#fff2e6}
 .seal-gate.opening .seal-btn{animation:none;transform:scale(1.5);opacity:0;transition:transform .45s ease,opacity .45s ease}
 .seal-gate.opening .seal-flap{animation:flapOpen .7s var(--ease) forwards}
 .seal-gate.opening .seal-letter{transform:translateY(-58%)}
@@ -36,7 +36,7 @@
 .reel-item:nth-child(even){transform:rotate(3deg) scale(.93)}
 .reel-item.on{opacity:1;transform:rotate(-3deg) scale(1)}
 .reel-item.on:nth-child(even){transform:rotate(3deg) scale(1)}
-.reel-frame{width:100%;height:100%;overflow:hidden;background:#e9dccd}
+.reel-frame{width:100%;height:100%;overflow:hidden;background:#eddbc9}
 .reel-pan{width:100%;height:100%}
 .reel-pan img{width:100%;height:100%;object-fit:cover}
 .reel-item.on .reel-pan{animation:kenBurns 7s ease-out forwards}
@@ -52,16 +52,16 @@
   .fw{animation:none;opacity:1;transform:none}
 }
 
-.report-link{display:inline-block;margin-top:6px;padding:10px 6px;font-size:13px;color:#d9b9bf;text-decoration:underline;text-underline-offset:3px}
-.report-link:hover{color:#fff3e6}
+.report-link{display:inline-block;margin-top:6px;padding:10px 6px;font-size:13px;color:#dfb3bd;text-decoration:underline;text-underline-offset:3px}
+.report-link:hover{color:#fff2e6}
 .report-line{margin:18px 0 0;text-align:center}
 .report-line .report-link{color:#6f5b60}
 
 /* ---------- Gift 2.0: touch feedback, one-touch moments, a finale worth answering ---------- */
-.burst-ring{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid rgba(255,226,180,.95);box-shadow:0 0 26px rgba(255,208,140,.65),inset 0 0 14px rgba(255,208,140,.5);pointer-events:none;z-index:70;animation:burstRing 1.15s cubic-bezier(.15,.7,.3,1) forwards}
+.burst-ring{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid rgba(255,224,180,.95);box-shadow:0 0 26px rgba(255,205,140,.65),inset 0 0 14px rgba(255,205,140,.5);pointer-events:none;z-index:70;animation:burstRing 1.15s cubic-bezier(.15,.7,.3,1) forwards}
 @keyframes burstRing{from{transform:scale(.4);opacity:1}to{transform:scale(15);opacity:0}}
 .rise-balloon{position:absolute;bottom:-90px;left:var(--x);width:34px;height:44px;margin-left:-17px;border-radius:50% 50% 46% 46%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),transparent 38%),var(--c);opacity:.9;pointer-events:none;z-index:7;transform:scale(var(--s));animation:riseBalloon 5.6s cubic-bezier(.3,.1,.6,1) var(--d) forwards}
-.rise-balloon::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:52px;background:rgba(150,110,100,.45)}
+.rise-balloon::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:52px;background:rgba(161,101,89,.45)}
 @keyframes riseBalloon{0%{transform:translate(0,0) scale(var(--s))}50%{transform:translate(14px,-62vh) scale(var(--s)) rotate(4deg)}100%{transform:translate(-8px,-130vh) scale(var(--s)) rotate(-4deg);opacity:0}}
 .finale-react{margin:18px 0 2px;text-align:center}
 .finale-react-title{margin:0;font-family:var(--serif);font-style:italic;font-size:19px}
@@ -71,7 +71,7 @@
 .finale-links .story-soft-skip{margin-top:6px}
 .gratitude-cards{display:grid;gap:10px;width:100%;max-width:440px;margin:14px auto 4px;min-height:24px;text-align:center}
 .gratitude-hint{margin:0;font-size:14px;line-height:1.6;opacity:.85}
-.thanks-card{margin:0;padding:12px 16px;border-radius:16px;background:#fff8ed;border:1px solid #e0cfb8;color:#6d5058;font-family:var(--serif);font-size:16px;line-height:1.5;animation:cardIn .7s ease both}
+.thanks-card{margin:0;padding:12px 16px;border-radius:16px;background:#fff8ed;border:1px solid #e8cfb0;color:#744957;font-family:var(--serif);font-size:16px;line-height:1.5;animation:cardIn .7s ease both}
 @keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
 .story-soft-skip.is-ready{animation:cardIn .6s ease both}
 .storybook{cursor:pointer}
