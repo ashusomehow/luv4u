@@ -177,17 +177,19 @@ try {
   // 2. Create a gift with a photo (uploads go to Storage, then a small JSON publish)
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForTimeout(1000);
   assert.equal(await page.locator('.seo-content').isVisible(), false, 'seo content hidden inside the creator');
-  assert.equal(await page.locator('[data-wizard-step]').count(), 3, 'three steps');
+  assert.equal(await page.locator('[data-wizard-step], #wizardNext').count(), 0, 'one page: no steps and no Next button');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'recipientName', 'the cursor is already in the name field');
   await page.fill('#recipientName', 'Sarah');
   assert.equal(await page.locator('#vibeGrid button:visible').count(), 6, 'mood is chosen on the same screen as the name');
-  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 2: words & photos (has photos, so nothing is asked)
+  await page.waitForFunction(() => /Sarah/.test(document.querySelector('#personalMessage').value), null, { timeout: 5000 });   // a ready-made note, written for her, appears by itself
+  assert.equal(await page.locator('#createGiftBtn').isVisible(), true, 'the way forward is always on screen');
   assert.equal(await page.locator('#noteDetail').evaluate(el => el.open), true, 'the note is open on arrival');
   assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), false, 'suggestions start collapsed');
   await page.locator('#giftForm .message-templates:not(.compact) .template-heading').first().click();
   assert.equal(await page.locator('#giftForm .message-templates:not(.compact) .template-options').first().isVisible(), true, 'suggestions open on tap');
   assert.equal(await page.locator('#photosDetail').evaluate(el => el.open), true, 'photos are open on arrival, not folded away');
   await page.setInputFiles('#photoUpload', photo); await page.waitForSelector('#photoList > *');
-  await page.click('#wizardNext'); await page.waitForTimeout(500);                 // step 3: preview & send
+  await page.waitForFunction(() => document.querySelector('#dockNudge').hidden);   // no nudge once a photo is added
   assert.equal(await page.locator('#moreOptions').evaluate(el => el.open), false, 'technical options are tucked away');
   assert.equal(await page.locator('#replyPhone').isVisible(), false, 'reply phone number is not in the main flow');
   assert.equal(await page.locator('#dockPreview').isVisible(), true, 'one preview button in the dock');
@@ -241,7 +243,7 @@ try {
 
   // 5. Funnel events were recorded (anonymously)
   const events = (await state()).events;
-  for (const name of ['page_view', 'occasion_selected', 'resume_clicked', 'creator_opened', 'wizard_next', 'publish_clicked', 'gift_published', 'gift_opened']) {
+  for (const name of ['page_view', 'occasion_selected', 'resume_clicked', 'creator_opened', 'publish_clicked', 'gift_published', 'gift_opened']) {
     assert.ok(events.includes(name), `event ${name} recorded (got ${events.join(',')})`);
   }
 
@@ -259,15 +261,15 @@ try {
   await page.waitForTimeout(1200); await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' })); await page.waitForTimeout(300);
   await contrast('landing');
   await page.goto(APP + '/#make=love', { waitUntil: 'load' }); await page.waitForSelector('#recipientName'); await contrast('step 1');
-  await page.fill('#recipientName', 'Sarah'); await page.click('#wizardNext'); await page.waitForTimeout(500); await contrast('step 2');
-  // words only: leaving step 2 asks once, and skipping is an explicit choice
+  await page.fill('#recipientName', 'Sarah'); await page.waitForTimeout(600); await contrast('creator');
+  // words only: the sticky bar says so beside the button, so leaving photos out is a visible choice
   assert.match(await page.locator('#vibeLabel').innerText(), /Pick a look/, 'for a love note the mood only changes colours and sounds, and says so');
   assert.match(await page.locator('#photosDetail .detail-status').innerText(), /1 photo/, 'the section says what is in it');
   await page.locator('[data-remove-photo="0"]').click(); await page.waitForTimeout(400);
   assert.match(await page.locator('#photosDetail .detail-status').innerText(), /Not added yet/, 'and says so when it is empty');
-  await page.click('#wizardNext'); await page.waitForSelector('.media-ask');
-  assert.match(await page.locator('.media-ask').innerText(), /words only/);
-  await page.click('#askSkip'); await page.waitForTimeout(500); await contrast('step 3');
+  await page.waitForFunction(() => !document.querySelector('#dockNudge').hidden);   // with no photo or voice, the bar says so
+  assert.match(await page.locator('#dockNudge').innerText(), /Words only so far[\s\S]*photo or voice note/);
+  await contrast('creator, words only');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.getByText('My little gifts').first().click();
 
   // 5b. Legal and report pages exist, say the right things, and the report form works end to end
@@ -314,6 +316,34 @@ try {
     await fetch(`${APP}/api/gifts/${sid}`, { method: 'DELETE', headers: { authorization: `Bearer ${skey}` } });
   }
 
+  // 5c. The fast path on a phone: tap an occasion, type a name, press Go. Three actions, one screen, a finished gift.
+  {
+    const fctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
+    const fp = await fctx.newPage(); fp.setDefaultTimeout(15000); watch(fp, 'fast');
+    await fp.goto(LOCKED_APP + '/', { waitUntil: 'load' }); await fp.waitForSelector('.hero-chip');
+    await fp.tap('[data-choose-occasion="birthday"]');                                          // action 1
+    await fp.waitForSelector('#recipientName');
+    assert.equal(await fp.evaluate(() => document.activeElement.id), 'recipientName', 'typing can start straight away');
+    await fp.keyboard.type('Rhea', { delay: 30 });                                               // action 2
+    await fp.waitForFunction(() => /Rhea/.test(document.querySelector('#personalMessage').value));
+    const first = await fp.inputValue('#personalMessage');
+    await fp.tap('#noteShuffle'); assert.notEqual(await fp.inputValue('#personalMessage'), first, 'one tap tries another note');
+    await fp.fill('#personalMessage', 'My own words, Rhea.'); await fp.fill('#recipientName', 'Rhea K');
+    assert.equal(await fp.inputValue('#personalMessage'), 'My own words, Rhea.', 'once they write their own, the name never overwrites it');
+    assert.equal(await fp.locator('#noteShuffle').isVisible(), false, 'and the shuffle steps aside');
+    await fp.fill('#recipientName', 'Rhea');
+    assert.equal(await fp.locator('#dockNudge').isVisible(), true);
+    const dock = await fp.locator('#createGiftBtn').boundingBox();
+    assert.ok(dock && dock.y + dock.height <= 844 && dock.y > 0, 'the Create button is on screen without scrolling');
+    await fp.locator('#recipientName').press('Enter');                                           // action 3
+    await fp.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
+    assert.equal(await fp.locator('#unlockPanel').isVisible(), true, 'straight to the preview and payment page');
+    assert.equal(await fp.evaluate(() => localStorage.getItem('kholona.sender')), null, 'no sender yet, nothing remembered');
+    const made = await fp.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
+    assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${made.id}`, { method: 'DELETE', headers: { authorization: `Bearer ${made.key}` } })).status, 200, 'tidy up: the throwaway gift is removed');
+    await fctx.close();
+  }
+
   // 6. Delete removes the gift and its files
   page.on('dialog', d => d.accept());
   await page.getByRole('button', { name: 'Remove gift' }).first().click(); await page.waitForTimeout(1200);
@@ -333,8 +363,7 @@ try {
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
   await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');
   await owner.fill('#recipientName', 'Noor');
-  await owner.click('#wizardNext'); await owner.waitForTimeout(500); await owner.click('#wizardNext'); await owner.click('#askSkip'); await owner.waitForTimeout(500);
-  assert.match(await owner.locator('#createGiftBtn').innerText(), /Save & continue/, 'the button says what happens next');
+  assert.match(await owner.locator('#createGiftBtn').innerText(), /Create & preview/, 'the button says what happens next');
   assert.match(await owner.locator('#priceLine').innerText(), /Previewing is free\. You pay ₹199 once/, 'the price is stated before the buyer commits');
   await owner.locator('#moreOptions summary').click();
   assert.equal(await owner.locator('#deliverySelect').isVisible(), false, 'no free offline copy is offered');
@@ -432,7 +461,6 @@ try {
     const makeGift = async name => {
       await zp.goto('about:blank'); await zp.goto(RZP_APP + '/#make=love', { waitUntil: 'load' }); await zp.waitForSelector('#recipientName');
       await zp.fill('#recipientName', name);
-      await zp.click('#wizardNext'); await zp.waitForTimeout(500); await zp.click('#wizardNext'); await zp.click('#askSkip'); await zp.waitForTimeout(500);
       await zp.click('#createGiftBtn'); await zp.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
       return zp.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0].id);
     };
