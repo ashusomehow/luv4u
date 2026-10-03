@@ -11,9 +11,9 @@ export default function AppleIcon() {
         <svg width="132" height="132" viewBox="0 0 32 32">
           <path
             d="M16 25.5 C15.5 25.5 6 19.5 4 14.5 C2 9.5 5.5 5.5 10 5.5 C12.8 5.5 14.8 7.2 16 9 C17.2 7.2 19.2 5.5 22 5.5 C26.5 5.5 30 9.5 28 14.5 C26 19.5 16.5 25.5 16 25.5 Z"
-            fill="#bb4161"
+            fill="#d6265d"
           />
-          <path d="M23 6 L24 4 L25 6 L27 7 L25 8 L24 10 L23 8 L21 7 Z" fill="#ffbf5d" />
+          <path d="M23 6 L24 4 L25 6 L27 7 L25 8 L24 10 L23 8 L21 7 Z" fill="#ffbb5d" />
         </svg>
       </div>
     ),
