@@ -6,12 +6,12 @@
   --c-surface:#fffdfa;
   --c-ink:#432d32;
   --c-ink-soft:#5b4549;      /* body-secondary text: 7:1 on paper */
-  --c-brand:#aa5265;
-  --c-brand-deep:#8d3f51;    /* links and small brand text: 6:1 on paper */
-  --c-line:#e9dfd8;
-  --c-ok-bg:#e3efe2;  --c-ok-ink:#22482a;
-  --c-warn-bg:#fff6dc; --c-warn-ink:#5e4a12;
-  --c-error-bg:#fbe6e6; --c-error-ink:#7a2330;
+  --c-brand:#d6265d;
+  --c-brand-deep:#b4184b;    /* links and small brand text: 6:1 on paper */
+  --c-line:#f0dcd1;
+  --c-ok-bg:#e1f1e0;  --c-ok-ink:#155522;
+  --c-warn-bg:#fff6dc; --c-warn-ink:#705300;
+  --c-error-bg:#ffe2e2; --c-error-ink:#9d0027;
   /* type scale */
   --t-xs:12px; --t-sm:14px; --t-md:16px; --t-lg:20px; --t-xl:26px; --t-2xl:clamp(34px,6vw,46px);
   /* spacing (4px base) */

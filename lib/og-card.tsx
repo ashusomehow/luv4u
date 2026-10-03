@@ -14,26 +14,26 @@ export function ogCard({ eyebrow, title, subtitle }: { eyebrow: string; title: s
           flexDirection: 'column',
           justifyContent: 'space-between',
           padding: '64px 72px',
-          background: 'linear-gradient(135deg, #fbf5eb 0%, #f2dfd9 100%)',
+          background: 'linear-gradient(135deg, #fef5e8 0%, #fbd8d0 100%)',
           color: '#432d32',
           fontFamily: 'serif',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 40, letterSpacing: -1 }}>
           <span style={{ display: 'flex' }}>
-            khol<span style={{ color: '#aa5265' }}>o</span>na
+            khol<span style={{ color: '#d6265d' }}>o</span>na
           </span>
           <svg width="34" height="34" viewBox="0 0 24 24">
             <path
               d="M12 21s-7.5-4.6-9.4-9.4C1.2 8 3.3 4.8 6.7 4.8c2 0 3.5 1.1 5.3 3.2 1.8-2.1 3.3-3.2 5.3-3.2 3.4 0 5.5 3.2 4.1 6.8C19.5 16.4 12 21 12 21z"
-              fill="#aa5265"
+              fill="#d6265d"
             />
           </svg>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div style={{ display: 'flex', fontSize: 26, letterSpacing: 4, textTransform: 'uppercase', color: '#aa5265' }}>{eyebrow}</div>
+          <div style={{ display: 'flex', fontSize: 26, letterSpacing: 4, textTransform: 'uppercase', color: '#d6265d' }}>{eyebrow}</div>
           <div style={{ display: 'flex', fontSize: 84, lineHeight: 1.05, letterSpacing: -2 }}>{title}</div>
-          <div style={{ display: 'flex', fontSize: 34, lineHeight: 1.35, color: '#6b5559', maxWidth: 900 }}>{subtitle}</div>
+          <div style={{ display: 'flex', fontSize: 34, lineHeight: 1.35, color: '#7a4655', maxWidth: 900 }}>{subtitle}</div>
         </div>
       </div>
     ),

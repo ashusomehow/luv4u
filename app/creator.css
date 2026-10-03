@@ -6,7 +6,7 @@
 .hero-picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:22px 0 0;max-width:520px}
 .hero-picker-label{flex-basis:100%;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .hero-chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:#fffdfa;color:var(--ink);font-size:14px;text-decoration:none;transition:border-color .2s,background .2s,transform .2s}
-.hero-chip:hover,.hero-chip:focus-visible{border-color:var(--rose);background:#f8ebe8;transform:translateY(-1px)}
+.hero-chip:hover,.hero-chip:focus-visible{border-color:var(--rose);background:#fbe8e5;transform:translateY(-1px)}
 @media(max-width:760px){.hero-picker{justify-content:center;margin-top:20px}.hero-picker-label{text-align:center}}
 @media(prefers-reduced-motion:reduce){.hero-chip{transition:none}.hero-chip:hover,.hero-chip:focus-visible{transform:none}}
 
@@ -107,10 +107,10 @@ input[type=range]{min-height:44px}
 .unlock-steps{display:flex;justify-content:center;gap:6px;margin:0 0 18px;padding:0;list-style:none;font-size:12px;letter-spacing:.04em;color:var(--muted)}
 .unlock-steps li{display:flex;align-items:center;gap:6px}
 .unlock-steps li+li::before{content:'';width:18px;height:1px;background:var(--line);margin-right:2px}
-.unlock-steps span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#efe3de;color:#6a5258;font-size:11px;font-weight:700}
-.unlock-steps .done span{background:#8d3f51;color:#fff}
+.unlock-steps span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f2e1db;color:#7a4256;font-size:11px;font-weight:700}
+.unlock-steps .done span{background:#b4184b;color:#fff}
 .unlock-steps .now{color:var(--ink);font-weight:600}
-.unlock-steps .now span{background:#fff;border:1.5px solid #8d3f51;color:#8d3f51}
+.unlock-steps .now span{background:#fff;border:1.5px solid #b4184b;color:#b4184b}
 .unlock-head{text-align:center;margin:0 0 18px}
 .unlock-head h2{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:clamp(28px,7vw,36px);line-height:1.15;color:var(--ink)}
 .unlock-head p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
@@ -122,40 +122,40 @@ input[type=range]{min-height:44px}
 .phone-screen{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;background:#150f13;isolation:isolate}
 .phone-frame{display:block;width:100%;height:100%;border:0;background:#150f13}
 .phone-island{position:absolute;top:9px;left:50%;width:30%;height:22px;transform:translateX(-50%);border-radius:999px;background:#000;z-index:3;pointer-events:none}
-.phone-loading{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#150f13;color:#c0a5a1;font-family:var(--serif);font-style:italic;font-size:16px;transition:opacity .45s ease .15s}
+.phone-loading{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#150f13;color:#d2958f;font-family:var(--serif);font-style:italic;font-size:16px;transition:opacity .45s ease .15s}
 .phone-loading.is-done{opacity:0;pointer-events:none}
 .phone figcaption{margin:14px 0 4px;font-size:13px;color:var(--muted)}
 .phone-tools{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
-.phone-tools button{min-height:44px;padding:0 12px;font-size:13px;color:#6a3341;border-radius:999px}
-.phone-tools button:hover{background:#f3e8e4}
+.phone-tools button{min-height:44px;padding:0 12px;font-size:13px;color:#86173f;border-radius:999px}
+.phone-tools button:hover{background:#f6e6e1}
 .unlock-rest{display:contents}
 .unlock-made{margin:0 0 14px;text-align:center;font-size:13px;color:var(--muted)}
 /* Price and what is included */
 .unlock-card{margin:0 0 6px;padding:18px 20px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#fffdfa,#fdf3ee);box-shadow:0 14px 34px -26px rgba(67,45,50,.6)}
 .unlock-price{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
-.unlock-price strong{font-family:var(--serif);font-weight:400;font-size:44px;line-height:1;color:#8d3f51}
+.unlock-price strong{font-family:var(--serif);font-weight:400;font-size:44px;line-height:1;color:#b4184b}
 .unlock-price span{font-size:14px;color:#5b4549}
 .unlock-list{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;color:var(--ink)}
 .unlock-list li{position:relative;padding-left:24px;line-height:1.45}
-.unlock-list li::before{content:'✓';position:absolute;left:0;top:0;color:#8d3f51;font-weight:700}
-.unlock-panel .unlock-trust{margin:0;padding:10px 12px;border-radius:12px;background:#f8ede9;font-size:13px;line-height:1.45;color:#5b4549}
+.unlock-list li::before{content:'✓';position:absolute;left:0;top:0;color:#b4184b;font-weight:700}
+.unlock-panel .unlock-trust{margin:0;padding:10px 12px;border-radius:12px;background:#fbebe6;font-size:13px;line-height:1.45;color:#5b4549}
 /* The button stays in reach while the page scrolls (phones) */
 .unlock-cta{position:sticky;bottom:0;z-index:5;margin:0 -25px 6px;padding:12px 25px max(12px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(253,248,244,0),rgba(253,248,244,.96) 22%);}
 .unlock-cta .pay-btn{width:100%;min-height:56px;font-size:17px}
-.unlock-panel .unlock-loss{margin:12px 0 0;text-align:center;color:#8d3f51;font-weight:600;font-size:13px}
+.unlock-panel .unlock-loss{margin:12px 0 0;text-align:center;color:#b4184b;font-weight:600;font-size:13px}
 .unlock-panel .unlock-loss:empty{display:none}
-.pay-error{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#fbe6e6;color:#7a2330;font-size:13px;line-height:1.5}
-.pay-status{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#eef3ec;color:#2f4a33;font-size:13px;line-height:1.5}
+.pay-error{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#ffe2e2;color:#9d0027;font-size:13px;line-height:1.5}
+.pay-status{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#eef4eb;color:#2f4a33;font-size:13px;line-height:1.5}
 .pay-error[hidden],.pay-status[hidden]{display:none}
 .unlock-faq{border-top:1px solid var(--line);padding:2px 0}
 .unlock-faq summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink)}
 .unlock-faq p{margin:0 0 12px;font-size:13px;line-height:1.6;color:var(--muted)}
-.unlock-faq a{color:#8d3f51;text-decoration:underline}
+.unlock-faq a{color:#b4184b;text-decoration:underline}
 .unlock-panel .unlock-note{margin:12px 0 0;font-size:12px;line-height:1.55;color:#5b4549;text-align:center}
 .pay-done{text-align:center;padding:26px 0 8px}
 .pay-done h2{margin:14px 0 8px;font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.2;color:var(--ink)}
 .pay-done p{margin:0 0 18px;color:#5b4549;font-size:14px}
-.pay-check{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#8d3f51;color:#fff;font-size:32px;animation:payCheck .5s cubic-bezier(.2,.9,.3,1.3) both}
+.pay-check{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#b4184b;color:#fff;font-size:32px;animation:payCheck .5s cubic-bezier(.2,.9,.3,1.3) both}
 @keyframes payCheck{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
 /* Wide screens: the phone sits beside the pitch */
 @media(min-width:920px){
@@ -169,15 +169,15 @@ input[type=range]{min-height:44px}
 @media(prefers-reduced-motion:reduce){.phone-loading{transition:none}.pay-check{animation:none}}
 
 /* ---------- Last step: the price, said plainly ---------- */
-.price-line{margin:16px 0 0;padding:12px 14px;border-radius:14px;background:#f8ede9;color:var(--ink);font-size:14px;line-height:1.5}
+.price-line{margin:16px 0 0;padding:12px 14px;border-radius:14px;background:#fbebe6;color:var(--ink);font-size:14px;line-height:1.5}
 .price-line[hidden]{display:none}
 
 /* ---------- Preview of an unsent gift: the way forward stays in view, biggest at the last scene ---------- */
 .unlock-tray{position:absolute;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 16px;border-radius:20px;background:#fffbf0f2;color:#5b4549;box-shadow:0 16px 36px -14px rgba(0,0,0,.75);font-size:13px;transition:padding .3s}
 .unlock-tray-copy{display:flex;flex-direction:column;min-width:0;line-height:1.35}
 .unlock-tray-copy strong{font-size:15px;color:#432d32}
-.unlock-tray-btn{flex:none;min-height:44px;padding:0 18px;border-radius:999px;background:#aa5265;color:#fff;font-size:14px;font-weight:600}
-.unlock-tray-btn:hover,.unlock-tray-btn:focus-visible{background:#8d3f51}
+.unlock-tray-btn{flex:none;min-height:44px;padding:0 18px;border-radius:999px;background:#d6265d;color:#fff;font-size:14px;font-weight:600}
+.unlock-tray-btn:hover,.unlock-tray-btn:focus-visible{background:#b4184b}
 .unlock-tray.is-final{flex-direction:column;align-items:stretch;text-align:center;padding:16px}
 .unlock-tray.is-final .unlock-tray-btn{min-height:52px;font-size:16px}
 @media(min-width:761px){.unlock-tray{left:50%;right:auto;width:min(520px,calc(100% - 32px));transform:translateX(-50%)}}
@@ -203,23 +203,23 @@ html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
 .make-theirs{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 0 10px;padding-top:20px;border-top:1px solid var(--line)}
 .make-theirs h3{margin:0;font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:-.3px;color:var(--ink)}
 .make-theirs h3 em{color:var(--rose)}
-.make-theirs span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6a3341}
+.make-theirs span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#86173f}
 .note-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 0}
-.note-shuffle{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid #c78e98;background:#fff;color:#8d3f51;font-size:13px;font-weight:600}
-.note-shuffle:hover{background:#f8ede9}
+.note-shuffle{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid #e47191;background:#fff;color:#b4184b;font-size:13px;font-weight:600}
+.note-shuffle:hover{background:#fbebe6}
 .note-shuffle[hidden]{display:none}
 .note-hint{flex:1 1 180px;font-size:12px;line-height:1.5;color:#5b4549}
 .alt-source{margin:10px 0 0}
-.alt-source summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#6a3341;text-decoration:underline;text-underline-offset:4px}
+.alt-source summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#86173f;text-decoration:underline;text-underline-offset:4px}
 .alt-source[open] summary{margin-bottom:6px}
-.media-nudge{margin:18px 0 12px;padding:14px 16px;border:1px dashed #c78e98;border-radius:18px;background:#fdf3ee}
+.media-nudge{margin:18px 0 12px;padding:14px 16px;border:1px dashed #e47191;border-radius:18px;background:#fdf3ee}
 .media-nudge[hidden]{display:none}
 .media-nudge p{margin:0 0 10px;font-size:13px;line-height:1.55;color:#432d32}
 .media-nudge-actions{display:flex;gap:8px;flex-wrap:wrap}
 /* One line in the sticky bar: leaving photos and voice out is visible right beside the button, never a missed step */
 .dock-nudge{display:block;width:100%;max-width:510px;margin:0 auto 8px;min-height:36px;padding:2px 6px;text-align:center;font-size:12px;line-height:1.4;color:#5b4549}
 .dock-nudge[hidden]{display:none}
-.dock-nudge u{color:#8d3f51;font-weight:600;text-underline-offset:3px}
+.dock-nudge u{color:#b4184b;font-weight:600;text-underline-offset:3px}
 @media(min-width:761px){.dock-nudge{max-width:1064px;text-align:right}}
 .creator #personalMessage{min-height:150px;field-sizing:content;max-height:320px}
 @media(max-width:760px){.creator .occasion-guide{display:none}}
@@ -228,6 +228,6 @@ html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
 .creator .vibe-grid.is-look .vibe-btn strong{font-size:13px}
 /* A quiet glow when the ready-made note is written or swapped, so the change is noticed without any sound or movement of the page */
 .note-fresh{animation:noteGlow 1s ease-out}
-@keyframes noteGlow{0%{box-shadow:0 0 0 3px rgba(170,82,101,.35);background:#fdf3ee}100%{box-shadow:0 0 0 0 rgba(170,82,101,0)}}
+@keyframes noteGlow{0%{box-shadow:0 0 0 3px rgba(214,38,93,.35);background:#fdf3ee}100%{box-shadow:0 0 0 0 rgba(214,38,93,0)}}
 @media(prefers-reduced-motion:reduce){.note-fresh{animation:none}}
 #noteDetail .input-help{display:none}
