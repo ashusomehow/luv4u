@@ -17,6 +17,8 @@ export function LegalPage({ title, children, updated = true }: { title: string; 
     <div className="legal">
       <header className="legal-head">
         <a className="legal-brand" href="/" aria-label={`${BUSINESS_NAME} home`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo-mark" src="/icon.svg" alt="" width={26} height={26} />
           khol<span>o</span>na
         </a>
         <a className="legal-back" href="/">Back to the gifts</a>

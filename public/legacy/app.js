@@ -416,7 +416,7 @@ function startExperienceV1(data,options={}){
  scenes=buildScenes(gift);
  for(const id of ['homeView','creatorView','shareView','errorView'])$('#'+id).hidden=true;
  $('#siteHeader').hidden=true;const exp=$('#experience');exp.hidden=false;exp.className='experience'+(isPreview?' preview-mode':'');exp.dataset.vibe=gift.vibe;exp.dataset.occasion=gift.occasion;exp.setAttribute('aria-label','Your '+occasionOf(gift).label.toLowerCase()+' surprise');
- exp.innerHTML=`<div class="room-warmth"></div><div class="room-decor" aria-hidden="true"><div class="room-wall"></div><div class="room-arch"></div><div class="room-side-balloon left">${balloonSVG('story-left')}</div><div class="room-side-balloon right">${balloonSVG('story-right')}</div><div class="room-floor-stars">${[[14,23,17],[83,19,13],[10,71,15],[90,73,20],[22,87,12],[78,88,12]].map(([x,y,s],i)=>`<span class="room-star" style="left:${x}%;top:${y}%;font-size:${s}px;animation-delay:${i*.6}s">✧</span>`).join('')}${Array.from({length:12},(_,i)=>`<span class="floating-dust" style="left:${9+i*7.2}%;top:${30+(i%5)*13}%;animation-delay:${-i*.8}s"></span>`).join('')}</div></div><div class="room-lights">${fairySVG('story-fairy',true)}</div><div class="room-vignette"></div><span class="experience-brand" aria-label="Kholona">kholona<span style="font-size:10px;vertical-align:top;position:relative;top:4px;left:3px">♡</span></span>${isPreview?'<div class="preview-banner"><span>A PEEK AT THEIR SURPRISE</span><button data-story="exit-preview">Back to editing</button></div>':''}<div class="experience-topright"><button class="round-control" id="soundToggle" data-story="sound" aria-label="Turn sound off"></button></div><div class="story-scroll" id="storyScroll"><div class="story-scene" id="storyScene"></div></div><div class="story-bottom" id="storyProgress" aria-hidden="true"></div><p class="sr-only" id="storyAnnouncement" aria-live="polite"></p>`;
+ exp.innerHTML=`<div class="room-warmth"></div><div class="room-decor" aria-hidden="true"><div class="room-wall"></div><div class="room-arch"></div><div class="room-side-balloon left">${balloonSVG('story-left')}</div><div class="room-side-balloon right">${balloonSVG('story-right')}</div><div class="room-floor-stars">${[[14,23,17],[83,19,13],[10,71,15],[90,73,20],[22,87,12],[78,88,12]].map(([x,y,s],i)=>`<span class="room-star" style="left:${x}%;top:${y}%;font-size:${s}px;animation-delay:${i*.6}s">✧</span>`).join('')}${Array.from({length:12},(_,i)=>`<span class="floating-dust" style="left:${9+i*7.2}%;top:${30+(i%5)*13}%;animation-delay:${-i*.8}s"></span>`).join('')}</div></div><div class="room-lights">${fairySVG('story-fairy',true)}</div><div class="room-vignette"></div><span class="experience-brand" aria-label="Kholona"><img class="logo-mark" src="/icon.svg" alt="" width="20" height="20">kholona<span style="font-size:10px;vertical-align:top;position:relative;top:4px;left:3px">♡</span></span>${isPreview?'<div class="preview-banner"><span>A PEEK AT THEIR SURPRISE</span><button data-story="exit-preview">Back to editing</button></div>':''}<div class="experience-topright"><button class="round-control" id="soundToggle" data-story="sound" aria-label="Turn sound off"></button></div><div class="story-scroll" id="storyScroll"><div class="story-scene" id="storyScene"></div></div><div class="story-bottom" id="storyProgress" aria-hidden="true"></div><p class="sr-only" id="storyAnnouncement" aria-live="polite"></p>`;
  document.body.classList.add('experiencing');currentView='experience';document.title=`${occasionOf(gift).label} for ${gift.name} ♡`; $('meta[name="theme-color"]').content='#150f13';updateSoundControl();renderScene();
 }
 function cleanupExperienceV1(){
@@ -773,7 +773,7 @@ function mountSeal(){
 }
 function cleanupExperience(){clearAuto();clearInterval(storyAuto);cascading=false;clearInterval(reelTimer);clearTimeout(finaleTimer);stopTilt();tiltEnabled=true;cleanupExperienceV1();}
 function previewGift(){stopPreviewAudio();previewGiftV1();}
-function renderScene(){renderSceneCore();updateUnlockTray();}
+function renderScene(){renderSceneCore();updateUnlockTray();embedNudge();}
 function renderSceneCore(){
  const type=scenes[sceneIndex],t=THEMES[gift.vibe];
  if(renderOccasionScene(type))return;
@@ -988,7 +988,7 @@ function applyShareLock(){
 <header class="unlock-head"><h2 id="unlockTitle">${name}’s gift is ready.</h2><p id="unlockText">This is exactly what ${name} will open. Tap through it.</p></header>
 <figure class="phone" aria-label="Live preview of the gift">
 <div class="phone-body"><span class="phone-key phone-key-a"></span><span class="phone-key phone-key-b"></span><span class="phone-key phone-key-c"></span>
-<div class="phone-screen"><iframe class="phone-frame" id="phoneFrame" title="Live preview of ${name}’s gift" src="/preview-frame" loading="lazy"></iframe><span class="phone-island" aria-hidden="true"></span><div class="phone-loading" id="phoneLoading" aria-hidden="true"><span>Unwrapping…</span></div></div></div>
+<div class="phone-screen"><iframe class="phone-frame" id="phoneFrame" title="Live preview of ${name}’s gift" src="/preview-frame" loading="lazy" tabindex="0"></iframe><span class="phone-island" aria-hidden="true"></span><div class="phone-loading" id="phoneLoading" aria-hidden="true"><span>Unwrapping…</span></div></div></div>
 <figcaption>The real thing, not a screenshot.</figcaption>
 <div class="phone-tools"><button type="button" id="phoneRestart">↺ Start over</button><button type="button" id="phoneFull">⤢ Full screen</button><button type="button" data-action="edit">✎ Edit</button></div>
 </figure>
@@ -1009,6 +1009,7 @@ function applyShareLock(){
 <details class="unlock-faq"><summary>Can I change it after paying?</summary><p>Yes. Edit the words, photos or music any time and the same link shows the new version.</p></details>
 <p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable.</p></div>`;
 setTimeout(welcomeBack,0);
+ fitPhone();
  $('#phoneRestart').onclick=()=>{try{$('#phoneFrame').contentWindow.location.reload();$('#phoneLoading')?.classList.remove('is-done');}catch{}};
  $('#phoneFull').onclick=()=>$('#previewPublished').click();
  }
@@ -1074,17 +1075,35 @@ async function confirmPayment(proof,status){
  for(let i=0;i<12;i++){await delay(5000);try{const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,timeout:20000});if(r.status==='paid'){payPendingRef='';return r;}}catch{}}
  throw new Error('Your payment is still being confirmed. Please do not pay again: this gift unlocks on its own as soon as it is confirmed, usually within minutes. Come back to it in a little while.'+refText(ref)+' If it is not unlocked within a day, write to us with this reference.');
 }
+/* Copy without any toast or alarm: some browsers only allow it from a tap, and the button covers that. */
+async function copyQuiet(text){
+ try{await navigator.clipboard.writeText(text);return true;}catch{}
+ try{const a=document.createElement('textarea');a.value=text;a.style.cssText='position:fixed;left:-9999px;top:0';document.body.append(a);a.select();const ok=document.execCommand('copy');a.remove();return ok;}catch{return false;}
+}
 function unlockDone(name){
  const panel=$('#unlockPanel');if(!panel)return;
- clearPayStarted(editing.id);{const en=libraryCache.find(v=>v.id===editing.id);if(en&&en.waiting)rememberGift({...en,waiting:false});}
- panel.dataset.frame='';
- panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">Unlocked. ${name} can open it now.</h2><p>Your private link is ready. Send it whenever you like.</p><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone">Get my link</button></div>`;
- confetti(140);$('#payDone').focus();
- $('#payDone').onclick=async()=>{
-  const btn=$('#payDone');btn.disabled=true;
-  try{const owner=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});publishedStatus='paid';publishedURL=owner.url;showShare();toast('Unlocked. Send it with love. ♡');}
-  catch(ex){btn.disabled=false;const er=$('#payError');er.textContent='Your gift is unlocked, but we could not load your link just now. Check your connection and press the button again.';er.hidden=false;}
+ panel.dataset.frame='';clearPayStarted(editing.id);{const en=libraryCache.find(v=>v.id===editing.id);if(en&&en.waiting)rememberGift({...en,waiting:false});}
+ panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">Unlocked. ${name} can open it now.</h2><p id="paidNote" role="status">Getting your private link…</p><input class="link-input paid-link" id="paidLink" readonly spellcheck="false" aria-label="Your private gift link" hidden><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone" disabled>One moment…</button></div>`;
+ confetti(140);
+ const btn=$('#payDone'),note=$('#paidNote'),box=$('#paidLink');let copied=false;
+ const load=async()=>{
+  btn.disabled=true;$('#payError').hidden=true;
+  try{
+   const owner=await api('/api/gifts/'+editing.id+'/owner',{key:editing.key});publishedStatus='paid';publishedURL=owner.url;
+   box.value=owner.url;box.hidden=false;copied=await copyQuiet(owner.url);
+   if(copied){toast('Link copied. Paste it into WhatsApp. ♡');sfx('pop');}
+   note.textContent=copied?'Your private link is copied. Paste it into WhatsApp, or anywhere.':'Your private link is ready. Tap the button to copy it.';
+   btn.textContent=copied?'Open my gift page':'Copy my link';btn.disabled=false;btn.focus();
+  }catch{
+   note.textContent='Your gift is unlocked.';const er=$('#payError');er.textContent='We could not load your link just now. Check your connection and press the button to try again.';er.hidden=false;btn.textContent='Try again';btn.disabled=false;
+  }
  };
+ btn.onclick=async()=>{
+  if(!publishedURL||publishedStatus!=='paid'){await load();return;}
+  if(!copied)copied=await copyQuiet(publishedURL);
+  showShare();toast(copied?'Link copied. Send it with love. ♡':'Unlocked. Send it with love. ♡');
+ };
+ load();
 }
 async function startPayment(){
  if(payBusy||!editing?.key||!publishedGift?.server)return;
@@ -1141,12 +1160,16 @@ async function welcomeBack(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&publishedGift?.server&&payStartedRecently(publishedGift.id))welcomeBack();});
 function unlockGift(){startPayment();$('#unlockPanel')?.scrollIntoView({behavior:'smooth',block:'center'});}
+/* The preview is laid out as a real 390 x 844 phone and scaled down to fit the mockup, so nothing is cut off. */
+function fitPhone(){const screen=$('.phone-screen');if(screen&&screen.clientWidth)screen.style.setProperty('--ps',String(screen.clientWidth/390));}
+window.addEventListener('resize',fitPhone);
 /* The unlock page plays the gift inside a phone. The frame (same origin) asks for the gift once it has loaded. */
 window.addEventListener('message',ev=>{
  if(ev.origin!==location.origin)return;
- const f=$('#phoneFrame');if(!f||ev.source!==f.contentWindow||!ev.data||ev.data.type!=='kholona-embed-ready'||!publishedGift)return;
- f.contentWindow.postMessage({type:'kholona-embed-play',gift:publishedGift},location.origin);
- $('#phoneLoading')?.classList.add('is-done');
+ const f=$('#phoneFrame');if(!f||ev.source!==f.contentWindow||!ev.data||!publishedGift)return;
+ if(ev.data.type==='kholona-embed-ready'){f.contentWindow.postMessage({type:'kholona-embed-play',gift:publishedGift,price:priceText()},location.origin);$('#phoneLoading')?.classList.add('is-done');}
+ /* The preview ends with a nudge to unlock: its button pays from here. */
+ if(ev.data.type==='kholona-embed-unlock'){startPayment();$('#payGo')?.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});}
 });
 /* Open a saved gift's share screen (used for gifts still waiting to be unlocked). */
 async function openSavedShare(id){
@@ -1263,12 +1286,29 @@ async function routeV2(){const occasionRoute=/^#occasion=(birthday|proposal|love
  if(match){try{const result=await api('/api/gifts/'+match[1]);if(result.scheduled){showScheduled(result.opensAt);return true;}startExperience(result.gift);}catch(err){showView('error');$('#errorMessage').textContent=err.message;}return true;}const campaign=Object.entries(OCCASIONS).find(([,o])=>location.pathname==='/for/'+o.slug||location.pathname==='/for/'+o.slug+'/');if(campaign){/* The server already set this page's own title. */applyCampaign(campaign[0],true);return true;}return false;
 }
 /* The phone on the unlock page plays the gift in here. It only ever shows what its parent window hands it. */
+const EMBED=location.pathname==='/preview-frame'&&window.parent!==window;
+let embedPrice='';
+/* When the preview reaches its ending, say so and point at the way to send it. */
+function embedNudge(){
+ if(!EMBED||!gift)return;const exp=$('#experience'),type=scenes[sceneIndex],last=type==='celebration'||type==='reply';
+ let n=$('.embed-nudge',exp);if(!last){n?.remove();exp.classList.remove('has-nudge');return;}if(n)return;
+ exp.classList.add('has-nudge');
+ exp.insertAdjacentHTML('beforeend',`<aside class="embed-nudge" aria-label="Unlock this gift"><p><strong>This is what ${e(gift.name)} will feel.</strong><br>Unlock it to get the link and send it.</p><button type="button" data-story="embed-unlock">Unlock & get link${embedPrice?' · '+e(embedPrice):''}</button></aside>`);
+}
 function initEmbed(){
  document.documentElement.classList.add('is-embed');
+ /* The preview frame never boots the creator, so the gift's own touches are wired here: every one-touch moment of every gift, and nothing else. */
+ document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-v3],[data-v2]');if(!b)return;
+  const v3={'open-note':()=>openOccasionNote(b),'heart-note':()=>openHeartNote(b),'flower':()=>pickFlower(b),'turn-page':()=>turnStoryPage(),'untie-ribbon':()=>untieRibbon(b),'send-hug':()=>sendPaperHug(b),'reveal-question':()=>revealProposal(b),'proposal-answer':()=>chooseProposalAnswer(b),'no-answer':()=>{journeyReply='';proposalAnswer='';goToScene(sceneIndex+1);},'quiet-close':()=>goToScene(scenes.indexOf('celebration')),'finish-reading':()=>showQuietFinish()};
+  const v2={'choose-path':()=>choosePath(b.dataset.path),'pick-gift':()=>pickMystery(b),'custom-quiz':()=>customQuiz(b),'reveal-quiz':()=>{if($('[data-right=true]'))$('#quizHint').textContent='A tiny hint: '+gift.quizAnswer+'. Give it a tap. ♡';},'tilt':()=>toggleTilt(),'quick-react':()=>quickReact(b)};
+  const act=b.dataset.v3!==undefined?v3[b.dataset.v3]:v2[b.dataset.v2];if(act){ev.preventDefault();act();}
+ });
  for(const id of ['homeView','creatorView','shareView','errorView','myGiftsView'])if($('#'+id))$('#'+id).hidden=true;
  if($('#siteHeader'))$('#siteHeader').hidden=true;
  window.addEventListener('message',ev=>{
   if(ev.origin!==location.origin||ev.source!==window.parent||!ev.data||ev.data.type!=='kholona-embed-play')return;
+  embedPrice=typeof ev.data.price==='string'?ev.data.price.slice(0,12):'';
   try{startExperience(sanitizeGift(ev.data.gift),{preview:true,returnView:'share'});}catch{}
  });
  document.documentElement.classList.remove('gift-loading');
@@ -1482,7 +1522,7 @@ $('#previewPublished').addEventListener('click',()=>{if(!publishedGift)return;pr
 $('#homeCandle').addEventListener('click',()=>{if(homeOccasion!=='birthday'){previewOccasion(homeOccasion);return;}const cake=$('#homeCandle');if(cake.classList.contains('extinguished')){cake.classList.remove('extinguished');$('#homeCandleHint').textContent='another little wish? go on.';cake.setAttribute('aria-label','Make a little wish and blow out the candles');return;}cake.classList.add('extinguished');cake.setAttribute('aria-label','Relight the birthday candles');$('#homeCandleHint').textContent='your little wish is on its way ♡';chime('wish');const r=cake.getBoundingClientRect();confetti(30,{x:r.x+r.width/2,y:r.y+30});});
 $('#experience').addEventListener('click',event=>{
  const balloon=event.target.closest('[data-balloon]');if(balloon){popBalloon(balloon);return;}const quiz=event.target.closest('[data-quiz]');if(quiz){answerQuiz(quiz);return;}const r=event.target.closest('[data-reaction]');if(r){selectReaction(r.dataset.reaction);return;}
- const button=event.target.closest('[data-story]');if(!button)return;switch(button.dataset.story){case'light':lightUp();break;case'next':chime();goToScene(sceneIndex+1);break;case'blow':blowCandles();break;case'microphone':startBlowing();break;case'open-gift':openPresent();break;case'sound':toggleSound();break;case'exit-preview':exitPreview();break;case'preview-unlock':exitPreview();unlockGift();break;case'preview-save':exitPreview();publishGift();break;case'reveal-scratch':revealScratch();break;case'prepare-reply':prepareReply();break;case'share-reply':shareReply();break;case'copy-reply':copyText(replySharedText,'Your little thank-you is copied. Send it back with love.');break;case'whatsapp-reply':whatsappReply();break;case'replay':{const data=gift,preview=isPreview,ret=previewReturn;startExperience(data,{preview,returnView:ret,skipSeal:true});setTimeout(()=>lightUp(),250);break;}case'make-your-own':browseGifts();break;}
+ const button=event.target.closest('[data-story]');if(!button)return;switch(button.dataset.story){case'light':lightUp();break;case'embed-unlock':try{window.parent.postMessage({type:'kholona-embed-unlock'},location.origin);}catch{}break;case'next':chime();goToScene(sceneIndex+1);break;case'blow':blowCandles();break;case'microphone':startBlowing();break;case'open-gift':openPresent();break;case'sound':toggleSound();break;case'exit-preview':exitPreview();break;case'preview-unlock':exitPreview();unlockGift();break;case'preview-save':exitPreview();publishGift();break;case'reveal-scratch':revealScratch();break;case'prepare-reply':prepareReply();break;case'share-reply':shareReply();break;case'copy-reply':copyText(replySharedText,'Your little thank-you is copied. Send it back with love.');break;case'whatsapp-reply':whatsappReply();break;case'replay':{const data=gift,preview=isPreview,ret=previewReturn;startExperience(data,{preview,returnView:ret,skipSeal:true});setTimeout(()=>lightUp(),250);break;}case'make-your-own':browseGifts();break;}
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBlowing();if(mediaRecorder)stopRecording(true);if(musicAudio)musicAudio.pause();if(audioContext?.state==='running')audioContext.suspend().catch(()=>{});cancelAnimationFrame(confettiFrame);$('#confettiCanvas').hidden=true;}else if(currentView==='experience'&&$('#experience').classList.contains('lit')&&!soundMuted){ensureAudio();if(musicAudio)musicAudio.play().catch(()=>{});}});
 window.addEventListener('pagehide',()=>{stopBlowing();stopRecording(false);stopMusic();});
