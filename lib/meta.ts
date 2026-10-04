@@ -100,10 +100,11 @@ function pageUrl(request: Request): string {
 /**
  * Reads the ad-click identifiers from the request: Meta's own `_fbc` / `_fbp` cookies and our `kholona_attr`
  * cookie (UTM tags). Everything is validated against a strict pattern, so a hand-made cookie cannot smuggle
- * anything else into the record. Returns null when the visitor opted out or there is nothing to remember.
+ * anything else into the record. Returns null when ad measurement is off or the visitor opted out.
  */
 export function readAttribution(request: Request): Attribution | null {
-  if (adsOptedOut(request.headers)) return null;
+  // Nothing is read, and so nothing is stored, unless ad measurement is switched on and the visitor has not opted out.
+  if (!metaConfigured() || adsOptedOut(request.headers)) return null;
   const jar = cookies(request.headers.get('cookie'));
   const out: Attribution = {};
   if (FBC.test(jar._fbc ?? '')) out.fbc = jar._fbc;
@@ -121,16 +122,14 @@ export function readAttribution(request: Request): Attribution | null {
     /* a broken cookie is just ignored */
   }
 
-  // Only keep the connection details when there is a click to match them to.
-  if (out.fbc || out.fbp || out.utm_source) {
-    const ip = clientAddress(request);
-    if (ip && ip.length <= 64) out.ip = ip;
-    const ua = request.headers.get('user-agent');
-    if (ua) out.ua = ua.slice(0, 400);
-    out.url = pageUrl(request);
-    return out;
-  }
-  return null;
+  // The connection details (address, browser, page) go with every buyer who has not opted out, ad click or not:
+  // Meta can still match many of them from these, so their purchase is not lost.
+  const ip = clientAddress(request);
+  if (ip && ip.length <= 64) out.ip = ip;
+  const ua = request.headers.get('user-agent');
+  if (ua) out.ua = ua.slice(0, 400);
+  out.url = pageUrl(request);
+  return out;
 }
 
 /* ------------------------------------------------------------------ sending */

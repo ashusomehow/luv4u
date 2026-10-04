@@ -19,7 +19,7 @@ Because the server does this, a purchase is reported even if the buyer closed th
 
 ## What is never sent
 
-Gift ids (only a hash, as `external_id`), names, messages, photos, gift links, or any typed text. Recipient pages (`/g/...`), downloaded gifts and the unlock-page phone preview never load the Pixel or set cookies. Nothing runs, and no cookie is set, when the browser sends Do Not Track or Global Privacy Control. Buyers with no measured visit are not reported at all.
+Gift ids (only a hash, as `external_id`), names, messages, photos, gift links, or any typed text. Recipient pages (`/g/...`), downloaded gifts and the unlock-page phone preview never load the Pixel or set cookies. Nothing runs, and no cookie is set, when the browser sends Do Not Track or Global Privacy Control. Buyers who opted out are not reported at all. Buyers with no ad cookies (blocked Pixel, typed the address) are still reported, with their network address and browser only, which Meta can sometimes match.
 
 ## Set up (one time)
 
@@ -54,4 +54,4 @@ The privacy page describes this. Setting the cookies and sending data to Meta is
 
 - **Events show only "Browser" or only "Server":** the other side is not matching event ids or is blocked. Server-only is normal for ad-blocker users; browser-only means the token is wrong or `META_CAPI_TOKEN` is missing.
 - **Nothing in Test events:** check the token, the test event code, and the Vercel logs for `Meta Conversions API rejected an event` (the log never contains the token).
-- **Purchases missing for some buyers:** buyers with Do Not Track on, or with no measured visit (they never landed on a page that loaded the Pixel), are intentionally not reported.
+- **Purchases missing for some buyers:** buyers with Do Not Track or Global Privacy Control on are intentionally not reported, and neither are orders made before the Pixel ID and token were set.

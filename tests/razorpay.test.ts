@@ -417,8 +417,11 @@ describe('Meta conversions', () => {
   it('reads only well-formed ad cookies and nothing when the visitor opted out', () => {
     const ok = readAttribution(adReq('/x'));
     expect(ok).toMatchObject({ fbc: FBC, fbp: FBP, utm_source: 'meta', utm_medium: 'paid', utm_campaign: 'diwali', utm_content: 'reel1', ip: '203.0.113.9' });
-    const junk = readAttribution(new Request('https://kholona.test/x', { headers: { cookie: '_fbc=<script>; _fbp=nope; kholona_attr=%%%' } }));
-    expect(junk).toBeNull();
+    const junk = readAttribution(new Request('https://kholona.test/x', { headers: { cookie: '_fbc=<script>; _fbp=nope; kholona_attr=%%%', 'user-agent': 'Mozilla/5.0', 'x-forwarded-for': '203.0.113.9' } }));
+    expect(junk).toEqual({ ip: '203.0.113.9', ua: 'Mozilla/5.0', url: expect.stringMatching(/^https?:\/\//) }); // bad cookies are dropped, connection details kept
+    delete process.env.META_CAPI_TOKEN;
+    expect(readAttribution(adReq('/x'))).toBeNull(); // nothing is read while ad measurement is off
+    process.env.META_CAPI_TOKEN = 'capi-token-not-real-0123456789';
     expect(readAttribution(adReq('/x', undefined, { dnt: '1' }))).toBeNull();
     expect(readAttribution(adReq('/x', undefined, { 'sec-gpc': '1' }))).toBeNull();
   });
@@ -478,6 +481,28 @@ describe('Meta conversions', () => {
     await settleMeta();
     expect(sent.map((s) => s.body.data[0].event_name)).toEqual(['Purchase']);
     expect(sent[0].body.data[0].user_data.fbc).toBe(FBC);
+  });
+
+  it('still reports a buyer who has no ad cookies, using their address and browser', async () => {
+    await create();
+    const plain = { 'x-forwarded-for': '198.51.100.4', 'user-agent': 'Mozilla/5.0 Chrome' };
+    const orderId = (await (await checkout(new Request('https://kholona.test/x', { method: 'POST', headers: { authorization: `Bearer ${KEY}`, ...plain } }), ctx())).json()).order.id as string;
+    expect(fake.tables.payments[0].attribution).toMatchObject({ ip: '198.51.100.4', ua: 'Mozilla/5.0 Chrome' });
+    sent.length = 0;
+    expect((await verify(new Request('https://kholona.test/x', { method: 'POST', headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json', ...plain }, body: JSON.stringify(pay(orderId)) }), ctx())).status).toBe(200);
+    await settleMeta();
+    expect(sent).toHaveLength(1);
+    expect(sent[0].body.data[0].user_data).toMatchObject({ client_ip_address: '198.51.100.4', client_user_agent: 'Mozilla/5.0 Chrome' });
+    expect(sent[0].body.data[0].user_data.fbc).toBeUndefined();
+  });
+
+  it('later adds the ad click to an order that was opened without one', async () => {
+    await create();
+    await checkout(new Request('https://kholona.test/x', { method: 'POST', headers: { authorization: `Bearer ${KEY}`, 'user-agent': 'Mozilla/5.0' } }), ctx());
+    expect((fake.tables.payments[0].attribution as Record<string, unknown>).fbp).toBeUndefined();
+    await startAd();
+    expect(fake.tables.payments).toHaveLength(1);
+    expect(fake.tables.payments[0].attribution).toMatchObject({ fbc: FBC, fbp: FBP });
   });
 
   it('does not report anything for a buyer who opted out, and keeps the response clean', async () => {
