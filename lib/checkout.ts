@@ -48,7 +48,8 @@ export async function openOrderFor(
   const existing = (data as PaymentRow[] | null)?.[0];
   if (existing) {
     // A returning buyer who now arrives from an ad: keep the click, so the sale is still credited.
-    if (attribution && !existing.attribution) await db.from('payments').update({ attribution }).eq('id', existing.id);
+    const hadClick = Boolean(existing.attribution?.fbc || existing.attribution?.fbp);
+    if (attribution && (!existing.attribution || (!hadClick && (attribution.fbc || attribution.fbp)))) await db.from('payments').update({ attribution }).eq('id', existing.id);
     return { id: existing.order_id, amount: existing.amount, currency: existing.currency, fresh: false };
   }
 
@@ -100,7 +101,7 @@ export async function recordPaid(row: PaymentRow, paymentId: string, buyer?: { e
   if (error) throw error;
 
   // Tell Meta about the sale, once: only the call that moved this order from created to paid gets here.
-  // Buyers with no measured visit (none, or Do Not Track / Global Privacy Control) are not reported at all.
+  // Buyers who opted out (Do Not Track / Global Privacy Control), or orders made while ad measurement was off, are not reported.
   if (!row.attribution) return;
   const when = Math.floor(Date.now() / 1000);
   defer(() =>
