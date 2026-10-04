@@ -526,6 +526,7 @@ try {
   assert.match(await owner.locator('#unlockPanel').innerText(), /What if the payment fails/, 'the failure FAQ is on the page');
   await owner.click('[data-v3="unlock"]');
   await owner.waitForFunction(() => /Payments are not set up yet/.test(document.querySelector('#payError')?.textContent || ''));
+  await owner.waitForFunction(() => document.querySelector('#payGo')?.disabled === false, null, { timeout: 5000 }).catch(() => {});
   assert.equal(await owner.locator('#payGo').isDisabled(), false, 'the button works again after an error');
   assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${saved.id}`)).status, 402, 'still locked');
   assert.equal(await owner.locator('#unlockPanel').isVisible(), true, 'the gift stays locked after a failed payment');
@@ -673,6 +674,35 @@ try {
     assert.equal((await (await fetch(`${RZP_APP}/api/gifts/${rid}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${rkey}` } })).json()).status, 'paid');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${rid}`)).status, 200);
     assert.deepEqual((await state()).paymentRows.map(r => r.status), ['paid', 'paid', 'paid', 'paid', 'paid', 'paid']);
+  }
+
+  // Meta Pixel (ad measurement): absent unless a Pixel id is configured, which this build has not. The loader itself is
+  // exercised by hand: it must remember the ad click in first-party cookies, queue its events, and stay silent on private pages.
+  {
+    const inject = (pg) => pg.evaluate(() => new Promise((ok) => { const s = document.createElement('script'); s.src = '/legacy/meta.js'; s.setAttribute('data-meta-pixel', '123456789012345'); s.onload = () => ok(); document.head.append(s); }));
+    const fresh = async () => { const c = await browser.newContext({ userAgent: NORMAL_UA }); await c.route('https://connect.facebook.net/**', r => r.fulfill({ contentType: 'application/javascript', body: '' })); return c; };
+    const mctx = await fresh(); const mp = await mctx.newPage(); mp.setDefaultTimeout(15000);
+    await mp.goto(`${APP}/?fbclid=IwAR0abcdef123456&utm_source=meta&utm_medium=paid&utm_campaign=diwali`);
+    assert.equal(await mp.locator('script[data-meta-pixel]').count(), 0, 'no Pixel script without a configured id');
+    await inject(mp);
+    const jar = Object.fromEntries((await mctx.cookies()).map(c => [c.name, c.value]));
+    assert.match(jar._fbc, /^fb\.1\.\d{13}\.IwAR0abcdef123456$/, 'the ad click id is kept in Meta format');
+    assert.match(jar._fbp, /^fb\.1\.\d{13}\.\d{10}$/, 'a browser id exists for matching');
+    assert.deepEqual(JSON.parse(Buffer.from(jar.kholona_attr, 'base64url').toString()), { s: 'meta', m: 'paid', c: 'diwali' }, 'UTM tags are kept');
+    assert.ok(await mp.evaluate(() => [...window.fbq.queue].some(a => a[0] === 'track' && a[1] === 'PageView')), 'PageView is queued');
+    assert.equal(await mp.evaluate(() => typeof window.kholonaMeta?.fire), 'function');
+    // The server's event ids are handed to the Pixel untouched; junk ids are refused.
+    await mp.evaluate(() => { window.kholonaMeta.fire({ event: 'Purchase', id: 'purchase_order_X123456', value: 199, currency: 'INR' }); window.kholonaMeta.fire({ event: 'Purchase', id: '<bad>', value: 1 }); });
+    const queued = await mp.evaluate(() => [...window.fbq.queue].filter(a => a[1] === 'Purchase').map(a => a[3]));
+    assert.deepEqual(queued, [{ eventID: 'purchase_order_X123456' }], 'one Purchase, with the shared id');
+    await mctx.close();
+
+    const pctx = await fresh(); const pp = await pctx.newPage(); pp.setDefaultTimeout(15000);
+    await pp.goto(`${APP}/preview-frame?fbclid=IwAR0abcdef123456&utm_source=meta`);
+    await inject(pp);
+    assert.deepEqual((await pctx.cookies()).filter(c => /^_fb|kholona_attr/.test(c.name)), [], 'nothing is stored on the private preview frame');
+    assert.equal(await pp.evaluate(() => typeof window.fbq), 'undefined', 'no Pixel on the private preview frame');
+    await pctx.close();
   }
 
   // The only console noise allowed is the failures this test injected on purpose: one rejected and three dropped confirmation requests.

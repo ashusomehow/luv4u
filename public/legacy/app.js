@@ -1119,6 +1119,7 @@ async function startPayment(){
   if(r.status!=='paid'&&payPendingRef){status('');throw new Error('Your payment is still being confirmed. Please do not pay again. This gift unlocks on its own as soon as it is confirmed.'+refText(payPendingRef!=='pending'?payPendingRef:''));}
   if(r.status!=='paid'){
    if(!r.order||!r.keyId)throw new Error('We could not start the payment. Nothing was charged.');
+   if(r.meta&&window.kholonaMeta)window.kholonaMeta.fire(r.meta);
    busy('Opening payment…');markPayStarted(editing.id);
    let proof;
    try{proof=await runRazorpay(r);}
@@ -1135,6 +1136,7 @@ async function startPayment(){
    r=await confirmPayment(proof,status);
   }
   if(r.status!=='paid')throw new Error('We could not confirm the payment. Nothing was unlocked.');
+  if(r.meta&&window.kholonaMeta)window.kholonaMeta.fire(r.meta);
   payPendingRef='';unlockDone(name);
  }catch(ex){
   status('');idle();

@@ -25,4 +25,18 @@
   --m-ease:cubic-bezier(.22,1,.36,1);
   /* touch */
   --tap:44px;
+  /* brand additions (see docs/BRAND.md): fonts, gradients, gold, occasion colours as swatch / tint / ink */
+  --f-serif:Georgia,'Times New Roman',serif;
+  --f-sans:'Avenir Next',Avenir,'Segoe UI',sans-serif;
+  --c-gold:#ffbb5d;
+  --g-brand:linear-gradient(135deg,#d92a5f 0%,#c42a74 60%,#a62f92 100%);
+  --g-headline:linear-gradient(90deg,#d92a5f,#f0683c,#f2a516);
+  --occ-birthday:#f2683c;       --occ-birthday-soft:#ffe3d6;       --occ-birthday-ink:#c2410c;
+  --occ-proposal:#e11d48;       --occ-proposal-soft:#ffe1e7;       --occ-proposal-ink:#be123c;
+  --occ-love:#ec4899;           --occ-love-soft:#ffe1f0;           --occ-love-ink:#be185d;
+  --occ-apology:#5b8def;        --occ-apology-soft:#e1ecff;        --occ-apology-ink:#2f5fc4;
+  --occ-anniversary:#e5a010;    --occ-anniversary-soft:#fff0c9;    --occ-anniversary-ink:#a16207;
+  --occ-thanks:#16a36e;         --occ-thanks-soft:#d9f6e8;         --occ-thanks-ink:#0f7a52;
+  --occ-congratulations:#8b5cf6;--occ-congratulations-soft:#ebe3ff;--occ-congratulations-ink:#6d3fd6;
+  --occ-missyou:#3b82f6;        --occ-missyou-soft:#dfeaff;        --occ-missyou-ink:#1d5fd1;
 }

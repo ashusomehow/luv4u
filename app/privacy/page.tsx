@@ -9,7 +9,7 @@ export default function Privacy() {
   return (
     <LegalPage title="Privacy policy">
       <p>
-        This explains what {BUSINESS_NAME} collects and what we do with it. We try to collect as little as possible: there are no accounts, no advertising and no tracking cookies.
+        This explains what {BUSINESS_NAME} collects and what we do with it. We try to collect as little as possible: there are no accounts and we do not sell or share your data. If you arrive from one of our ads on Facebook or Instagram, we use Meta’s measurement tools to learn whether the ad worked (see “Advertising measurement” below).
       </p>
 
       <h2>What we store</h2>
@@ -29,6 +29,11 @@ export default function Privacy() {
         <li>
           <strong>Simple usage counts.</strong> To learn which steps confuse people we record events such as “opened the creator”. These carry a random per-tab code that cannot be linked across visits, the page
           type and where the visitor came from. They are deleted after thirteen months. They never include gift ids, names or messages, and they are skipped if your browser sends Do Not Track or Global Privacy Control.
+        </li>
+        <li>
+          <strong>Advertising measurement.</strong> When you visit our website pages (never a gift link someone sends you) we may use the Meta Pixel and Meta’s Conversions API to learn whether our ads on Facebook and Instagram lead to gifts being made and paid for.
+          This sets small cookies in your browser (named _fbp, _fbc and kholona_attr) that remember which ad you came from for up to 90 days. When you pay, our server tells Meta that a purchase of ₹199 happened, together with those cookie values, your browser type and network address and, if the payment provider gave them to us, a scrambled (hashed) version of your email and phone number.
+          We never send names, messages, photos or gift links to Meta. None of this happens if your browser sends Do Not Track or Global Privacy Control. Meta handles this information under its own privacy policy, and you can control ads you see in your Facebook and Instagram settings.
         </li>
         <li>
           <strong>Abuse protection.</strong> To stop bulk abuse we keep a scrambled (hashed) version of your network address for up to a day alongside a count of recent requests. If someone reports a gift, the report

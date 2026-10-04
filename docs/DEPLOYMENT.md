@@ -26,6 +26,7 @@ The service-role key bypasses Row Level Security. Keep it server-side only: neve
    | `SUPABASE_STORAGE_BUCKET` | Optional; defaults to `gift-media` |
    | `RATE_SALT` | Random secret used to hash edit keys and visitor tokens. `openssl rand -hex 32`. **Set once and never change it**: changing it invalidates every owner's edit key. Required in production; the app refuses to hash without it. |
    | `NEXT_PUBLIC_SITE_URL` | Canonical origin, e.g. `https://luv4u.example`. Used for sitemap, canonical URLs and share images. |
+   | `NEXT_PUBLIC_META_PIXEL_ID`, `META_CAPI_TOKEN` | Optional. Meta ad tracking; see [Meta ads](META-ADS.md). Both empty means it is off. |
    | `CRON_SECRET` | Random string. Vercel sends it as `Authorization: Bearer …` to the cleanup cron. |
 
 3. Deploy. Visit `/api/config`: it should report `"hosted": true`.
