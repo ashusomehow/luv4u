@@ -2,6 +2,7 @@ import { openOrderFor, reconcileGift } from '@/lib/checkout';
 import { findOwnedGift, isUnlocked, markPaid } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, requireBackend } from '@/lib/http';
 import { simulatePayments } from '@/lib/payments';
+import { browserEvent, checkoutEventId, defer, readAttribution, sendMetaEvent } from '@/lib/meta';
 import { LIMITS, rateLimit } from '@/lib/rate-limit';
 import { razorpayConfigured, razorpayKeyId, razorpayTestMode } from '@/lib/razorpay';
 
@@ -28,8 +29,16 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
   if (razorpayConfigured()) {
     await rateLimit(request, 'checkout', LIMITS.checkout.max, LIMITS.checkout.window);
     if (await reconcileGift(id)) return json({ ok: true, status: 'paid' });
-    const order = await openOrderFor(id);
-    return json({ ok: true, status: 'pending', order, keyId: razorpayKeyId(), testMode: razorpayTestMode() });
+    const attribution = readAttribution(request);
+    const { fresh, ...order } = await openOrderFor(id, attribution);
+    // Ad measurement: a new order is a "checkout started". The browser fires the same event with the same id.
+    const meta = fresh ? browserEvent(request, 'InitiateCheckout', order.id, order.amount) : undefined;
+    if (meta) {
+      defer(() =>
+        sendMetaEvent({ name: 'InitiateCheckout', id: checkoutEventId(order.id), attribution, giftId: id, value: order.amount / 100, occasion: row.gift?.occasion as string | undefined, orderId: order.id }),
+      );
+    }
+    return json({ ok: true, status: 'pending', order, keyId: razorpayKeyId(), testMode: razorpayTestMode(), ...(meta ? { meta } : {}) });
   }
   if (simulatePayments()) {
     await markPaid(id);

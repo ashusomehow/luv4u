@@ -2,6 +2,7 @@ import Script from 'next/script';
 import type { ReactNode } from 'react';
 import { LEGACY_BODY_HTML } from '@/lib/legacy-body';
 import { bodyForOccasion } from '@/lib/legacy-hero';
+import { metaPixelId } from '@/lib/meta';
 import type { OccasionKey } from '@/lib/occasions';
 
 /**
@@ -17,6 +18,7 @@ import type { OccasionKey } from '@/lib/occasions';
  * the server HTML, and pass the page's SEO content as `children` (rendered below the app).
  */
 export function LegacyApp({ occasion, children }: { occasion?: OccasionKey; children?: ReactNode }) {
+  const pixelId = metaPixelId();
   const html = occasion ? bodyForOccasion(occasion) : LEGACY_BODY_HTML;
   return (
     <>
@@ -24,6 +26,7 @@ export function LegacyApp({ occasion, children }: { occasion?: OccasionKey; chil
       {children}
       <script id="giftPayload" type="application/json" dangerouslySetInnerHTML={{ __html: 'null' }} />
       <Script src="/legacy/track.js" strategy="afterInteractive" />
+      {pixelId && <Script src="/legacy/meta.js" strategy="afterInteractive" data-meta-pixel={pixelId} />}
       <Script src="/legacy/motion.js" strategy="afterInteractive" />
       <Script src="/legacy/app.js" strategy="afterInteractive" data-luv4u-legacy="" />
     </>

@@ -27,6 +27,9 @@ export interface RazorpayPayment {
   amount: number;
   currency: string;
   status: string;
+  /** The payer's details, when Razorpay collected them. Used only (hashed) for ad-conversion matching. */
+  email?: string;
+  contact?: string;
 }
 
 async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {

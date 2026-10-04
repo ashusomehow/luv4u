@@ -366,3 +366,159 @@ describe('payments that happen while the page is away', () => {
     expect(fake.tables.payments[0].status).toBe('paid');
   });
 });
+
+/* ----------------------------------------------------- Meta (ads) conversions */
+
+import { hashEmail, hashPhone, readAttribution, settleMeta } from '@/lib/meta';
+
+const PIXEL = '123456789012345';
+const FBC = 'fb.1.1700000000000.IwAR0abcdef123456';
+const FBP = 'fb.1.1700000000000.1234567890';
+const ATTR = Buffer.from(JSON.stringify({ s: 'meta', m: 'paid', c: 'diwali', n: 'reel1' })).toString('base64url');
+const cookie = `_fbc=${FBC}; _fbp=${FBP}; kholona_attr=${ATTR}`;
+
+describe('Meta conversions', () => {
+  const sent: { url: string; body: Record<string, any> }[] = [];
+  let graphDown = false;
+  const adReq = (path: string, body?: unknown, extra: Record<string, string> = {}) =>
+    new Request(`https://kholona.test${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${KEY}`, cookie, 'x-forwarded-for': '203.0.113.9', 'user-agent': 'Mozilla/5.0 Instagram', ...extra },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  const startAd = (extra: Record<string, string> = {}) => checkout(adReq('/x', undefined, extra), ctx());
+
+  beforeEach(() => {
+    sent.length = 0;
+    graphDown = false;
+    Object.assign(process.env, { NEXT_PUBLIC_META_PIXEL_ID: PIXEL, META_CAPI_TOKEN: 'capi-token-not-real-0123456789', META_GRAPH_BASE: 'https://graph.test' });
+    delete process.env.META_TEST_EVENT_CODE;
+    const razorpayFetch = globalThis.fetch;
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
+      if (String(url).startsWith('https://graph.test')) {
+        if (graphDown) throw new Error('meta down');
+        sent.push({ url: String(url), body: JSON.parse(String(init.body)) });
+        return new Response('{"events_received":1}', { status: 200 });
+      }
+      return razorpayFetch(url, init);
+    });
+  });
+  afterEach(() => {
+    for (const k of ['NEXT_PUBLIC_META_PIXEL_ID', 'META_CAPI_TOKEN', 'META_GRAPH_BASE', 'META_TEST_EVENT_CODE']) delete process.env[k];
+  });
+
+  it('hashes email and phone the way Meta wants, and drops what is not valid', () => {
+    expect(hashEmail('  Sarah@Example.COM ')).toBe(hashEmail('sarah@example.com'));
+    expect(hashEmail('not an email')).toBeUndefined();
+    expect(hashPhone('+91 98765 43210')).toBe(hashPhone('9876543210'));
+    expect(hashPhone('12')).toBeUndefined();
+  });
+
+  it('reads only well-formed ad cookies and nothing when the visitor opted out', () => {
+    const ok = readAttribution(adReq('/x'));
+    expect(ok).toMatchObject({ fbc: FBC, fbp: FBP, utm_source: 'meta', utm_medium: 'paid', utm_campaign: 'diwali', utm_content: 'reel1', ip: '203.0.113.9' });
+    const junk = readAttribution(new Request('https://kholona.test/x', { headers: { cookie: '_fbc=<script>; _fbp=nope; kholona_attr=%%%' } }));
+    expect(junk).toBeNull();
+    expect(readAttribution(adReq('/x', undefined, { dnt: '1' }))).toBeNull();
+    expect(readAttribution(adReq('/x', undefined, { 'sec-gpc': '1' }))).toBeNull();
+  });
+
+  it('records the click on the order, sends InitiateCheckout once, and gives the browser the same id', async () => {
+    await create();
+    const first = await (await startAd()).json();
+    await settleMeta();
+    expect(first.meta).toEqual({ event: 'InitiateCheckout', id: `ic_${first.order.id}`, value: 199, currency: 'INR' });
+    expect(fake.tables.payments[0].attribution).toMatchObject({ fbc: FBC, fbp: FBP, utm_campaign: 'diwali' });
+    expect(sent).toHaveLength(1);
+    const ev = sent[0].body.data[0];
+    expect(sent[0].url).toBe(`https://graph.test/v21.0/${PIXEL}/events`);
+    expect(ev).toMatchObject({ event_name: 'InitiateCheckout', event_id: first.meta.id, action_source: 'website' });
+    expect(ev.user_data).toMatchObject({ fbc: FBC, fbp: FBP, client_ip_address: '203.0.113.9' });
+    expect(ev.custom_data).toMatchObject({ value: 199, currency: 'INR', content_category: 'love' });
+    // Pressing the button again reuses the order and does not report a second checkout.
+    const again = await (await startAd()).json();
+    await settleMeta();
+    expect(again.order.id).toBe(first.order.id);
+    expect(again.meta).toBeUndefined();
+    expect(sent).toHaveLength(1);
+  });
+
+  it('sends one Purchase for a confirmed payment, with hashed buyer details and the browser sharing its id', async () => {
+    await create();
+    const orderId = (await (await startAd()).json()).order.id as string;
+    const proof = pay(orderId);
+    Object.assign(rzp.payments.get(proof.razorpay_payment_id)!, { email: 'Sarah@Example.com', contact: '+919876543210' });
+    sent.length = 0;
+    const res = await verify(adReq('/x', proof), ctx());
+    const body = await res.json();
+    await settleMeta();
+    expect(body.meta).toEqual({ event: 'Purchase', id: `purchase_${orderId}`, value: 199, currency: 'INR' });
+    expect(sent).toHaveLength(1);
+    const ev = sent[0].body.data[0];
+    expect(ev).toMatchObject({ event_name: 'Purchase', event_id: `purchase_${orderId}`, action_source: 'website' });
+    expect(ev.event_source_url).toMatch(/^https?:\/\/[^/]+\/$/);
+    expect(ev.user_data.em).toEqual([hashEmail('sarah@example.com')]);
+    expect(ev.user_data.ph).toEqual([hashPhone('+919876543210')]);
+    expect(ev.custom_data).toMatchObject({ value: 199, currency: 'INR', order_id: orderId });
+    expect(JSON.stringify(ev)).not.toMatch(/sarah@|9876543210/i); // only hashes leave the server
+    // The webhook for the same payment, and a repeated confirmation, do not send it again.
+    const p = rzp.payments.get(proof.razorpay_payment_id)!;
+    expect((await hook(capturedEvent(p))).status).toBe(200);
+    expect((await verify(adReq('/x', proof), ctx())).status).toBe(200);
+    await settleMeta();
+    expect(sent).toHaveLength(1);
+  });
+
+  it('still reports the sale when only the webhook arrives (buyer never came back)', async () => {
+    await create();
+    const orderId = (await (await startAd()).json()).order.id as string;
+    const p = rzp.payments.get(pay(orderId).razorpay_payment_id)!;
+    sent.length = 0;
+    expect((await hook(capturedEvent(p))).status).toBe(200);
+    await settleMeta();
+    expect(sent.map((s) => s.body.data[0].event_name)).toEqual(['Purchase']);
+    expect(sent[0].body.data[0].user_data.fbc).toBe(FBC);
+  });
+
+  it('does not report anything for a buyer who opted out, and keeps the response clean', async () => {
+    await create();
+    const res = await (await startAd({ dnt: '1' })).json();
+    expect(res.meta).toBeUndefined();
+    expect(fake.tables.payments[0].attribution).toBeUndefined();
+    const proof = pay(res.order.id);
+    expect((await verify(adReq('/x', proof, { dnt: '1' }), ctx())).status).toBe(200);
+    await settleMeta();
+    expect(sent).toHaveLength(0);
+  });
+
+  it('never lets Meta break a payment: an outage changes nothing for the buyer', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    graphDown = true;
+    await create();
+    const orderId = (await (await startAd()).json()).order.id as string;
+    const res = await verify(adReq('/x', pay(orderId)), ctx());
+    await settleMeta();
+    expect(res.status).toBe(200);
+    expect(await isPublic()).toBe(true);
+    expect(fake.tables.payments[0].status).toBe('paid');
+  });
+
+  it('adds the test event code when set, so events can be checked in Meta Events Manager', async () => {
+    process.env.META_TEST_EVENT_CODE = 'TEST12345';
+    await create();
+    await startAd();
+    await settleMeta();
+    expect(sent[0].body.test_event_code).toBe('TEST12345');
+  });
+
+  it('is completely off without a Pixel id and token', async () => {
+    delete process.env.META_CAPI_TOKEN;
+    await create();
+    const res = await (await startAd()).json();
+    const orderId = res.order.id as string;
+    expect(res.meta).toBeUndefined();
+    expect((await verify(adReq('/x', pay(orderId)), ctx())).status).toBe(200);
+    await settleMeta();
+    expect(sent).toHaveLength(0);
+  });
+});

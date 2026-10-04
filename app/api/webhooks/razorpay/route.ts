@@ -10,6 +10,8 @@ interface Entity {
   amount?: number;
   currency?: string;
   status?: string;
+  email?: string;
+  contact?: string;
 }
 interface Event {
   event?: string;
@@ -49,6 +51,6 @@ export const POST = handle(async (request: Request) => {
     console.warn('Webhook payment does not match its order; not unlocking.', { order: orderId, payment: payment.id });
     return json({ ok: true, ignored: true });
   }
-  await recordPaid(order, payment.id);
+  await recordPaid(order, payment.id, { email: payment.email, contact: payment.contact });
   return json({ ok: true });
 });

@@ -1,6 +1,7 @@
 import { completeOrder, findOrder } from '@/lib/checkout';
 import { findOwnedGift, isUnlocked } from '@/lib/gifts';
 import { ApiError, bearer, handle, json, readJson, requireBackend } from '@/lib/http';
+import { browserEvent } from '@/lib/meta';
 import { LIMITS, rateLimit } from '@/lib/rate-limit';
 import { razorpayConfigured, verifyCheckoutSignature } from '@/lib/razorpay';
 
@@ -40,5 +41,7 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
   if (!(await completeOrder(order, paymentId))) {
     throw new ApiError(402, 'The payment has not completed yet. If you were charged, your gift unlocks on its own within a few minutes.');
   }
-  return json({ ok: true, status: 'paid', paymentId });
+  // Same event id the server used for the Conversions API, so Meta counts this purchase once.
+  const meta = browserEvent(request, 'Purchase', orderId, order.amount);
+  return json({ ok: true, status: 'paid', paymentId, ...(meta ? { meta } : {}) });
 });
