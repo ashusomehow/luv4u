@@ -473,8 +473,11 @@ try {
   assert.equal(await phone.locator('.preview-banner').isVisible(), false, 'no editing chrome inside the phone');
   assert.equal(await phone.locator('.unlock-tray').count(), 0, 'no second pay button inside the phone');
   const sceneBefore = await phone.locator('#storyScene').innerText();
-  await phone.locator('[data-story="light"]').click();
-  await owner.waitForFunction(b => (document.querySelector('#phoneFrame').contentDocument.querySelector('#storyScene')?.innerText || b) !== b, sceneBefore);   // it is interactive: tapping moves the story on
+  assert.equal(await owner.evaluate(() => getComputedStyle(document.querySelector('#phoneFrame')).pointerEvents), 'none', 'the preview ignores touches until Play, so it cannot trap page scrolling');
+  assert.equal(await owner.locator('#phonePlay').isVisible(), true, 'a clear Play button covers the preview at first');
+  await owner.click('#phonePlay');
+  assert.equal(await owner.evaluate(() => getComputedStyle(document.querySelector('#phoneFrame')).pointerEvents), 'auto', 'after Play the gift takes touches');
+  await owner.waitForFunction(b => (document.querySelector('#phoneFrame').contentDocument.querySelector('#storyScene')?.innerText || b) !== b, sceneBefore);   // Play also does the first touch, so the story moves on at once
   assert.equal(await owner.locator('#phoneLoading.is-done').count(), 1, 'the loading veil lifts once the gift plays');
   assert.equal(await owner.locator('#shareView > h2').isVisible(), false, 'the locked page shows one pitch, not two');
   // a phone-sized screen: the pay button stays in reach and nothing spills sideways
@@ -488,7 +491,7 @@ try {
   assert.match(await (await fetch(`${LOCKED_APP}/preview-frame`)).text(), /name="robots" content="noindex/, 'the preview frame page is never indexed');
   // the preview is a real phone layout scaled to fit, so nothing is cut off
   const geo = await owner.evaluate(() => { const f = document.querySelector('#phoneFrame'); return [f.offsetWidth, f.getBoundingClientRect().width]; });
-  assert.equal(geo[0], 390, 'the preview runs at a true phone width'); assert.ok(geo[1] < 340 && geo[1] > 200, 'and is scaled to fit the mockup: ' + geo[1]);
+  assert.equal(geo[0], 360, 'the preview runs at a true phone width'); assert.ok(geo[1] < 372 && geo[1] > 280, 'and is shown close to full size in the mockup: ' + geo[1]);
   // it plays to the end, and the ending says what comes next with a button that starts payment
   for (let i = 0; i < 40; i++) {
     const cls = (await phone.locator('#storyScene').getAttribute('class')) || '';
