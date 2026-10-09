@@ -742,7 +742,7 @@ function buildScenes(g){
 }
 function seeded(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 function roomDetails(){const t={...THEMES[gift.vibe],motifs:gift.occasion==='birthday'?THEMES[gift.vibe].motifs:gift.occasion==='apology'?['❦','·','◌']:gift.occasion==='missyou'?['☾','✧','·']:gift.occasion==='thanks'?['✿','❦','·']:gift.occasion==='congratulations'?['✧','✦','·']:['♡','✧','❦']},rand=seeded(gift.id+gift.name+gift.vibe+gift.occasion),count=gift.vibe==='Elegant'?9:gift.vibe==='Crazy'?23:15;return `<div class="vibe-room-doodles" aria-hidden="true">${Array.from({length:count},(_,i)=>{const x=i%2?78+rand()*18:4+rand()*18;return `<span class="room-motif" style="--x:${x.toFixed(2)}%;--y:${(20+rand()*69).toFixed(2)}%;--size:${(11+rand()*18).toFixed(1)}px;--rotation:${(-25+rand()*50).toFixed(1)}deg;--delay:${(-rand()*9).toFixed(2)}s">${t.motifs[i%t.motifs.length]}</span>`;}).join('')}<i class="room-ribbon"></i><i class="room-ribbon right"></i></div>`;}
-function startExperience(data,options={}){if($('.skip-link'))$('.skip-link').hidden=true;stopPreviewAudio();lightStage=0;tiltEnabled=true;startExperienceV1(data,options);$('#myGiftsView').hidden=true;$('#experience').dataset.palette=OCCASIONS[gift.occasion]?.vibe===gift.vibe?'occasion':'look';$('#experience').classList.toggle('motion-off',!gift.motion);$('#experience').insertAdjacentHTML('afterbegin',roomDetails());if(isPreview&&previewReturn==='home')$('[data-story=exit-preview]').textContent='Back to the little gifts';if(!reducedMotion&&gift.motion){$('.experience-topright').insertAdjacentHTML('afterbegin','<button class="round-control tilt-toggle" data-v2="tilt" aria-label="Toggle gentle room tilt" aria-pressed="true" title="A little room movement">⌁</button>');enableTilt(true);}if(!options.skipSeal)mountSeal();if(!options.preview&&gift.server&&/^\/g\/[a-f0-9]{24}/.test(location.pathname))countOpening();}
+function startExperience(data,options={}){if($('.skip-link'))$('.skip-link').hidden=true;stopPreviewAudio();lightStage=0;tiltEnabled=true;startExperienceV1(data,options);$('#myGiftsView').hidden=true;$('#experience').dataset.palette=OCCASIONS[gift.occasion]?.vibe===gift.vibe?'occasion':'look';$('#experience').classList.toggle('motion-off',!gift.motion);$('#experience').insertAdjacentHTML('afterbegin',roomDetails());if(isPreview&&previewReturn==='home')$('[data-story=exit-preview]').textContent='Back to the little gifts';if(!reducedMotion&&gift.motion)enableTilt(true);/* the tilt toggle was an unlabelled control nobody needed: the room still tilts, there is just nothing to explain */if(!options.skipSeal)mountSeal();if(!options.preview&&gift.server&&/^\/g\/[a-f0-9]{24}/.test(location.pathname))countOpening();}
 /* The ritual before the first scene: a sealed envelope, opened by pressing and holding the wax seal. */
 /* Anyone holding a gift link can report it without opening it (the report page takes the link). Only for real, hosted gifts. */
 function reportLink(){return gift?.server&&!isPreview&&/^[a-f0-9]{24}$/.test(gift.id||'')?`<a class="report-link" href="/report?gift=${gift.id}">Didn’t expect this? Report it</a>`:'';}
@@ -1888,7 +1888,7 @@ async function openHeartNote(){
   await sleep(i<buttons.length-1?1300:800);
  }
  cascading=false;if(token!==experienceToken)return;
- $('#noteProgress').textContent='All three. All of them you.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep a little love with me');
+ $('#noteProgress').textContent='All three. All of them you.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep a little love with me');autoAdvance(7500,'hearts');
 }
 async function pickFlower(){
  if(cascading||openedNotes.size>=3)return;cascading=true;const token=experienceToken,buttons=$$('[data-v3=flower]'),box=$('#gratitudeMessage');box.innerHTML='';
@@ -1899,7 +1899,7 @@ async function pickFlower(){
   sfx('note',i);buzz(12);ring(buttons[i]);await sleep(i<buttons.length-1?1600:800);
  }
  cascading=false;if(token!==experienceToken)return;
- $('#noteProgress').textContent='Three thank-yous, gathered.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep the bouquet close');
+ $('#noteProgress').textContent='Three thank-yous, gathered.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep the bouquet close');autoAdvance(7500,'bouquet');
 }
 function paintStoryPage(){
  const pages=[['Our beginning','Every story has a little beginning. I’m glad ours found its way here.'],['The everyday','The familiar smiles. The little conversations. The ordinary moments that slowly become a life.'],['What comes next','More days to discover. More little things to learn about each other. More pages to write, together.']];

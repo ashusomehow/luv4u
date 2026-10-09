@@ -36,10 +36,10 @@ Findings:
 |---|---|---|
 | Birthday | **4** (seal, blow, present, continue) | The envelope lights the room by itself. Greeting and wish are one scene. Blow once: smoke, a fanfare, confetti from the cake, balloons rise, and it moves on to the present. Open the present: burst of light, confetti, and the letter appears and writes itself. |
 | Proposal | **4** (seal, continue, open the box, answer) | The letter comes first and builds to the question. A "yes" is a celebration (fanfare, confetti, balloons) that carries on by itself; "talk" and "no" stay quiet and in their hands. |
-| Love note | **3** (seal, one heart, continue) | One touch and all three reasons unfold one after another, each with a rising note and a ring of light. |
+| Love note | **3** (seal, one heart, then the note's own continue) | One touch and all three reasons unfold one after another, each with a rising note and a ring of light, then it moves on by itself after a reading pause (the button stays for anyone who wants to go sooner). |
 | Apology | **3** (seal, "Read when you're ready", continue) | Slower, quieter, never automatic. The letter unfolds on arrival instead of behind a second envelope. |
 | Anniversary | **2-5** (seal, then the pages turn themselves; touch to turn sooner, continue) | The book opens and turns its own pages with a soft page sound. |
-| Thank you | **3** (seal, one flower, continue) | One touch blooms the bouquet; the three thank-yous gather as cards. |
+| Thank you | **3** (seal, one flower, then the note's own continue) | One touch blooms the bouquet; the three thank-yous gather as cards, then it moves on by itself after a reading pause. |
 | Congratulations | **3** (seal, ribbon, continue) | Untie the ribbon: fanfare, confetti, balloons; it carries on. |
 | Miss you | **3** (seal, hug, continue) | The paper hug flies across, a heartbeat (sound and vibration), then on. |
 
@@ -53,3 +53,20 @@ Everywhere:
 `gift_opened` → `reply_sent` is the recipient funnel. The one-touch ending should raise the share of recipients who reply (it is now one touch instead of four steps). Compare before and after launch. Replies reach the sender, which is what makes the gift travel.
 
 Risks to watch: auto-advance pace (if people say it moves too fast, lengthen the pauses in `autoAdvance` calls in `public/legacy/app.js`), and whether the shorter path makes the gift feel less substantial (more wow, fewer taps is the bet).
+
+## Second pass: fewer things in the way
+
+Measured with a patient player (`only touches the gift's own moments, waits to see what moves on by itself`) on a 390 px phone, with a name-only gift:
+
+| Gift | Touches | Notes |
+|---|---|---|
+| Birthday | 4 | seal, blow, open the present, then the letter's continue |
+| Proposal | 4 | seal, continue after the letter, open the box, answer |
+| Love note | 3 | the three reasons now move on by themselves |
+| Apology | 3 | never automatic, by design |
+| Anniversary | 2 to 5 | pages turn themselves |
+| Thank you | 3 | the three thank-yous now move on by themselves |
+| Congratulations | 3 | |
+| Miss you | 3 | |
+
+Removed: the unlabelled round "tilt" button in the top corner (the room still tilts; there was nothing to explain), and the extra tap after the three hearts and the bouquet. What stays on purpose: the seal, every payoff moment, the apology's consent step, and one continue after the letter, because reading stays in the reader's hands.
