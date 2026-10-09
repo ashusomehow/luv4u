@@ -49,20 +49,20 @@
 }
 
 /* ---------- Journey clean-up ---------- */
-.field-hint{margin-left:8px;font-weight:400;font-size:13px;color:#5b4549}
+.field-hint{margin-left:8px;font-weight:400;font-size:15px;color:#5b4549}
 .reply-share-panel{display:flex;flex-direction:column;align-items:center;gap:8px}
 .reply-alt{min-height:44px;padding:0 10px;font-size:14px;color:#5b4549;text-decoration:underline;text-underline-offset:4px}
 .reply-alt:hover{color:#b4184b}
-.share-cover-note{margin:10px 0 0;text-align:center;font-size:13px;color:#5b4549}
+.share-cover-note{margin:10px 0 0;text-align:center;font-size:15px;color:#5b4549}
 
 /* ---------- Look picker, media status, and the "add something only you have" prompt ---------- */
 .vibe-grid.is-look{grid-template-columns:repeat(3,1fr)}
 .vibe-grid.is-look .vibe-btn{flex-direction:column;gap:4px;min-height:64px;padding:10px 6px;text-align:center}
 .vibe-grid.is-look .vibe-icon{display:none}
 .vibe-grid.is-look .vibe-btn::before{content:'';width:22px;height:22px;border-radius:50%;background:var(--sw,#d6265d);box-shadow:0 0 0 2px #fff inset,0 0 0 1px rgba(67,45,50,.18)}
-.vibe-grid.is-look .vibe-caption{display:block;max-width:none;font-size:12px}
+.vibe-grid.is-look .vibe-caption{display:block;max-width:none;font-size:14px}
 .vibe-btn[data-vibe=Romantic]{--sw:#e0446a}.vibe-btn[data-vibe=Cute]{--sw:#ff7eb6}.vibe-btn[data-vibe=Funny]{--sw:#f5a623}.vibe-btn[data-vibe=Emotional]{--sw:#8d74e8}.vibe-btn[data-vibe=Crazy]{--sw:#ff6a3d}.vibe-btn[data-vibe=Elegant]{--sw:#cfa233}
-.detail-status{margin:0 10px 0 auto;padding:3px 10px;border-radius:999px;background:#f6e6e1;color:#5b4549;font-size:12px;white-space:nowrap}
+.detail-status{margin:0 10px 0 auto;padding:3px 10px;border-radius:999px;background:#f6e6e1;color:#5b4549;font-size:14px;white-space:nowrap}
 .detail-status.done{background:#e1f1e0;color:#1d6325}
 .media-ask{width:min(100%,420px);padding:26px;border-radius:22px}
 .media-ask h2{margin:0 0 10px;font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.2}
@@ -75,10 +75,10 @@
 .upload-zone{padding:28px 16px;font-size:16px;font-weight:600;color:#5b4549;border-color:#e182a0;background:#feeee6}
 .upload-zone:hover{background:#f9e0d7}
 .upload-zone .icon{width:30px;height:30px;color:#b4184b}
-.upload-zone small{font-size:13px;font-weight:400;color:#5b4549}
-.or-line{font-size:13px;color:#5b4549}
+.upload-zone small{font-size:15px;font-weight:400;color:#5b4549}
+.or-line{font-size:15px;color:#5b4549}
 
-.footer-links{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px}
+.footer-links{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:15px}
 .footer-links a{color:#5b4549;padding:10px 0;text-decoration:none}
 .footer-links a:hover{color:#b4184b;text-decoration:underline}
 

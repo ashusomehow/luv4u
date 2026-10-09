@@ -31,16 +31,20 @@
     return occasion;
   };
 
+  const env = /FBAN|FBAV|FB_IAB|Instagram|;\s*wv\)/i.test(navigator.userAgent) ? 'inapp' : 'browser';
   const seen = new Set();
   const send = (name, props = {}, once = false) => {
     if (once) { if (seen.has(name)) return; seen.add(name); }
     occasion = inferOccasion() || occasion;
     try { if (window.kholonaMeta) window.kholonaMeta.onEvent(name, props, occasion); } catch {}
+    props = { env, ...props };
     const body = JSON.stringify({ name, session, occasion, path: location.pathname, props, ...source });
     try { if (!(navigator.sendBeacon && navigator.sendBeacon('/api/events', new Blob([body], { type: 'application/json' })))) throw 0; }
     catch { fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {}); }
   };
 
+  // Which kind of browser: ads opened inside Instagram or Facebook behave differently (UPI apps, storage), so the funnel can be split by it.
+  window.kholonaTrack = (name, props) => send(name, props || {});
   send('page_view', {}, true);
 
   // Clicks (delegated, so they work for markup the engine re-renders).

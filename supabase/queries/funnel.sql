@@ -43,3 +43,25 @@ select date_trunc('day', created_at) as day, count(distinct session_id) as sessi
 from public.events
 where name = 'page_view' and created_at > now() - interval '30 days'
 group by 1 order by 1;
+
+-- 6. The payment funnel, last 14 days, split by browser (in_app = opened inside Instagram or Facebook).
+--    Read it top to bottom: the first step where the number collapses is where people stop.
+--    Events from before the env tag existed show in before_tag.
+select f.n as step_no, f.step,
+       count(distinct e.session_id) filter (where e.props->>'env' = 'inapp')   as in_app,
+       count(distinct e.session_id) filter (where e.props->>'env' = 'browser') as browser,
+       count(distinct e.session_id) filter (where e.props->>'env' is null)     as before_tag
+from (values
+  (1, 'page_view'), (2, 'occasion_selected'), (3, 'creator_opened'), (4, 'publish_clicked'),
+  (5, 'gift_published'), (6, 'unlock_viewed'), (7, 'preview_played'), (8, 'pay_clicked'),
+  (9, 'razorpay_opened'), (10, 'payment_dismissed'), (11, 'payment_failed'), (12, 'payment_succeeded')
+) as f(n, step)
+left join public.events e on e.name = f.step and e.created_at > now() - interval '14 days'
+group by f.n, f.step
+order by f.n;
+
+-- 7. Why payments fail (Razorpay error codes), last 14 days.
+select props->>'label' as reason, props->>'env' as env, count(*) as times
+from public.events
+where name = 'payment_failed' and created_at > now() - interval '14 days'
+group by 1, 2 order by times desc;

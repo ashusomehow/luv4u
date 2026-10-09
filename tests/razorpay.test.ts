@@ -127,6 +127,18 @@ describe('config', () => {
     expect(text).not.toContain(KEY_ID);
   });
 
+  it('shares a few real reviews for the unlock page, best rated first, one per occasion, none too long', async () => {
+    const reviews = (await (await getConfig()).json()).reviews;
+    expect(reviews.count).toBeGreaterThanOrEqual(5);
+    expect(Number(reviews.average)).toBeGreaterThan(0);
+    expect(reviews.quotes.length).toBeGreaterThan(1);
+    expect(reviews.quotes.length).toBeLessThanOrEqual(6);
+    expect(new Set(reviews.quotes.map((q: { occasion: string }) => q.occasion)).size).toBe(reviews.quotes.length);
+    for (const q of reviews.quotes) expect(q.quote.length).toBeLessThanOrEqual(320);
+    const ratings = reviews.quotes.map((q: { rating: number }) => q.rating);
+    expect(ratings).toEqual([...ratings].sort((a: number, b: number) => b - a));
+  });
+
   it('says live mode for live keys, and prefers Razorpay over test-mode simulation', async () => {
     process.env.RAZORPAY_KEY_ID = 'rzp_live_unit';
     process.env.PAYMENT_SIMULATE = 'true';

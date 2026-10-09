@@ -50,6 +50,12 @@ describe('cleanEvent', () => {
     }
   });
 
+  it('accepts the payment-step events with the browser kind, and keeps only that', () => {
+    for (const name of ['unlock_viewed', 'preview_played', 'pay_clicked', 'razorpay_opened', 'payment_dismissed', 'payment_failed', 'payment_succeeded']) {
+      expect(cleanEvent({ name, session: SESSION, props: { env: 'inapp', label: 'BAD_REQUEST_ERROR', name: 'Sarah', phone: '98765' } })?.props).toEqual({ env: 'inapp', label: 'BAD_REQUEST_ERROR' });
+    }
+  });
+
   it('rejects unknown events and malformed sessions', () => {
     expect(cleanEvent({ name: 'drop_table', session: SESSION })).toBeNull();
     expect(cleanEvent({ name: 'page_view', session: 'short' })).toBeNull();

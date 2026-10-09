@@ -512,7 +512,7 @@ const THEMES = {
  Crazy:{symbol:'✷',caption:'Confetti, plot twists & zero chill',line:'Birthday rules? Absolutely not.',motifs:['✷','↝','✦','!'],speed:.7,transpose:1.19,opening:'The party is loading.<br><em>You’re the main event.</em>',birthday:'A certified legend was born today.',cake:'Make a wish.<br><em>Make it ridiculous.</em>',cakeNote:'World domination? A pet dragon? We’re not judging.',gift:'Warning: contains<br><em>birthday chaos.</em>',ending:'More wild stories. More terrible dancing. More “we actually did that” moments. Go be gloriously you.',finalTitle:'Maximum cake.<br><em>Minimum chill.</em>'},
  Elegant:{symbol:'✧',caption:'Champagne details & quiet joy',line:'A beautiful day, made more beautiful by you.',motifs:['✧','❦','·','✦'],speed:1.15,transpose:.84,opening:'A moment, set aside<br><em>just for you.</em>',birthday:'A beautiful reason to pause and celebrate.',cake:'A candle.<br><em>A beautiful possibility.</em>',cakeNote:'For the things you hope for. And the joys you haven’t met yet.',gift:'Thoughtfully chosen.<br><em>Entirely yours.</em>',ending:'To a year of meaningful moments, quiet joys, and wonderful things unfolding in their own time.',finalTitle:'To your next<br><em>beautiful chapter.</em>'}
 };
-let reelTimer=0,mediaBase='',paymentsRequired=false,publishedStatus='paid',payPrice=0,payLinkDays=365,publishedExpiresAt='',publishedOpensAt='',wizardStep=0,backendReady=false,backendChecked=false,delivery='portable',editing=null,publishing=false,previewAudio=null,previewMelody=null,previewGain=null,lightStage=0,tiltEnabled=true,tiltHandler=null,finaleTimer=null,libraryCache=[],coverData='',draftDB=null,saveGeneration=0,cropContext=null,publishAttempt=null;
+let reelTimer=0,mediaBase='',paymentsRequired=false,publishedStatus='paid',payPrice=0,payLinkDays=365,payReviews=null,publishedExpiresAt='',publishedOpensAt='',wizardStep=0,backendReady=false,backendChecked=false,delivery='portable',editing=null,publishing=false,previewAudio=null,previewMelody=null,previewGain=null,lightStage=0,tiltEnabled=true,tiltHandler=null,finaleTimer=null,libraryCache=[],coverData='',draftDB=null,saveGeneration=0,cropContext=null,publishAttempt=null;
 const LIBRARY_KEY='luv4u.library.v2';
 const hexToken=n=>{const bytes=new Uint8Array(n);crypto.getRandomValues(bytes);return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');};
 const clamp=(v,min,max,fallback)=>Number.isFinite(Number(v))?Math.min(max,Math.max(min,Number(v))):fallback;
@@ -537,7 +537,7 @@ async function restoreDraft(){let saved;try{saved=await store('draft');}catch{}i
 function saveLibrary(){try{localStorage.setItem(LIBRARY_KEY,JSON.stringify(libraryCache));return true;}catch{toast('Save your private recovery link now. This browser cannot remember your gifts.');return false;}}
 function rememberGift(entry){libraryCache=libraryCache.filter(v=>v.id!==entry.id);libraryCache.unshift({...entry,at:new Date().toISOString()});libraryCache=libraryCache.slice(0,100);saveLibrary();}
 async function api(path,options={}){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),options.timeout||45000);try{const r=await fetch(path,{method:options.method||'GET',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.key?{Authorization:'Bearer '+options.key}:{})},body:options.body?JSON.stringify(options.body):undefined,signal:controller.signal,cache:'no-store',credentials:'omit'});let data;try{data=await r.json();}catch{throw new Error('The gift server returned an unexpected response. Your draft is still safe.');}if(!r.ok){const err=new Error(data.error||'The gift could not be saved.');err.status=r.status;throw err;}return data;}catch(err){if(err.name==='AbortError')throw new Error('The gift server is taking too long. Try again; your draft is still here.');throw err;}finally{clearTimeout(timeout);}}
-async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;paySimulated=paymentsRequired&&c.payments.simulated===true;payProvider=paymentsRequired?String(c.payments.provider||''):'';payTestMode=paymentsRequired&&c.payments.testMode===true;payLinkDays=Number(c.payments?.linkDays)||365;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
+async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;paySimulated=paymentsRequired&&c.payments.simulated===true;payProvider=paymentsRequired?String(c.payments.provider||''):'';payTestMode=paymentsRequired&&c.payments.testMode===true;payLinkDays=Number(c.payments?.linkDays)||365;payReviews=c.reviews&&Array.isArray(c.reviews.quotes)&&c.reviews.quotes.length?c.reviews:null;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
 function clearGiftHash(){try{const p=/^\/(g|for)\//.test(location.pathname)?'/':location.pathname;history.replaceState(null,'',p+location.search);}catch{}}
 function showView(view){if($('.skip-link'))$('.skip-link').hidden=view!=='home';stopPreviewAudio();showViewV1(view);updateResumeBanner();$('#myGiftsView').hidden=view!=='library';if(view==='library')$('#myGiftsView').hidden=false;const right=$('#headerRight');if(!right.querySelector('.my-gifts-link'))right.insertAdjacentHTML('afterbegin','<button class="nav-link my-gifts-link" data-v2="library">My little gifts</button>');if(view==='creator')setStep(wizardStep,false);if(view==='library'){document.title='Your little gifts · Kholona';right.innerHTML='<button class="nav-link pill-link" data-action="create">Make another little gift ♡</button>';}}
 async function openCreator(key='birthday'){
@@ -742,7 +742,7 @@ function buildScenes(g){
 }
 function seeded(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 function roomDetails(){const t={...THEMES[gift.vibe],motifs:gift.occasion==='birthday'?THEMES[gift.vibe].motifs:gift.occasion==='apology'?['❦','·','◌']:gift.occasion==='missyou'?['☾','✧','·']:gift.occasion==='thanks'?['✿','❦','·']:gift.occasion==='congratulations'?['✧','✦','·']:['♡','✧','❦']},rand=seeded(gift.id+gift.name+gift.vibe+gift.occasion),count=gift.vibe==='Elegant'?9:gift.vibe==='Crazy'?23:15;return `<div class="vibe-room-doodles" aria-hidden="true">${Array.from({length:count},(_,i)=>{const x=i%2?78+rand()*18:4+rand()*18;return `<span class="room-motif" style="--x:${x.toFixed(2)}%;--y:${(20+rand()*69).toFixed(2)}%;--size:${(11+rand()*18).toFixed(1)}px;--rotation:${(-25+rand()*50).toFixed(1)}deg;--delay:${(-rand()*9).toFixed(2)}s">${t.motifs[i%t.motifs.length]}</span>`;}).join('')}<i class="room-ribbon"></i><i class="room-ribbon right"></i></div>`;}
-function startExperience(data,options={}){if($('.skip-link'))$('.skip-link').hidden=true;stopPreviewAudio();lightStage=0;tiltEnabled=true;startExperienceV1(data,options);$('#myGiftsView').hidden=true;$('#experience').dataset.palette=OCCASIONS[gift.occasion]?.vibe===gift.vibe?'occasion':'look';$('#experience').classList.toggle('motion-off',!gift.motion);$('#experience').insertAdjacentHTML('afterbegin',roomDetails());if(isPreview&&previewReturn==='home')$('[data-story=exit-preview]').textContent='Back to the little gifts';if(!reducedMotion&&gift.motion){$('.experience-topright').insertAdjacentHTML('afterbegin','<button class="round-control tilt-toggle" data-v2="tilt" aria-label="Toggle gentle room tilt" aria-pressed="true" title="A little room movement">⌁</button>');enableTilt(true);}if(!options.skipSeal)mountSeal();if(!options.preview&&gift.server&&/^\/g\/[a-f0-9]{24}/.test(location.pathname))countOpening();}
+function startExperience(data,options={}){if($('.skip-link'))$('.skip-link').hidden=true;stopPreviewAudio();lightStage=0;tiltEnabled=true;startExperienceV1(data,options);$('#myGiftsView').hidden=true;$('#experience').dataset.palette=OCCASIONS[gift.occasion]?.vibe===gift.vibe?'occasion':'look';$('#experience').classList.toggle('motion-off',!gift.motion);$('#experience').insertAdjacentHTML('afterbegin',roomDetails());if(isPreview&&previewReturn==='home')$('[data-story=exit-preview]').textContent='Back to the little gifts';if(!reducedMotion&&gift.motion)enableTilt(true);/* the tilt toggle was an unlabelled control nobody needed: the room still tilts, there is just nothing to explain */if(!options.skipSeal)mountSeal();if(!options.preview&&gift.server&&/^\/g\/[a-f0-9]{24}/.test(location.pathname))countOpening();}
 /* The ritual before the first scene: a sealed envelope, opened by pressing and holding the wax seal. */
 /* Anyone holding a gift link can report it without opening it (the report page takes the link). Only for real, hosted gifts. */
 function reportLink(){return gift?.server&&!isPreview&&/^[a-f0-9]{24}$/.test(gift.id||'')?`<a class="report-link" href="/report?gift=${gift.id}">Didn’t expect this? Report it</a>`:'';}
@@ -969,6 +969,18 @@ const priceText=()=>payPrice?'₹'+payPrice.toLocaleString('en-IN'):'';
 function savedDaysLeft(){if(!publishedExpiresAt)return null;return Math.max(0,Math.ceil((new Date(publishedExpiresAt).getTime()-Date.now())/86400000));}
 function savedLossLine(){const n=savedDaysLeft();if(n===null)return '';return n<=1?'Your saved gift is deleted within a day unless you unlock it.':`Your saved gift is kept for ${n} more days. After that it is deleted.`;}
 const lifeText=days=>days>=365?'a full year':days+' days';
+/* Funnel events for the payment steps (anonymous; see lib/events.ts). */
+const track=(name,props)=>{try{if(window.kholonaTrack)window.kholonaTrack(name,props);}catch{}};
+const inAppBrowser=/FBAN|FBAV|FB_IAB|Instagram|;\s*wv\)/i.test(navigator.userAgent||'');
+/* Real, consented reviews beside the price (they come from /api/config; nothing is invented here). */
+function proofHtml(){
+ const r=payReviews;if(!r)return '';
+ /* Show the reviews closest to this gift first (a birthday buyer sees a birthday story), then the best of the rest. */
+ const norm=x=>String(x||'').toLowerCase().replace(/[^a-z]/g,''),key=norm(publishedGift?.occasion).replace('thanks','thankyou');
+ const same=r.quotes.filter(q=>key&&norm(q.occasion).startsWith(key)),rest=r.quotes.filter(q=>!same.includes(q));
+ const shown=[...same,...rest].slice(0,2);
+ return `<section class="unlock-proof" aria-label="What senders say"><p class="proof-head"><span class="proof-stars" aria-hidden="true">★★★★★</span><strong>${e(String(r.average))}</strong> from ${e(String(r.count))} early reviews</p>${shown.map(q=>`<blockquote><p>“${e(q.quote)}”</p><footer>${e(q.name)} · ${e(q.occasion)}</footer></blockquote>`).join('')}</section>`;
+}
 function updatePriceLine(){const el=$('#priceLine');if(!el)return;const show=paymentsRequired&&!!priceText();el.hidden=!show;if(show)el.innerHTML=`Previewing is free. You pay <strong>${e(priceText())}</strong> once, only when you are ready to send it.`;}
 function madeSummary(g,fallback=true){const parts=[];if(g.message?.trim())parts.push('your own words');if(g.photos.length)parts.push(g.photos.length+(g.photos.length===1?' photo':' photos'));if(g.voice)parts.push('a voice note');if(g.memories.some(m=>m.text.trim()))parts.push('little memories');if(g.music!=='none')parts.push('a soundtrack');return parts.length?parts.join(' · '):fallback?'A thoughtful ready-made note is tucked inside':'';}
 /* A preview gift is saved and editable but its link does not open yet: show what is at stake and how to unlock it. */
@@ -985,10 +997,11 @@ function applyShareLock(){
  else{
  panel.dataset.frame=frameKey;payBusy=false;payPendingRef='';
  panel.innerHTML=`<ol class="unlock-steps" aria-label="Your progress"><li class="done"><span>✓</span>Made</li><li class="done"><span>✓</span>Previewed</li><li class="now" aria-current="step"><span>3</span>Unlock & send</li></ol>
-<header class="unlock-head"><h2 id="unlockTitle">${name}’s gift is ready.</h2><p id="unlockText">This is exactly what ${name} will open. Tap through it.</p></header>
-<figure class="phone" aria-label="Live preview of the gift">
+<header class="unlock-head"><h2 id="unlockTitle">${name}’s gift is ready.</h2><p id="unlockText">Tap play to see exactly what ${name} will open.</p></header>
+<figure class="phone" id="phoneWrap" aria-label="Live preview of the gift">
 <div class="phone-body"><span class="phone-key phone-key-a"></span><span class="phone-key phone-key-b"></span><span class="phone-key phone-key-c"></span>
-<div class="phone-screen"><iframe class="phone-frame" id="phoneFrame" title="Live preview of ${name}’s gift" src="/preview-frame" loading="lazy" tabindex="0"></iframe><span class="phone-island" aria-hidden="true"></span><div class="phone-loading" id="phoneLoading" aria-hidden="true"><span>Unwrapping…</span></div></div></div>
+<div class="phone-screen"><iframe class="phone-frame" id="phoneFrame" title="Live preview of ${name}’s gift" src="/preview-frame" loading="lazy" tabindex="0"></iframe><span class="phone-island" aria-hidden="true"></span><div class="phone-loading" id="phoneLoading" aria-hidden="true"><span>Unwrapping…</span></div>
+<button type="button" class="phone-play" id="phonePlay" aria-label="Play ${name}’s gift"><span class="phone-play-icon" aria-hidden="true">▶</span><span class="phone-play-text">Tap to open ${name}’s gift</span><span class="phone-play-sub">Turn your sound on</span></button></div></div>
 <figcaption>The real thing, not a screenshot.</figcaption>
 <div class="phone-tools"><button type="button" id="phoneRestart">↺ Start over</button><button type="button" id="phoneFull">⤢ Full screen</button><button type="button" data-action="edit">✎ Edit</button></div>
 </figure>
@@ -996,21 +1009,27 @@ function applyShareLock(){
 <div class="unlock-card">
 <div class="unlock-price"><strong>${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
 <ul class="unlock-list"><li>A private link only ${name} gets, ready the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li></ul>
-<p class="unlock-trust">${paySimulated?'<strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.':payTestMode?'<strong>Test mode.</strong> Pay with Razorpay’s test card or test UPI. No real money moves.':'<span aria-hidden="true">🔒</span> Secure payment by Razorpay · UPI, cards, netbanking'}</p>
+${savedLossLine()?`<p class="unlock-loss"><span aria-hidden="true">⏳</span> ${e(savedLossLine())}</p>`:''}
+${paySimulated?'<p class="unlock-trust"><strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.</p>':payTestMode?'<p class="unlock-trust"><strong>Test mode.</strong> Pay with Razorpay’s test card or test UPI. No real money moves.</p>':''}
 </div>
 <div class="unlock-cta">
 <p class="pay-error" id="payError" role="alert" hidden></p>
 <p class="pay-status" id="payStatus" role="status" hidden></p>
 <button type="button" class="btn btn-primary pulse-cta pay-btn" id="payGo" data-v3="unlock" data-label="Unlock & get link${price?' · '+e(price):''}">Unlock & get link${price?' · '+e(price):''}</button>
-<p class="unlock-loss">${e(savedLossLine())}</p>
+${paySimulated||payTestMode?'':'<p class="pay-methods"><span aria-hidden="true">🔒</span> Secure payment · UPI, cards, netbanking</p>'}
 </div>
+${proofHtml()}
 <details class="unlock-faq"><summary>What happens after I pay?</summary><p>Your private link appears right away. Send it on WhatsApp or anywhere. ${name} opens it with no account and no app.</p></details>
 <details class="unlock-faq"><summary>What if the payment fails?</summary><p>Nothing unlocks and your gift stays saved, so you can try again or use another method. If your bank shows a debit anyway, it is returned automatically, usually in 5–7 working days. If a payment goes through but the page doesn’t update, the gift unlocks on its own within minutes. <a href="/contact">Still stuck? Write to us.</a></p></details>
 <details class="unlock-faq"><summary>Can I change it after paying?</summary><p>Yes. Edit the words, photos or music any time and the same link shows the new version.</p></details>
-<p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable.</p></div>`;
+<p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable. <a href="/refund">Refund details</a></p></div>`;
 setTimeout(welcomeBack,0);
  fitPhone();
+ $('#phonePlay').onclick=()=>{$('#phoneWrap').classList.add('is-playing');track('preview_played');try{$('#phoneFrame').contentWindow.postMessage({type:'kholona-embed-go'},location.origin);}catch{}};
  $('#phoneRestart').onclick=()=>{try{$('#phoneFrame').contentWindow.location.reload();$('#phoneLoading')?.classList.remove('is-done');}catch{}};
+ track('unlock_viewed');
+ /* Fetch the payment window now, so the button opens it at once instead of after a wait. */
+ if(payProvider==='razorpay'&&!paySimulated)loadRazorpay().catch(()=>{});
  $('#phoneFull').onclick=()=>$('#previewPublished').click();
  }
  $('#giftLink').value='Your link appears here once it is unlocked';
@@ -1056,7 +1075,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
 const refText=ref=>ref?' Reference: '+ref+'.':'';
 function failureText(f){
  const why=f&&(f.description||f.reason)?String(f.description||f.reason).replace(/[.\s]+$/,''):'';
- return 'That payment did not go through'+(why?' ('+why+')':'')+'. Your gift is safe and nothing was unlocked. Try again, or pick another way to pay. If your bank shows a debit, it is returned automatically, usually in 5–7 working days.';
+ return 'That payment did not go through'+(why?' ('+why+')':'')+'. Your gift is safe and nothing was unlocked. Try again, or pick another way to pay'+(inAppBrowser?' (if your UPI app did not open, enter your UPI ID, or use a card or netbanking)':'')+'. If your bank shows a debit, it is returned automatically, usually in 5–7 working days.';
 }
 /* Asks the server to confirm a payment. A network blip right after paying must never look like a failed payment. */
 async function confirmPayment(proof,status){
@@ -1113,18 +1132,19 @@ async function startPayment(){
  const status=t=>{note.textContent=t;note.hidden=!t;};
  const idle=()=>{go.disabled=false;go.classList.remove('is-busy');go.textContent=payPendingRef?'Check payment status':label;payBusy=false;};
  const checkout=()=>api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
- payBusy=true;err.hidden=true;status('');busy('Processing…');
+ payBusy=true;err.hidden=true;status('');busy('Processing…');track('pay_clicked');
  try{
   let r=await checkout();
   if(r.status!=='paid'&&payPendingRef){status('');throw new Error('Your payment is still being confirmed. Please do not pay again. This gift unlocks on its own as soon as it is confirmed.'+refText(payPendingRef!=='pending'?payPendingRef:''));}
   if(r.status!=='paid'){
    if(!r.order||!r.keyId)throw new Error('We could not start the payment. Nothing was charged.');
    if(r.meta&&window.kholonaMeta)window.kholonaMeta.fire(r.meta);
-   busy('Opening payment…');markPayStarted(editing.id);
+   busy('Opening payment…');markPayStarted(editing.id);track('razorpay_opened');
    let proof;
    try{proof=await runRazorpay(r);}
    catch(ex){
     if(!(ex&&ex.cancelled))throw ex;
+    track(ex.failure?'payment_failed':'payment_dismissed',ex.failure&&ex.failure.code?{label:String(ex.failure.code).slice(0,40)}:{});
     /* They closed the window. If money did move (or a payment failed), say so; otherwise stay quiet. */
     const again=await checkout().catch(()=>null);
     if(again&&again.status==='paid'){unlockDone(name);return;}
@@ -1137,7 +1157,7 @@ async function startPayment(){
   }
   if(r.status!=='paid')throw new Error('We could not confirm the payment. Nothing was unlocked.');
   if(r.meta&&window.kholonaMeta)window.kholonaMeta.fire(r.meta);
-  payPendingRef='';unlockDone(name);
+  payPendingRef='';track('payment_succeeded');unlockDone(name);
  }catch(ex){
   status('');idle();
   err.textContent=(ex&&ex.message)||'We could not take the payment. Your gift is still saved.';err.hidden=false;
@@ -1162,8 +1182,8 @@ async function welcomeBack(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&publishedGift?.server&&payStartedRecently(publishedGift.id))welcomeBack();});
 function unlockGift(){startPayment();$('#unlockPanel')?.scrollIntoView({behavior:'smooth',block:'center'});}
-/* The preview is laid out as a real 390 x 844 phone and scaled down to fit the mockup, so nothing is cut off. */
-function fitPhone(){const screen=$('.phone-screen');if(screen&&screen.clientWidth)screen.style.setProperty('--ps',String(screen.clientWidth/390));}
+/* The preview is laid out as a real 360 x 660 phone and scaled to the mockup, so text stays close to full size and nothing is cut off. */
+function fitPhone(){const screen=$('.phone-screen');if(screen&&screen.clientWidth)screen.style.setProperty('--ps',String(screen.clientWidth/360));}
 window.addEventListener('resize',fitPhone);
 /* The unlock page plays the gift inside a phone. The frame (same origin) asks for the gift once it has loaded. */
 window.addEventListener('message',ev=>{
@@ -1312,6 +1332,11 @@ function initEmbed(){
   if(ev.origin!==location.origin||ev.source!==window.parent||!ev.data||ev.data.type!=='kholona-embed-play')return;
   embedPrice=typeof ev.data.price==='string'?ev.data.price.slice(0,12):'';
   try{startExperience(sanitizeGift(ev.data.gift),{preview:true,returnView:'share'});}catch{}
+ });
+ /* The viewer tapped play on the unlock page: do the first touch for them (lighting the room), so the gift starts moving at once. */
+ window.addEventListener('message',ev=>{
+  if(ev.origin!==location.origin||ev.source!==window.parent||!ev.data||ev.data.type!=='kholona-embed-go')return;
+  setTimeout(()=>{try{$('#storyScene [data-story="light"]:not([disabled])')?.click();}catch{}},350);
  });
  document.documentElement.classList.remove('gift-loading');
  window.parent.postMessage({type:'kholona-embed-ready'},location.origin);
@@ -1863,7 +1888,7 @@ async function openHeartNote(){
   await sleep(i<buttons.length-1?1300:800);
  }
  cascading=false;if(token!==experienceToken)return;
- $('#noteProgress').textContent='All three. All of them you.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep a little love with me');
+ $('#noteProgress').textContent='All three. All of them you.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep a little love with me');autoAdvance(7500,'hearts');
 }
 async function pickFlower(){
  if(cascading||openedNotes.size>=3)return;cascading=true;const token=experienceToken,buttons=$$('[data-v3=flower]'),box=$('#gratitudeMessage');box.innerHTML='';
@@ -1874,7 +1899,7 @@ async function pickFlower(){
   sfx('note',i);buzz(12);ring(buttons[i]);await sleep(i<buttons.length-1?1600:800);
  }
  cascading=false;if(token!==experienceToken)return;
- $('#noteProgress').textContent='Three thank-yous, gathered.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep the bouquet close');
+ $('#noteProgress').textContent='Three thank-yous, gathered.';sfx('bloom');buzz([20,30,50]);confetti(40);$('#occasionAfter').innerHTML=storyButton('Keep the bouquet close');autoAdvance(7500,'bouquet');
 }
 function paintStoryPage(){
  const pages=[['Our beginning','Every story has a little beginning. I’m glad ours found its way here.'],['The everyday','The familiar smiles. The little conversations. The ordinary moments that slowly become a life.'],['What comes next','More days to discover. More little things to learn about each other. More pages to write, together.']];
