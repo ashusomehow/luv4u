@@ -326,3 +326,7 @@ html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 /* The main creator buttons read as buttons */
 .editor-dock .btn,.dock-buttons .btn{font-size:17px;font-weight:700}
 .hero-cta .btn{font-size:17px}
+/* Small phones (360px): bigger text must wrap cleanly, never squeeze a button label onto two lines */
+.occasion-ribbon button,.occasion-ribbon a{white-space:nowrap;flex:none}
+.field-label{flex-wrap:wrap;column-gap:12px;row-gap:2px}
+.field-label small{margin-left:auto}
