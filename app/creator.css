@@ -4,7 +4,7 @@
 
 /* ---------- Landing: start with an occasion from the first screen (F1) ---------- */
 .hero-picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:22px 0 0;max-width:520px}
-.hero-picker-label{flex-basis:100%;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hero-picker-label{flex-basis:100%;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .hero-chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:#fffdfa;color:var(--ink);font-size:14px;text-decoration:none;transition:border-color .2s,background .2s,transform .2s}
 .hero-chip:hover,.hero-chip:focus-visible{border-color:var(--rose);background:#fbe8e5;transform:translateY(-1px)}
 @media(max-width:760px){.hero-picker{justify-content:center;margin-top:20px}.hero-picker-label{text-align:center}}
@@ -18,14 +18,14 @@
 .detail summary{min-height:56px}
 
 /* ---------- Step tracker: three steps, readable ---------- */
-.wizard-steps{font-size:13px}
+.wizard-steps{font-size:15px}
 .wizard-steps [aria-current=step]{font-weight:600}
 /* On phones only the current step shows its name; the others are numbered (labels stay in aria-label). */
 @media(max-width:760px){
-  .wizard-steps{font-size:13px;gap:8px;max-width:100%}
+  .wizard-steps{font-size:15px;gap:8px;max-width:100%}
   .wizard-steps .step-rule{width:14px;flex:1 1 14px}
   .wizard-steps button:not([aria-current=step]){font-size:0;gap:0}
-  .wizard-steps button:not([aria-current=step]) i{font-size:13px}
+  .wizard-steps button:not([aria-current=step]) i{font-size:15px}
 }
 
 /* ---------- Live card on phones, where the side preview is hidden (F2) ---------- */
@@ -34,7 +34,7 @@
   .mini-preview:not([hidden]){display:flex;align-items:center;gap:12px;margin:0 0 22px;padding:10px 10px 10px 12px;background:#fffdfa;border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 26px -20px rgba(67,45,50,.55)}
   .mini-art{flex:none;width:48px;height:48px;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:var(--blush);color:var(--rose);font-family:var(--serif);font-size:24px}
   .mini-art img{width:100%;height:100%;object-fit:cover}
-  .mini-copy{flex:1;min-width:0;display:flex;flex-direction:column;font-size:13px;line-height:1.35;color:var(--muted)}
+  .mini-copy{flex:1;min-width:0;display:flex;flex-direction:column;font-size:15px;line-height:1.35;color:var(--muted)}
   .mini-copy strong{color:var(--ink);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mini-copy span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
@@ -65,11 +65,11 @@
 .more-options select{min-height:48px}
 
 /* ---------- Full-screen preview: room for the controls (F9) ---------- */
-.preview-banner{font-size:12px}
-.preview-banner button{font-size:13px;min-height:44px;padding:0 14px}
+.preview-banner{font-size:14px}
+.preview-banner button{font-size:15px;min-height:44px;padding:0 14px}
 @media(max-width:760px){
   .preview-banner{left:16px;transform:none;top:max(16px,env(safe-area-inset-top));padding:4px;font-size:0;gap:0}
-  .preview-banner button{font-size:13px}
+  .preview-banner button{font-size:15px}
 }
 
 /* ---------- Phones: get to the first field sooner (F7) ---------- */
@@ -104,10 +104,10 @@ input[type=range]{min-height:44px}
 .share-view.is-locked>.share-art,.share-view.is-locked>.eyebrow,.share-view.is-locked>h2,.share-view.is-locked>.share-lead,.share-view.is-locked>.link-wrap,.share-view.is-locked>.share-privacy,.share-view.is-locked>.share-secondary{display:none}
 .unlock-panel{margin:0 0 22px;text-align:left;background:none;border:0;padding:0;box-shadow:none}
 .unlock-panel[hidden]{display:none}
-.unlock-steps{display:flex;justify-content:center;gap:6px;margin:0 0 18px;padding:0;list-style:none;font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.unlock-steps{display:flex;justify-content:center;gap:6px;margin:0 0 18px;padding:0;list-style:none;font-size:14px;letter-spacing:.04em;color:var(--muted)}
 .unlock-steps li{display:flex;align-items:center;gap:6px}
 .unlock-steps li+li::before{content:'';width:18px;height:1px;background:var(--line);margin-right:2px}
-.unlock-steps span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f2e1db;color:#7a4256;font-size:11px;font-weight:700}
+.unlock-steps span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f2e1db;color:#7a4256;font-size:13px;font-weight:700}
 .unlock-steps .done span{background:#b4184b;color:#fff}
 .unlock-steps .now{color:var(--ink);font-weight:600}
 .unlock-steps .now span{background:#fff;border:1.5px solid #b4184b;color:#b4184b}
@@ -129,7 +129,7 @@ input[type=range]{min-height:44px}
 .phone-tools button{min-height:44px;padding:0 12px;font-size:13px;color:#86173f;border-radius:999px}
 .phone-tools button:hover{background:#f6e6e1}
 .unlock-rest{display:contents}
-.unlock-made{margin:0 0 14px;text-align:center;font-size:13px;color:var(--muted)}
+.unlock-made{margin:0 0 14px;text-align:center;font-size:15px;color:var(--muted)}
 /* Price and what is included */
 .unlock-card{margin:0 0 6px;padding:18px 20px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#fffdfa,#fdf3ee);box-shadow:0 14px 34px -26px rgba(67,45,50,.6)}
 .unlock-price{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
@@ -138,20 +138,20 @@ input[type=range]{min-height:44px}
 .unlock-list{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;color:var(--ink)}
 .unlock-list li{position:relative;padding-left:24px;line-height:1.45}
 .unlock-list li::before{content:'✓';position:absolute;left:0;top:0;color:#b4184b;font-weight:700}
-.unlock-panel .unlock-trust{margin:0;padding:10px 12px;border-radius:12px;background:#fbebe6;font-size:13px;line-height:1.45;color:#5b4549}
+.unlock-panel .unlock-trust{margin:0;padding:10px 12px;border-radius:12px;background:#fbebe6;font-size:15px;line-height:1.45;color:#5b4549}
 /* The button stays in reach while the page scrolls (phones) */
 .unlock-cta{position:sticky;bottom:0;z-index:5;margin:0 -25px 6px;padding:12px 25px max(12px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(253,248,244,0),rgba(253,248,244,.96) 22%);}
 .unlock-cta .pay-btn{width:100%;min-height:56px;font-size:17px}
-.unlock-panel .unlock-loss{margin:12px 0 0;text-align:center;color:#b4184b;font-weight:600;font-size:13px}
+.unlock-panel .unlock-loss{margin:12px 0 0;text-align:center;color:#b4184b;font-weight:600;font-size:15px}
 .unlock-panel .unlock-loss:empty{display:none}
-.pay-error{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#ffe2e2;color:#9d0027;font-size:13px;line-height:1.5}
-.pay-status{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#eef4eb;color:#2f4a33;font-size:13px;line-height:1.5}
+.pay-error{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#ffe2e2;color:#9d0027;font-size:15px;line-height:1.5}
+.pay-status{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#eef4eb;color:#2f4a33;font-size:15px;line-height:1.5}
 .pay-error[hidden],.pay-status[hidden]{display:none}
 .unlock-faq{border-top:1px solid var(--line);padding:2px 0}
 .unlock-faq summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink)}
-.unlock-faq p{margin:0 0 12px;font-size:13px;line-height:1.6;color:var(--muted)}
+.unlock-faq p{margin:0 0 12px;font-size:15px;line-height:1.6;color:var(--muted)}
 .unlock-faq a{color:#b4184b;text-decoration:underline}
-.unlock-panel .unlock-note{margin:12px 0 0;font-size:12px;line-height:1.55;color:#5b4549;text-align:center}
+.unlock-panel .unlock-note{margin:12px 0 0;font-size:14px;line-height:1.55;color:#5b4549;text-align:center}
 .pay-done{text-align:center;padding:26px 0 8px}
 .pay-done h2{margin:14px 0 8px;font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.2;color:var(--ink)}
 .pay-done p{margin:0 0 18px;color:#5b4549;font-size:14px}
@@ -196,28 +196,28 @@ html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
 .creator .vibe-grid,.creator .vibe-grid.is-look{display:flex;flex-wrap:wrap;gap:8px}
 .creator .vibe-grid .vibe-btn{flex:0 0 auto;min-height:44px;padding:0 15px;flex-direction:row;align-items:center;justify-content:center;gap:8px;border-radius:999px;text-align:center}
 .creator .vibe-grid .vibe-btn .vibe-icon{position:static;font-size:16px}
-.creator .vibe-grid .vibe-btn strong{font-size:13px;font-weight:600}
+.creator .vibe-grid .vibe-btn strong{font-size:15px;font-weight:600}
 .creator .vibe-grid .vibe-caption{display:none}
 .creator .vibe-grid.is-look .vibe-btn::before{width:16px;height:16px}
 .creator .vibe-preview-line{margin:12px 0 4px;font-size:15px;min-height:22px}
 .make-theirs{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 0 10px;padding-top:20px;border-top:1px solid var(--line)}
 .make-theirs h3{margin:0;font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:-.3px;color:var(--ink)}
 .make-theirs h3 em{color:var(--rose)}
-.make-theirs span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#86173f}
+.make-theirs span{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#86173f}
 .note-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 0}
-.note-shuffle{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid #e47191;background:#fff;color:#b4184b;font-size:13px;font-weight:600}
+.note-shuffle{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid #e47191;background:#fff;color:#b4184b;font-size:15px;font-weight:600}
 .note-shuffle:hover{background:#fbebe6}
 .note-shuffle[hidden]{display:none}
-.note-hint{flex:1 1 180px;font-size:12px;line-height:1.5;color:#5b4549}
+.note-hint{flex:1 1 180px;font-size:14px;line-height:1.5;color:#5b4549}
 .alt-source{margin:10px 0 0}
-.alt-source summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#86173f;text-decoration:underline;text-underline-offset:4px}
+.alt-source summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:15px;color:#86173f;text-decoration:underline;text-underline-offset:4px}
 .alt-source[open] summary{margin-bottom:6px}
 .media-nudge{margin:18px 0 12px;padding:14px 16px;border:1px dashed #e47191;border-radius:18px;background:#fdf3ee}
 .media-nudge[hidden]{display:none}
-.media-nudge p{margin:0 0 10px;font-size:13px;line-height:1.55;color:#432d32}
+.media-nudge p{margin:0 0 10px;font-size:15px;line-height:1.55;color:#432d32}
 .media-nudge-actions{display:flex;gap:8px;flex-wrap:wrap}
 /* One line in the sticky bar: leaving photos and voice out is visible right beside the button, never a missed step */
-.dock-nudge{display:block;width:100%;max-width:510px;margin:0 auto 8px;min-height:36px;padding:2px 6px;text-align:center;font-size:12px;line-height:1.4;color:#5b4549}
+.dock-nudge{display:block;width:100%;max-width:510px;margin:0 auto 8px;min-height:36px;padding:2px 6px;text-align:center;font-size:14px;line-height:1.4;color:#5b4549}
 .dock-nudge[hidden]{display:none}
 .dock-nudge u{color:#b4184b;font-weight:600;text-underline-offset:3px}
 @media(min-width:761px){.dock-nudge{max-width:1064px;text-align:right}}
@@ -225,7 +225,7 @@ html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
 @media(max-width:760px){.creator .occasion-guide{display:none}}
 .creator .vibe-grid.is-look .vibe-btn{flex-direction:row;min-height:44px;padding:0 15px;text-align:center}
 .creator .vibe-grid.is-look .vibe-caption{display:none}
-.creator .vibe-grid.is-look .vibe-btn strong{font-size:13px}
+.creator .vibe-grid.is-look .vibe-btn strong{font-size:15px}
 /* A quiet glow when the ready-made note is written or swapped, so the change is noticed without any sound or movement of the page */
 .note-fresh{animation:noteGlow 1s ease-out}
 @keyframes noteGlow{0%{box-shadow:0 0 0 3px rgba(214,38,93,.35);background:#fdf3ee}100%{box-shadow:0 0 0 0 rgba(214,38,93,0)}}
@@ -243,7 +243,7 @@ html.is-embed .preview-banner,html.is-embed .unlock-tray{display:none!important}
 .embed-nudge button{width:100%;min-height:50px;border-radius:999px;color:#fff;font-size:15px;font-weight:600;background:linear-gradient(135deg,#d92a5f 0%,#c42a74 60%,#a62f92 100%);box-shadow:0 12px 24px -12px rgba(214,38,93,.7)}
 html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 /* The link, shown once it is copied */
-.paid-link{width:100%;max-width:420px;margin:0 auto 14px;text-align:center;font-size:13px}
+.paid-link{width:100%;max-width:420px;margin:0 auto 14px;text-align:center;font-size:15px}
 .paid-link[hidden]{display:none}
 /* The logo mark, small, beside the wordmark */
 .logo-mark{flex:none;width:30px;height:30px;margin-right:9px;align-self:center;border-radius:9px;box-shadow:0 3px 10px -3px rgba(214,38,93,.4)}
@@ -252,3 +252,77 @@ html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 .experience-brand .logo-mark{display:inline-block;width:20px;height:20px;margin:0 7px 3px 0;vertical-align:middle;border-radius:6px;box-shadow:none;opacity:.9}
 .legal-brand{display:inline-flex;align-items:center}
 .legal-brand .logo-mark{width:26px;height:26px;margin-right:8px}
+
+/* ======================================================================
+   Conversion pass: a bigger, calmer unlock page.
+   Larger type, a preview that does not trap scrolling, one clear price block,
+   no alarm-red warnings, and no sharing tools cluttering the screen below the paywall.
+   ====================================================================== */
+.unlock-panel .unlock-steps{font-size:14px;gap:8px}
+.unlock-panel .unlock-steps span{width:26px;height:26px;font-size:13px}
+.unlock-panel .unlock-head{margin-bottom:16px}
+.unlock-panel .unlock-head h2{font-size:clamp(32px,8.6vw,40px);line-height:1.1}
+.unlock-panel .unlock-head p{font-size:17px;line-height:1.5;color:#4d3a3f}
+
+/* The phone is a true 360 x 660 layout, shown close to full size so the words inside are readable */
+.phone-body{width:min(360px,92vw)}
+.phone-screen{aspect-ratio:360/660}
+.phone-frame{width:360px;height:660px}
+@media(min-width:920px){.phone-body{width:340px}}
+/* Until it is tapped the preview ignores touches, so a thumb on the phone scrolls the page instead of getting stuck in it */
+.phone:not(.is-playing) .phone-frame{pointer-events:none}
+.phone-play{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;color:#fff;text-align:center;background:linear-gradient(180deg,rgba(21,15,19,.55),rgba(21,15,19,.82));-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);cursor:pointer;transition:opacity .35s ease}
+.phone.is-playing .phone-play{opacity:0;pointer-events:none;visibility:hidden}
+.phone-play-icon{display:grid;place-items:center;width:84px;height:84px;border-radius:50%;font-size:34px;padding-left:6px;background:linear-gradient(135deg,#d92a5f,#a62f92);box-shadow:0 14px 34px -10px rgba(217,42,95,.9),0 0 0 8px rgba(255,255,255,.14);animation:playPulse 1.8s ease-in-out infinite}
+.phone-play-text{font-family:var(--serif);font-size:24px;line-height:1.2}
+.phone-play-sub{font-size:15px;color:#f3d9de}
+@keyframes playPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@media(prefers-reduced-motion:reduce){.phone-play-icon{animation:none}}
+.phone figcaption{font-size:15px;color:#4d3a3f;margin:12px 0 2px}
+.phone-tools button{min-height:48px;font-size:15px;padding:0 14px}
+
+/* Price and promise */
+.unlock-panel .unlock-made{font-size:15px;color:#4d3a3f}
+.unlock-panel .unlock-card{padding:20px 20px 18px}
+.unlock-panel .unlock-price strong{font-size:52px}
+.unlock-panel .unlock-price span{font-size:16px;color:#4d3a3f}
+.unlock-panel .unlock-list{font-size:16px;gap:10px}
+.unlock-panel .unlock-list li{line-height:1.45;padding-left:28px}
+.unlock-panel .unlock-trust{font-size:15px;padding:12px 14px}
+/* "Kept for N more days": a calm note, not an error */
+.unlock-panel .unlock-loss{margin:14px 0 0;padding:11px 14px;border-radius:14px;background:#fff3d6;color:#5f4300;font-size:15px;font-weight:600;line-height:1.45;text-align:left}
+.unlock-panel .unlock-loss:empty{display:none}
+
+/* The one button */
+.unlock-cta .pay-btn{min-height:62px;font-size:19px;font-weight:700;letter-spacing:.01em}
+.unlock-cta{padding-top:18px}
+.unlock-panel .pay-methods{margin:8px 0 0;text-align:center;font-size:15px;line-height:1.4;color:#4d3a3f}
+.pay-error,.pay-status{font-size:15px;padding:12px 14px}
+
+/* Proof from real senders */
+.unlock-proof{margin:20px 0 8px;padding:18px;border:1px solid var(--line);border-radius:22px;background:#fffdfa}
+.unlock-proof .proof-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;font-size:16px;color:#432d32}
+.unlock-proof .proof-stars{color:#f2a516;letter-spacing:2px;font-size:18px}
+.unlock-proof blockquote{margin:0;padding:12px 0 0;border-top:1px solid var(--line)}
+.unlock-proof blockquote+blockquote{margin-top:12px}
+.unlock-proof blockquote p{margin:0 0 6px;font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.45;color:#432d32;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.unlock-proof footer{font-size:14px;color:#5b4549;font-weight:600}
+
+/* Reading material */
+.unlock-panel .unlock-faq summary{font-size:17px;min-height:52px}
+.unlock-panel .unlock-faq p{font-size:16px;line-height:1.6;color:#4d3a3f}
+.unlock-panel .unlock-note{font-size:14px;line-height:1.6;color:#4d3a3f;text-align:left}
+.unlock-panel .unlock-note a{color:#b4184b;text-decoration:underline}
+
+/* Below the paywall: nothing to share yet, so the sharing tools stay out of the way */
+.share-view.is-locked #hostingWarning,.share-view.is-locked .share-cover,.share-view.is-locked .share-extra-actions,.share-view.is-locked .share-cover-note{display:none!important}
+.share-view.is-locked .owner-note{font-size:15px;line-height:1.55}
+/* Unlock progress: on phones only the current step keeps its name, so the row never wraps */
+@media(max-width:480px){
+  .unlock-panel .unlock-steps li:not(.now){font-size:0;gap:0}
+  .unlock-panel .unlock-steps li:not(.now) span{font-size:13px}
+  .unlock-panel .unlock-steps li.now{white-space:nowrap;font-size:15px}
+}
+/* The main creator buttons read as buttons */
+.editor-dock .btn,.dock-buttons .btn{font-size:17px;font-weight:700}
+.hero-cta .btn{font-size:17px}
