@@ -1,0 +1,59 @@
+/* Referral tracker (admin) and the creator's private stats page. Plain and dense: these are working tools. */
+.rt,.rs{min-height:100dvh;background:var(--paper,#faf7f2);color:var(--ink,#432d32);font-family:var(--sans,system-ui,sans-serif);font-size:15px;line-height:1.5}
+.rt{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+.rt h1,.rs h1{font-family:var(--serif,Georgia,serif);font-weight:400;font-size:32px;margin:0 0 12px;letter-spacing:-.5px}
+.rt h2{font-size:18px;margin:0 0 6px}
+.rt h3{font-size:15px;margin:18px 0 6px}
+.rt button{font:inherit;font-weight:600;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #d9b4ad;background:#fffdfa;color:#432d32;cursor:pointer}
+.rt button[type=submit],.rt-actions button:first-child{background:#d6265d;border-color:#d6265d;color:#fffaf5}
+.rt button:disabled{opacity:.55;cursor:default}
+.rt .rt-small{min-height:32px;padding:0 10px;font-size:13px;margin:2px 4px 2px 0}
+.rt .rt-quiet{background:transparent;border-color:transparent;text-decoration:underline}
+.rt input{font:inherit;font-size:16px;padding:9px 12px;border:1px solid #daaaa4;border-radius:10px;background:#fffdfa;color:#432d32;min-height:42px;width:100%;box-sizing:border-box}
+.rt label{display:grid;gap:4px;font-size:13px;font-weight:600}
+.rt-login{display:grid;gap:10px;max-width:420px}
+.rt-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.rt-actions{display:flex;flex-wrap:wrap;gap:8px}
+.rt-error{padding:10px 12px;border-radius:10px;background:#ffe2e2;color:#9d0027}
+.rt-flash{padding:10px 12px;border-radius:10px;background:#e1f1e0;color:#155522}
+.rt-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0}
+.rt-cards div{padding:14px 16px;border:1px solid #f0dcd1;border-radius:14px;background:#fffdfa;display:grid;gap:2px}
+.rt-cards span{font-size:13px;color:#5b4549}
+.rt-cards strong{font-size:26px}
+.rt-cards em{font-style:normal;font-size:13px;color:#5b4549}
+.rt-cards .is-due{border-color:#d6265d;background:#fff1f4}
+.rt-rules{font-size:13px;color:#5b4549;margin:0 0 14px}
+.rt-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;padding:16px;border:1px solid #f0dcd1;border-radius:14px;background:#fffdfa;margin:0 0 16px;align-items:end}
+.rt-form h2{grid-column:1/-1}
+.rt-table-wrap{overflow-x:auto;border:1px solid #f0dcd1;border-radius:14px;background:#fffdfa}
+.rt-table,.rt-mini{width:100%;border-collapse:collapse}
+.rt-table th,.rt-table td,.rt-mini th,.rt-mini td{text-align:left;padding:10px 12px;border-bottom:1px solid #f3e4dc;vertical-align:top}
+.rt-table th,.rt-mini th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#5b4549;white-space:nowrap}
+.rt-mini{font-size:14px;background:#fff}
+.rt-mini td,.rt-mini th{padding:6px 8px}
+.rt-sub{font-size:13px;color:#6b5357;word-break:break-all}
+.rt-due{color:#b4184b}
+.is-off{opacity:.6}
+.rt-open>td{background:#fbf3ee}
+.rt-details{display:grid;gap:4px;overflow-x:auto}
+.rt-links{display:flex;flex-wrap:wrap;gap:4px}
+.rt-form-inline{margin:0}
+
+/* Creator stats page */
+.rs{padding:24px 16px 60px}
+.rs-wrap{max-width:560px;margin:0 auto;display:grid;gap:14px}
+.rs-brand{font-family:var(--serif,Georgia,serif);font-size:26px;text-decoration:none;color:inherit}
+.rs-brand span{color:#d6265d;font-style:italic}
+.rs-card{padding:18px;border:1px solid #f0dcd1;border-radius:18px;background:#fffdfa;display:grid;gap:6px}
+.rs-big{font-size:40px;font-weight:700;line-height:1.1}
+.rs-muted{color:#5b4549;font-size:14px;margin:0}
+.rs-bar{height:12px;border-radius:999px;background:#f3e4dc;overflow:hidden}
+.rs-bar span{display:block;height:100%;background:linear-gradient(90deg,#ff8aa6,#d6265d);border-radius:inherit}
+.rs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.rs-grid strong{display:block;font-size:22px}
+.rs-grid span{font-size:13px;color:#5b4549}
+.rs table{width:100%;border-collapse:collapse;font-size:14px}
+.rs th,.rs td{text-align:left;padding:8px 6px;border-bottom:1px solid #f3e4dc}
+.rs th{font-size:12px;color:#5b4549;text-transform:uppercase;letter-spacing:.04em}
+.rs-link{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:600;word-break:break-all}
+.rs-tiers{margin:0;padding-left:20px;font-size:14px}

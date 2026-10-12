@@ -51,6 +51,19 @@ export default function Terms() {
         copy of anything you want to keep for longer. Refunds are covered on the <a href="/refund">Refunds</a> page.
       </p>
 
+      <h2>Creator codes and the creator programme</h2>
+      <p>
+        If you arrive through a creator’s link (kholona.in/r/…) or type a creator code on the unlock page, you get the discount shown before you pay, and the creator earns a commission on
+        your purchase. One code per gift; codes cannot be combined, exchanged for cash or applied after paying. We may end a code at any time.
+      </p>
+      <p>
+        Creators who join the programme agree that: commission is a share of what buyers actually paid through their link or code, by weekly sales (Monday to Sunday, India time): 20% for 1 to 9
+        sales, 30% for 10 to 19, and 50% for 20 or more, applied to every sale that week. It is paid by bank transfer (IMPS) each Friday for the week before; amounts under ₹100 roll over. A
+        creator’s own purchases, refunded or disputed payments, and sales made by misleading people, spam or fake accounts do not count, and we may withhold commission while we look into
+        them. Posts must be marked as paid partnerships (for example #ad or #collab) as the ASCI guidelines require. Tax is deducted where the law requires it, so we may ask for a PAN. We
+        may change the rates with a week’s notice; sales already made keep the rate of their week.
+      </p>
+
       <h2>No guarantees</h2>
       <p>
         We work to keep the service available, but we provide it “as is”. We don’t promise it will always be uninterrupted or error-free, or that a gift will look identical on every device or

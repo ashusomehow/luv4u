@@ -32,6 +32,8 @@ export const EVENT_NAMES = [
   'payment_dismissed',
   'payment_failed',
   'payment_succeeded',
+  // a creator code was applied on the unlock page
+  'referral_applied',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

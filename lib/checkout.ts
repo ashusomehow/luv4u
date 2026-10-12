@@ -1,6 +1,7 @@
 import { findGift, isUnlocked, markPaid } from './gifts';
 import { defer, purchaseEventId, sendMetaEvent, type Attribution } from './meta';
 import { priceInr } from './payments';
+import { buyerHashes, type Referral } from './referrals';
 import { CURRENCY, capturePayment, createOrder, fetchPayment, orderPayments, type RazorpayPayment } from './razorpay';
 import { supabase } from './supabase';
 
@@ -15,6 +16,9 @@ export interface PaymentRow {
   status: 'created' | 'paid';
   /** Ad-click details captured when the order was opened (see lib/meta.ts). Absent for organic buyers. */
   attribution?: Attribution | null;
+  /** The creator code the sale is credited to, and the paise the buyer got off (migration 0008). */
+  ref_code?: string | null;
+  discount?: number;
 }
 
 export const pricePaise = (): number => Math.round(priceInr() * 100);
@@ -33,8 +37,9 @@ export async function findOrder(orderId: string): Promise<PaymentRow | null> {
 export async function openOrderFor(
   giftId: string,
   attribution?: Attribution | null,
+  referral?: Referral | null,
 ): Promise<{ id: string; amount: number; currency: string; fresh: boolean }> {
-  const amount = pricePaise();
+  const amount = pricePaise() - (referral?.discount ?? 0);
   const db = supabase();
   const { data, error } = await db
     .from('payments')
@@ -43,9 +48,10 @@ export async function openOrderFor(
     .eq('status', 'created')
     .eq('amount', amount)
     .order('id', { ascending: false })
-    .limit(1);
+    .limit(5);
   if (error) throw error;
-  const existing = (data as PaymentRow[] | null)?.[0];
+  // Reuse only an order made for the same creator (or for none), so a sale is never credited to the wrong one.
+  const existing = (data as PaymentRow[] | null)?.find((row) => (row.ref_code ?? null) === (referral?.code ?? null));
   if (existing) {
     // A returning buyer who now arrives from an ad: keep the click, so the sale is still credited.
     const hadClick = Boolean(existing.attribution?.fbc || existing.attribution?.fbp);
@@ -55,6 +61,8 @@ export async function openOrderFor(
 
   const order = await createOrder(giftId, amount);
   const base: Record<string, unknown> = { gift_id: giftId, order_id: order.id, amount, currency: CURRENCY, status: 'created' };
+  // A referral only exists once migration 0008 is applied (the creator lookup needs it), so its columns are there too.
+  if (referral) Object.assign(base, { ref_code: referral.code, discount: referral.discount });
   let { error: insertError } = await db.from('payments').insert(attribution ? { ...base, attribution } : base);
   // Before the attribution migration (0007) is applied the column does not exist: save the order without it.
   if (insertError && attribution && /attribution|42703|PGRST204/.test(`${insertError.code ?? ''} ${insertError.message ?? ''}`)) {
@@ -97,7 +105,10 @@ export async function recordPaid(row: PaymentRow, paymentId: string, buyer?: { e
   if (othersError) throw othersError;
   if (others?.length) console.warn('Duplicate payment for one gift: refund the extra one.', { gift: row.gift_id, order: row.order_id, payment: paymentId });
 
-  const { error } = await db.from('payments').update({ status: 'paid', payment_id: paymentId, paid_at: new Date().toISOString() }).eq('id', row.id);
+  const paid: Record<string, unknown> = { status: 'paid', payment_id: paymentId, paid_at: new Date().toISOString() };
+  // A referred sale keeps hashed buyer details, so a creator buying through their own code can be spotted.
+  if (row.ref_code) Object.assign(paid, buyerHashes(buyer));
+  const { error } = await db.from('payments').update(paid).eq('id', row.id);
   if (error) throw error;
 
   // Tell Meta about the sale, once: only the call that moved this order from created to paid gets here.

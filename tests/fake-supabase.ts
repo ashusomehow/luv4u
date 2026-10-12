@@ -8,6 +8,7 @@ class Query {
   private payload: Row | null = null;
   private opts: { count?: boolean; head?: boolean; ignoreDuplicates?: boolean; onConflict?: string } = {};
   private max = Infinity;
+  private offset = 0;
   private sort: { column: string; ascending: boolean } | null = null;
   private returning = false;
   private single = false;
@@ -35,6 +36,7 @@ class Query {
   lt(column: string, value: string) { this.filters.push((r) => String(r[column]) < value); return this; }
   in(column: string, values: unknown[]) { this.filters.push((r) => values.includes(r[column])); return this; }
   limit(n: number) { this.max = n; return this; }
+  range(from: number, to: number) { this.offset = from; this.max = to - from + 1; return this; }
   order(column: string, o: { ascending: boolean }) { this.sort = { column, ascending: o.ascending }; return this; }
   maybeSingle() { this.single = true; return this; }
 
@@ -75,7 +77,7 @@ class Query {
           hit = [...hit].sort((a, b) => (Number(a[column]) - Number(b[column])) * (ascending ? 1 : -1));
         }
         const count = hit.length;
-        hit = hit.slice(0, this.max);
+        hit = hit.slice(this.offset, this.offset + this.max);
         if (this.opts.head) return { data: null, count, error: null };
         if (this.single) return { data: hit[0] ?? null, error: null };
         return { data: hit, count: this.opts.count ? count : undefined, error: null };

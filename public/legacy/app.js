@@ -536,7 +536,7 @@ function saveDraft(){
 async function restoreDraft(){let saved;try{saved=await store('draft');}catch{}if(!saved){try{saved=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');}catch{}}if(saved)try{draft=sanitizeGift(saved,false);occasionDrafts.set(occasionKey(draft),structuredClone(draft));}catch{}try{const list=JSON.parse(localStorage.getItem(LIBRARY_KEY)||'[]');libraryCache=Array.isArray(list)?list.filter(v=>v&&typeof v.id==='string').slice(0,100):[];}catch{libraryCache=[];}}
 function saveLibrary(){try{localStorage.setItem(LIBRARY_KEY,JSON.stringify(libraryCache));return true;}catch{toast('Save your private recovery link now. This browser cannot remember your gifts.');return false;}}
 function rememberGift(entry){libraryCache=libraryCache.filter(v=>v.id!==entry.id);libraryCache.unshift({...entry,at:new Date().toISOString()});libraryCache=libraryCache.slice(0,100);saveLibrary();}
-async function api(path,options={}){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),options.timeout||45000);try{const r=await fetch(path,{method:options.method||'GET',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.key?{Authorization:'Bearer '+options.key}:{})},body:options.body?JSON.stringify(options.body):undefined,signal:controller.signal,cache:'no-store',credentials:'omit'});let data;try{data=await r.json();}catch{throw new Error('The gift server returned an unexpected response. Your draft is still safe.');}if(!r.ok){const err=new Error(data.error||'The gift could not be saved.');err.status=r.status;throw err;}return data;}catch(err){if(err.name==='AbortError')throw new Error('The gift server is taking too long. Try again; your draft is still here.');throw err;}finally{clearTimeout(timeout);}}
+async function api(path,options={}){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),options.timeout||45000);try{const r=await fetch(path,{method:options.method||'GET',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.key?{Authorization:'Bearer '+options.key}:{})},body:options.body?JSON.stringify(options.body):undefined,signal:controller.signal,cache:'no-store',credentials:options.credentials?'same-origin':'omit'});let data;try{data=await r.json();}catch{throw new Error('The gift server returned an unexpected response. Your draft is still safe.');}if(!r.ok){const err=new Error(data.error||'The gift could not be saved.');err.status=r.status;throw err;}return data;}catch(err){if(err.name==='AbortError')throw new Error('The gift server is taking too long. Try again; your draft is still here.');throw err;}finally{clearTimeout(timeout);}}
 async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;paySimulated=paymentsRequired&&c.payments.simulated===true;payProvider=paymentsRequired?String(c.payments.provider||''):'';payTestMode=paymentsRequired&&c.payments.testMode===true;payLinkDays=Number(c.payments?.linkDays)||365;payReviews=c.reviews&&Array.isArray(c.reviews.quotes)&&c.reviews.quotes.length?c.reviews:null;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
 function clearGiftHash(){try{const p=/^\/(g|for)\//.test(location.pathname)?'/':location.pathname;history.replaceState(null,'',p+location.search);}catch{}}
 function showView(view){if($('.skip-link'))$('.skip-link').hidden=view!=='home';stopPreviewAudio();showViewV1(view);updateResumeBanner();$('#myGiftsView').hidden=view!=='library';if(view==='library')$('#myGiftsView').hidden=false;const right=$('#headerRight');if(!right.querySelector('.my-gifts-link'))right.insertAdjacentHTML('afterbegin','<button class="nav-link my-gifts-link" data-v2="library">My little gifts</button>');if(view==='creator')setStep(wizardStep,false);if(view==='library'){document.title='Your little gifts · Kholona';right.innerHTML='<button class="nav-link pill-link" data-action="create">Make another little gift ♡</button>';}}
@@ -965,7 +965,45 @@ function updateResumeBanner(){
  b.innerHTML=`<span class="resume-copy"><strong>${e(o.short)} for ${e(name)}</strong><span>Saved on this device. Pick up where you left off.</span></span><a class="resume-btn" href="#make=${e(key)}" data-choose-occasion="${e(key)}">Continue</a><button type="button" class="resume-close" data-v3="resume-dismiss" aria-label="Dismiss">×</button>`;
 }
 /* ---- Paywall: everything shown here is true (real deletion date, real price and terms). ---- */
-const priceText=()=>payPrice?'₹'+payPrice.toLocaleString('en-IN'):'';
+/* Creator referrals: a code from a creator's link (?ref= or the kholona_ref cookie) or typed in. The server checks it and sets the price. */
+let payRef=null,payRefRemoved=false;const REF_KEY='kholona.ref',REF_CODE=/^[A-Z0-9]{3,20}$/;
+function savedRefCode(){try{const v=JSON.parse(localStorage.getItem(REF_KEY)||'null');if(v&&Date.now()-v.t<30*86400000&&REF_CODE.test(v.code))return v.code;}catch{}const m=document.cookie.match(/(?:^|; )kholona_ref=([A-Za-z0-9]{3,20})/);return m?m[1].toUpperCase():'';}
+function rememberRef(code){try{localStorage.setItem(REF_KEY,JSON.stringify({code,t:Date.now()}));}catch{}try{document.cookie='kholona_ref='+code+'; Max-Age='+30*86400+'; Path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'');}catch{}}
+function forgetRef(){try{localStorage.removeItem(REF_KEY);}catch{}try{document.cookie='kholona_ref=; Max-Age=0; Path=/';}catch{}}
+try{const c=(new URLSearchParams(location.search).get('ref')||'').trim().toUpperCase();if(REF_CODE.test(c))rememberRef(c);}catch{}
+/* What the checkout is told: the applied code, nothing if the buyer removed it, else whatever the creator link left behind. */
+const refBody=()=>({ref:payRef?payRef.code:payRefRemoved?'':savedRefCode()});
+const fullPriceText=()=>payPrice?'₹'+payPrice.toLocaleString('en-IN'):'';
+const priceText=()=>payPrice?'₹'+Math.max(1,payPrice-(payRef?.discount||0)).toLocaleString('en-IN'):'';
+function refBoxHtml(){
+ if(payRef)return `<p class="ref-applied"><span aria-hidden="true">🎟️</span><span>Code <strong>${e(payRef.code)}</strong> applied · ₹${e(String(payRef.discount))} off</span><button type="button" id="refRemove">Remove</button></p>`;
+ return `<details class="ref-entry" id="refEntry"><summary>Have a creator code?</summary><div class="ref-form"><input id="refInput" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. PRIYA" aria-label="Creator code"><button type="button" id="refApply">Apply</button></div><p class="ref-msg" id="refMsg" role="status" hidden></p></details>`;
+}
+/* Puts the current price (and code) everywhere on the unlock card without rebuilding the preview. */
+function refreshPayPrice(){
+ const box=$('#refBox'),val=$('#unlockPriceVal'),go=$('#payGo');
+ if(val)val.innerHTML=payRef?`<s>${e(fullPriceText())}</s> ${e(priceText())}`:e(priceText()||'Free');
+ if(go&&!payBusy){const label='Unlock & get link'+(priceText()?' · '+priceText():'');go.dataset.label=label;if(!go.disabled)go.textContent=label;}
+ if(!box)return;
+ box.innerHTML=refBoxHtml();
+ $('#refRemove')?.addEventListener('click',()=>{payRef=null;payRefRemoved=true;forgetRef();refreshPayPrice();});
+ const apply=async()=>{
+  const input=$('#refInput'),msg=$('#refMsg'),btn=$('#refApply'),code=(input.value||'').trim().toUpperCase();
+  const say=t=>{msg.textContent=t;msg.hidden=!t;};
+  if(!REF_CODE.test(code)){say('Codes are 3 to 20 letters or numbers.');return;}
+  btn.disabled=true;say('Checking…');
+  try{payRef=await checkRef(code);payRefRemoved=false;rememberRef(payRef.code);track('referral_applied');refreshPayPrice();}
+  catch(ex){say(ex&&ex.status===404?'That code is not valid. Check the spelling with the creator.':'We could not check the code just now. Try again.');btn.disabled=false;}
+ };
+ $('#refApply')?.addEventListener('click',apply);
+ $('#refInput')?.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();apply();}});
+}
+async function checkRef(code){const r=await api('/api/referral?code='+encodeURIComponent(code),{timeout:8000});return {code:String(r.code),discount:Number(r.discountInr)||0};}
+/* A code from a creator's link is applied by itself; a code the server no longer knows is forgotten. */
+function autoApplyRef(){
+ if(payRef||payRefRemoved)return;const code=savedRefCode();if(!code)return;
+ checkRef(code).then(r=>{payRef=r;refreshPayPrice();}).catch(ex=>{if(ex&&ex.status===404)forgetRef();});
+}
 function savedDaysLeft(){if(!publishedExpiresAt)return null;return Math.max(0,Math.ceil((new Date(publishedExpiresAt).getTime()-Date.now())/86400000));}
 function savedLossLine(){const n=savedDaysLeft();if(n===null)return '';return n<=1?'Your saved gift is deleted within a day unless you unlock it.':`Your saved gift is kept for ${n} more days. After that it is deleted.`;}
 const lifeText=days=>days>=365?'a full year':days+' days';
@@ -1007,7 +1045,8 @@ function applyShareLock(){
 </figure>
 <div class="unlock-rest">${madeSummary(publishedGift,false)?`<p class="unlock-made">Inside: ${e(madeSummary(publishedGift,false))}</p>`:''}
 <div class="unlock-card">
-<div class="unlock-price"><strong>${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
+<div class="unlock-price"><strong id="unlockPriceVal">${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
+<div class="ref-box" id="refBox"></div>
 <ul class="unlock-list"><li>A private link only ${name} gets, ready the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li></ul>
 ${savedLossLine()?`<p class="unlock-loss"><span aria-hidden="true">⏳</span> ${e(savedLossLine())}</p>`:''}
 ${paySimulated?'<p class="unlock-trust"><strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.</p>':payTestMode?'<p class="unlock-trust"><strong>Test mode.</strong> Pay with Razorpay’s test card or test UPI. No real money moves.</p>':''}
@@ -1024,6 +1063,7 @@ ${proofHtml()}
 <details class="unlock-faq"><summary>Can I change it after paying?</summary><p>Yes. Edit the words, photos or music any time and the same link shows the new version.</p></details>
 <p class="unlock-note">Previewing is free, so look as often as you like. Once a gift is unlocked, the payment is not refundable. <a href="/refund">Refund details</a></p></div>`;
 setTimeout(welcomeBack,0);
+ refreshPayPrice();autoApplyRef();
  fitPhone();
  $('#phonePlay').onclick=()=>{$('#phoneWrap').classList.add('is-playing');track('preview_played');try{$('#phoneFrame').contentWindow.postMessage({type:'kholona-embed-go'},location.origin);}catch{}};
  $('#phoneRestart').onclick=()=>{try{$('#phoneFrame').contentWindow.location.reload();$('#phoneLoading')?.classList.remove('is-done');}catch{}};
@@ -1091,7 +1131,7 @@ async function confirmPayment(proof,status){
  /* Still no answer: the money may have moved. Look for it for a minute, never ask them to pay again. */
  payPendingRef=ref||'pending';
  status('Payment received. Waiting for the bank to confirm it. Please do not pay again.');
- for(let i=0;i<12;i++){await delay(5000);try{const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,timeout:20000});if(r.status==='paid'){payPendingRef='';return r;}}catch{}}
+ for(let i=0;i<12;i++){await delay(5000);try{const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,body:refBody(),credentials:true,timeout:20000});if(r.status==='paid'){payPendingRef='';return r;}}catch{}}
  throw new Error('Your payment is still being confirmed. Please do not pay again: this gift unlocks on its own as soon as it is confirmed, usually within minutes. Come back to it in a little while.'+refText(ref)+' If it is not unlocked within a day, write to us with this reference.');
 }
 /* Copy without any toast or alarm: some browsers only allow it from a tap, and the button covers that. */
@@ -1131,7 +1171,7 @@ async function startPayment(){
  const busy=t=>{go.disabled=true;go.classList.add('is-busy');go.textContent=t;};
  const status=t=>{note.textContent=t;note.hidden=!t;};
  const idle=()=>{go.disabled=false;go.classList.remove('is-busy');go.textContent=payPendingRef?'Check payment status':label;payBusy=false;};
- const checkout=()=>api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key});
+ const checkout=()=>api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,body:refBody(),credentials:true});
  payBusy=true;err.hidden=true;status('');busy('Processing…');track('pay_clicked');
  try{
   let r=await checkout();
@@ -1139,6 +1179,8 @@ async function startPayment(){
   if(r.status!=='paid'){
    if(!r.order||!r.keyId)throw new Error('We could not start the payment. Nothing was charged.');
    if(r.meta&&window.kholonaMeta)window.kholonaMeta.fire(r.meta);
+   /* The server has the final say on the code (it may have been paused since it was applied). */
+   if('referral' in r)payRef=r.referral?{code:String(r.referral.code),discount:Number(r.referral.discountInr)||0}:null;
    busy('Opening payment…');markPayStarted(editing.id);track('razorpay_opened');
    let proof;
    try{proof=await runRazorpay(r);}
@@ -1172,7 +1214,7 @@ const keptLine=()=>{const n=savedDaysLeft();return n===null?'':n<=1?' It is kept
 /* Asks the server (which also looks for money that moved while we were away). Unlocks the page if it did. */
 async function recheckPayment(){
  if(payBusy||!editing?.key||!publishedGift?.server||publishedStatus!=='preview'||$('#unlockPanel')?.hidden)return false;
- try{const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,timeout:20000});if(r.status==='paid'){unlockDone(e(publishedGift.name));return true;}}catch{}
+ try{const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,body:refBody(),credentials:true,timeout:20000});if(r.status==='paid'){unlockDone(e(publishedGift.name));return true;}}catch{}
  return false;
 }
 async function welcomeBack(){
