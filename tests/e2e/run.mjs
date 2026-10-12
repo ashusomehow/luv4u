@@ -550,7 +550,7 @@ try {
   {
     assert.deepEqual((await (await fetch(`${RZP_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365, provider: 'razorpay', testMode: true });
     const zctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA, permissions: ['clipboard-read', 'clipboard-write'] });
-    await zctx.route('https://checkout.razorpay.com/v1/checkout.js', route => route.fulfill({ contentType: 'application/javascript', body: `
+    const rzpStub = `
       window.Razorpay = function (o) { const on = {}; this.on = (ev, fn) => { on[ev] = fn; }; this.open = async () => {
         window.__rzpOptions = { key: o.key, order_id: o.order_id, amount: o.amount, currency: o.currency, name: o.name, description: o.description };
         if (window.__rzpMode === 'dismiss') { o.modal.ondismiss(); return; }
@@ -559,7 +559,8 @@ try {
         const r = await fetch('${MOCK}/__pay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: o.order_id }) });
         const p = await r.json();
         o.handler({ razorpay_order_id: o.order_id, razorpay_payment_id: p.payment.id, razorpay_signature: p.signature });
-      }; };` }));
+      }; };`;
+    await zctx.route('https://checkout.razorpay.com/v1/checkout.js', route => route.fulfill({ contentType: 'application/javascript', body: rzpStub }));
     const zp = await zctx.newPage(); zp.setDefaultTimeout(15000); watch(zp, 'razorpay');
     const makeGift = async name => {
       await zp.goto('about:blank'); await zp.goto(RZP_APP + '/#make=love', { waitUntil: 'load' }); await zp.waitForSelector('#recipientName');
@@ -655,6 +656,40 @@ try {
     assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 4, 'one payment for the fourth gift');
     await zctx.close();
 
+    // Creator referral: a creator's link brings the buyer in, the code is applied by itself (₹30 off), can be removed and
+    // typed back, and the paid sale is credited to the creator.
+    {
+      await fetch(`${MOCK}/rest/v1/referrers`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: 'PRIYA', name: 'Priya', stats_key: 'k'.repeat(24), active: true }) });
+      const rctx = await browser.newContext({ viewport: { width: 412, height: 860 }, userAgent: NORMAL_UA, permissions: ['clipboard-read', 'clipboard-write'] });
+      await rctx.route('https://checkout.razorpay.com/v1/checkout.js', route => route.fulfill({ contentType: 'application/javascript', body: rzpStub }));
+      const rp = await rctx.newPage(); rp.setDefaultTimeout(15000); watch(rp, 'referral');
+      await rp.goto(`${RZP_APP}/r/priya`, { waitUntil: 'load' });
+      assert.match(rp.url(), /\/for\/birthday-wish\?ref=PRIYA/, 'the creator link opens the birthday page');
+      assert.ok((await rctx.cookies()).some(c => c.name === 'kholona_ref' && c.value === 'PRIYA'), 'the code is remembered');
+      await rp.goto(RZP_APP + '/#make=birthday', { waitUntil: 'load' }); await rp.waitForSelector('#recipientName');
+      await rp.fill('#recipientName', 'Ria');
+      await rp.click('#createGiftBtn'); await rp.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
+      await rp.waitForSelector('.ref-applied');
+      assert.match(await rp.locator('.ref-applied').innerText(), /PRIYA[\s\S]*₹30 off/);
+      assert.equal(await rp.locator('#payGo').innerText(), 'Unlock & get link · ₹169');
+      assert.match(await rp.locator('#unlockPriceVal').innerText(), /₹199\s*₹169/, 'the old price is shown struck through');
+      await rp.click('#refRemove'); await rp.waitForSelector('#refEntry');
+      assert.equal(await rp.locator('#payGo').innerText(), 'Unlock & get link · ₹199', 'removing the code restores the price');
+      await rp.click('#refEntry summary'); await rp.fill('#refInput', 'nope'); await rp.click('#refApply');
+      await rp.waitForFunction(() => /not valid/.test(document.querySelector('#refMsg')?.textContent || ''));
+      await rp.fill('#refInput', 'priya'); await rp.click('#refApply'); await rp.waitForSelector('.ref-applied');
+      await rp.evaluate(() => { window.__rzpMode = 'pay'; delete window.__rzpOptions; });
+      await rp.click('#payGo'); await rp.waitForSelector('#payDone');
+      assert.equal(await rp.evaluate(() => window.__rzpOptions.amount), 16900, 'the server charged the discounted price');
+      const rows = await (await fetch(`${MOCK}/rest/v1/payments?select=*`)).json();
+      const sale = rows.find(r => r.ref_code === 'PRIYA');
+      assert.ok(sale && sale.status === 'paid' && sale.amount === 16900 && sale.discount === 3000, 'the sale is credited to the creator');
+      const statsPage = await (await fetch(`${RZP_APP}/r/PRIYA/stats?key=${'k'.repeat(24)}`)).text();
+      assert.match(statsPage, />₹34</, 'the creator sees what the sale earned them (20% of ₹169) on their private page');
+      assert.equal((await fetch(`${RZP_APP}/r/PRIYA/stats?key=wrong`)).status, 404, 'a wrong key shows nothing');
+      await rctx.close();
+    }
+
     // c) the browser never comes back: Razorpay's webhook unlocks the gift, a forged one does not
     const mk = async (id, key) => { await fetch(`${RZP_APP}/api/gifts`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, editKey: key, gift: { name: 'Webhook', occasion: 'love', vibe: 'Romantic', photos: [] } }) });
       return (await (await fetch(`${RZP_APP}/api/gifts/${id}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${key}` } })).json()); };
@@ -676,7 +711,7 @@ try {
     await fetch(`${MOCK}/__pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: pend2.order.id }) });
     assert.equal((await (await fetch(`${RZP_APP}/api/gifts/${rid}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${rkey}` } })).json()).status, 'paid');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${rid}`)).status, 200);
-    assert.deepEqual((await state()).paymentRows.map(r => r.status), ['paid', 'paid', 'paid', 'paid', 'paid', 'paid']);
+    assert.deepEqual((await state()).paymentRows.map(r => r.status), ['paid', 'paid', 'paid', 'paid', 'paid', 'paid', 'paid']);
   }
 
   // Meta Pixel (ad measurement): absent unless a Pixel id is configured, which this build has not. The loader itself is
@@ -711,7 +746,10 @@ try {
   // The only console noise allowed is the failures this test injected on purpose: one rejected and three dropped confirmation requests.
   const injected = errors.filter(e => /^razorpay: Failed to load resource: (the server responded with a status of 400|net::ERR_FAILED)/.test(e));
   assert.equal(injected.length, 4, 'exactly the injected failures were logged');
-  assert.deepEqual(errors.filter(e => !/favicon/.test(e) && !injected.includes(e)), [], 'no browser errors');
+  // Plus the invalid creator code typed on purpose, which the code check answers with a 404.
+  const badCode = errors.filter(e => /^referral: Failed to load resource: the server responded with a status of 404/.test(e));
+  assert.equal(badCode.length, 1, 'exactly the invalid code was refused');
+  assert.deepEqual(errors.filter(e => !/favicon/.test(e) && !injected.includes(e) && !badCode.includes(e)), [], 'no browser errors');
   console.log('e2e smoke passed');
 } catch (error) {
   console.error(error);

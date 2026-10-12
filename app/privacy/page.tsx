@@ -27,6 +27,9 @@ export default function Privacy() {
           <strong>Payments.</strong> Payments are taken by Razorpay. We never see or store your card, UPI or bank details. Razorpay may ask for details such as your phone number and email to take the payment and send a receipt, and handles them under its own privacy policy. We keep a record of each payment (the gift’s id, the amount, Razorpay’s order and payment ids, and the time) for accounting and tax purposes for as long as the law requires, even after the gift itself has been deleted. It holds no names or messages.
         </li>
         <li>
+          <strong>Creator codes.</strong> If you came through a creator’s link we keep the creator’s code in a small cookie (kholona_ref) and in your browser’s storage for up to 30 days, so you get their discount. When you pay with a code, the payment record also keeps that code and a scrambled (hashed) version of the phone number and email Razorpay gives us, only to stop a creator earning commission on their own purchases. Creators see their sales counts and earnings, never who bought. Visits to a creator link are counted without any address or cookie id.
+        </li>
+        <li>
           <strong>Simple usage counts.</strong> To learn which steps confuse people we record events such as “opened the creator”. These carry a random per-tab code that cannot be linked across visits, the page
           type and where the visitor came from. They are deleted after thirteen months. They never include gift ids, names or messages, and they are skipped if your browser sends Do Not Track or Global Privacy Control.
         </li>

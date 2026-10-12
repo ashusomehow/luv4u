@@ -330,3 +330,22 @@ html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 .occasion-ribbon button,.occasion-ribbon a{white-space:nowrap;flex:none}
 .field-label{flex-wrap:wrap;column-gap:12px;row-gap:2px}
 .field-label small{margin-left:auto}
+
+/* Creator code on the unlock card */
+.ref-box{margin:2px 0 10px}
+.ref-box:empty{display:none}
+.ref-entry summary{cursor:pointer;font-size:16px;font-weight:600;color:#b4184b;min-height:44px;display:flex;align-items:center;list-style:none}
+.ref-entry summary::-webkit-details-marker{display:none}
+.ref-entry summary::after{content:'›';margin-left:8px;transition:transform .2s}
+.ref-entry[open] summary::after{transform:rotate(90deg)}
+.ref-form{display:flex;gap:8px;margin-top:4px}
+.ref-form input{flex:1;min-width:0;font:inherit;font-size:17px;letter-spacing:.06em;text-transform:uppercase;padding:10px 14px;min-height:48px;border:1.5px solid #daaaa4;border-radius:12px;background:#fffdfa;color:#432d32}
+.ref-form button{min-height:48px;padding:0 18px;border-radius:12px;background:#432d32;color:#fffaf5;font-size:16px;font-weight:700}
+.ref-form button:disabled{opacity:.6}
+.ref-msg{margin:6px 0 0;font-size:15px;color:#9d0027}
+.ref-applied{display:flex;align-items:center;gap:8px;margin:0;padding:8px 8px 8px 12px;border-radius:12px;background:#e1f1e0;color:#155522;font-size:16px;line-height:1.35}
+.ref-applied>span:nth-child(2){flex:1;min-width:0}
+.ref-applied button{flex:none;font-size:15px;font-weight:600;color:#155522;text-decoration:underline;background:none;min-height:40px;padding:0 6px}
+.unlock-price strong s{font-size:.42em;opacity:.6;font-weight:500;margin-right:6px;vertical-align:.45em}
+.unlock-price strong{white-space:nowrap}
+.ref-form input::placeholder{text-transform:none;letter-spacing:0}

@@ -1,10 +1,11 @@
 import { openOrderFor, reconcileGift } from '@/lib/checkout';
 import { findOwnedGift, isUnlocked, markPaid } from '@/lib/gifts';
-import { ApiError, bearer, handle, json, requireBackend } from '@/lib/http';
+import { ApiError, bearer, handle, json, readJson, requireBackend } from '@/lib/http';
 import { simulatePayments } from '@/lib/payments';
 import { browserEvent, checkoutEventId, defer, readAttribution, sendMetaEvent } from '@/lib/meta';
 import { LIMITS, rateLimit } from '@/lib/rate-limit';
 import { razorpayConfigured, razorpayKeyId, razorpayTestMode } from '@/lib/razorpay';
+import { referralFor } from '@/lib/referrals';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,10 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
     await rateLimit(request, 'checkout', LIMITS.checkout.max, LIMITS.checkout.window);
     if (await reconcileGift(id)) return json({ ok: true, status: 'paid' });
     const attribution = readAttribution(request);
-    const { fresh, ...order } = await openOrderFor(id, attribution);
+    // A creator code: the one the page sends, else the one remembered from the creator's link. Checked here, priced here.
+    const body = await readJson<{ ref?: unknown }>(request);
+    const referral = await referralFor(request, body && 'ref' in body ? body.ref : undefined);
+    const { fresh, ...order } = await openOrderFor(id, attribution, referral);
     // Ad measurement: a new order is a "checkout started". The browser fires the same event with the same id.
     const meta = fresh ? browserEvent(request, 'InitiateCheckout', order.id, order.amount) : undefined;
     if (meta) {
@@ -38,7 +42,7 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
         sendMetaEvent({ name: 'InitiateCheckout', id: checkoutEventId(order.id), attribution, giftId: id, value: order.amount / 100, occasion: row.gift?.occasion as string | undefined, orderId: order.id }),
       );
     }
-    return json({ ok: true, status: 'pending', order, keyId: razorpayKeyId(), testMode: razorpayTestMode(), ...(meta ? { meta } : {}) });
+    return json({ ok: true, status: 'pending', order, referral: referral ? { code: referral.code, discountInr: referral.discount / 100 } : null, keyId: razorpayKeyId(), testMode: razorpayTestMode(), ...(meta ? { meta } : {}) });
   }
   if (simulatePayments()) {
     await markPaid(id);

@@ -2,7 +2,7 @@
 // Not a full implementation: it supports exactly the queries the app issues.
 import crypto from 'node:crypto';
 import http from 'node:http';
-const tables = { gifts: [], gift_views: [], gift_replies: [], events: [], gift_reports: [], rate_hits: [], payments: [] };
+const tables = { gifts: [], gift_views: [], gift_replies: [], events: [], gift_reports: [], rate_hits: [], payments: [], referrers: [], referral_clicks: [], referral_payouts: [] };
 
 // A stand-in for api.razorpay.com (orders, payments, capture) plus /__pay, which plays the customer paying.
 const RZP_AUTH = 'Basic ' + Buffer.from('rzp_test_e2e:e2e-razorpay-secret').toString('base64');
