@@ -34,6 +34,10 @@ export const EVENT_NAMES = [
   'payment_succeeded',
   // a creator code was applied on the unlock page
   'referral_applied',
+  // the sorry gift: the recipient tried the runaway No, pressed Yes, saved the "Forgiven" story card
+  'forgive_no_tried',
+  'forgive_yes',
+  'story_card_saved',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

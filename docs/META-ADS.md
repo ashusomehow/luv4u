@@ -40,7 +40,7 @@ Gift ids (only a hash, as `external_id`), names, messages, photos, gift links, o
 - In Ads Manager, set the campaign objective to **Sales**, conversion event **Purchase**, and the Pixel above.
 - Add this URL parameter string to every ad so campaigns show up in our own data:
   `utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`
-- Send traffic to `/` or an occasion page such as `/for/birthday-wish`.
+- Send traffic to `/` or an occasion page such as `/for/birthday-wish` or `/for/sorry-gift` (the sorry gift, built for "sorry" ads: the runaway No button and the "Forgiven" card are the moments to screen-record).
 
 ## Our own numbers
 

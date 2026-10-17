@@ -95,7 +95,7 @@ main#homeView.view{animation:none}
 [data-choose-occasion=birthday],[data-occasion=birthday]{--occ:#f2683c;--occ-soft:#ffe3d6;--occ-ink:#c2410c}
 [data-choose-occasion=proposal],[data-occasion=proposal]{--occ:#e11d48;--occ-soft:#ffe1e7;--occ-ink:#be123c}
 [data-choose-occasion=love],[data-occasion=love]{--occ:#ec4899;--occ-soft:#ffe1f0;--occ-ink:#be185d}
-[data-choose-occasion=apology],[data-occasion=apology]{--occ:#5b8def;--occ-soft:#e1ecff;--occ-ink:#2f5fc4}
+[data-choose-occasion=apology],[data-occasion=apology]{--occ:#ff6f91;--occ-soft:#ffe0ea;--occ-ink:#d6336c}
 [data-choose-occasion=anniversary],[data-occasion=anniversary]{--occ:#e5a010;--occ-soft:#fff0c9;--occ-ink:#a16207}
 [data-choose-occasion=thanks],[data-occasion=thanks]{--occ:#16a36e;--occ-soft:#d9f6e8;--occ-ink:#0f7a52}
 [data-choose-occasion=congratulations],[data-occasion=congratulations]{--occ:#8b5cf6;--occ-soft:#ebe3ff;--occ-ink:#6d3fd6}
@@ -123,7 +123,7 @@ body:has(#homeView:not([hidden])){background-image:radial-gradient(520px 340px a
 /* Each occasion's room has its own colour by default. A look chosen by the sender (a different mood) takes over. */
 .experience[data-palette=occasion][data-occasion=love]{--accent:#c9226f;--accent-soft:#ffb3d6;--scene:linear-gradient(165deg,#ffe0ef 0%,#ffc1de 52%,#ffd9e8 100%);--petal:#f0559a}
 .experience[data-palette=occasion][data-occasion=thanks]{--accent:#0f7a52;--accent-soft:#9fe3c5;--scene:linear-gradient(165deg,#dcf7ea 0%,#b9ecd3 52%,#e6f8da 100%);--petal:#2fbf8a}
-.experience[data-palette=occasion][data-occasion=apology]{--accent:#3f66c4;--accent-soft:#b9cdf5;--scene:linear-gradient(165deg,#e6eefc 0%,#cfdcf7 52%,#e9e6f7 100%);--petal:#7aa0e8}
+.experience[data-palette=occasion][data-occasion=apology]{--accent:#e0457b;--accent-soft:#ffb3c7;--scene:linear-gradient(165deg,#ffe3ec 0%,#ffd3e0 50%,#eadcff 100%);--petal:#ff8fab}
 .experience[data-palette=occasion][data-occasion=anniversary]{--accent:#9a5b00;--accent-soft:#f7d27a;--scene:linear-gradient(165deg,#fff1cf 0%,#ffdf94 52%,#ffe7c4 100%);--petal:#e5a010}
 .experience[data-palette=occasion][data-occasion=congratulations]{--accent:#6d3fd6;--accent-soft:#cdbcff;--scene:linear-gradient(165deg,#ece2ff 0%,#ffd9ee 55%,#ffeec2 100%);--petal:#9b6cf5}
 .experience[data-palette=occasion][data-occasion=missyou]{--accent:#2f5fd0;--accent-soft:#b6ccff;--scene:linear-gradient(165deg,#e2ebff 0%,#c8d8ff 50%,#e6dcff 100%);--petal:#6f95f0}

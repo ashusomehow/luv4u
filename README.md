@@ -39,7 +39,7 @@ Deploy to Vercel and connect Supabase by following [Deployment](docs/DEPLOYMENT.
 | Birthday wish | Light the room, make a wish, extinguish candles, open a gift and celebrate. | Existing birthday photo, note, memory, audio and surprise controls. |
 | Romantic proposal | Open an envelope, read the note, reveal an honest question and choose how to respond. | Relationship, date or marriage question; editable wording. A ring appears only for marriage. |
 | Show your love | Unfold three little paper hearts with reasons tucked inside. | Up to three personal reasons; blank hearts receive thoughtful fallback lines. |
-| Apology card | Open a quieter note, read an optional concrete next step and leave with space. | One realistic commitment, not a request for forgiveness. |
+| Sorry gift | A pleading teddy, kitty or stickers, a sorry meter, sorry coupons, the note and a “Forgive me?” question whose No button runs away. | The character, up to three coupons and the question. |
 | Happy anniversary | Turn the pages of a miniature storybook, then read a note for this chapter. | A meaningful starting date; photos and memories use the common optional controls. |
 | Thank you | Gather three flowers in an interactive gratitude bouquet. | Up to three things you appreciate about the recipient. |
 | Congratulations | Step into a warm spotlight and untie a celebration ribbon. | The achievement, milestone or brave step you are celebrating. |
@@ -53,7 +53,7 @@ All retain the two-stage **“Click to light up”** opening, warm lighting, roo
 
 The landing page shows eight occasion chips in its first screen; each starts that gift directly. A small selected-gift ribbon and (on desktop) a side preview keep the choice visible while creating. “Change gift” returns to the chooser; each occasion keeps its own local draft so changing direction does not mix one person’s words with another gift.
 
-Creating takes three steps: **Name & mood** (six moods, with a sensible default per occasion; the apology flow offers only Emotional and Elegant and enforces that when importing or publishing data), **Words & photos** (everything optional), and **Preview & send**. On phones a compact live card on step 2 reflects the note and first photo. The audit behind this design is in [UX audit](docs/UX-AUDIT.md).
+Creating takes three steps: **Name & mood** (six moods, with a sensible default per occasion; every occasion, including the sorry gift, offers all six), **Words & photos** (everything optional), and **Preview & send**. On phones a compact live card on step 2 reflects the note and first photo. The audit behind this design is in [UX audit](docs/UX-AUDIT.md).
 
 ### Little touches stay optional, and easy to find
 
@@ -73,7 +73,7 @@ Quiz presets insert a complete compatible question/answer set. Date inputs stay 
 
 **Proposals:** Yes, Let’s talk and Not for me use equally sized, stationary buttons. Continuing without answering is equally possible. A selection creates a local editable response draft, not an automatic notification. A decline, a request to talk, or no answer ends quietly rather than triggering a success celebration.
 
-**Apologies:** No games, confetti, deadline, moving refusal button or forced forgiveness. An early “need some space” route allows the recipient to stop before reading the whole note. A concrete commitment is optional and is only shown when supplied. The recipient can finish without sending a reply.
+**Sorry gifts:** Playful by design and meant for small fights. The No button runs away and only Yes can be pressed; Yes sends a “💗 I forgive you 💗” reply to the sender on hosted gifts. The recipient can close the page at any time. (This replaced the quiet apology card; see `docs/GIFT-EXPERIENCE.md`.)
 
 **All replies:** Emoji selection and template selection do not transmit a reaction. In hosted mode, the recipient explicitly sends the chosen words to the creator. Otherwise they prepare, copy or share a reply themselves. Opening counts are a separate approximate hosted feature; they are not evidence of acceptance or agreement.
 
@@ -81,7 +81,7 @@ Quiz presets insert a complete compatible question/answer set. Date inputs stay 
 
 Photo compression and framing; photo/memory reordering with button alternatives to dragging; browser voice recording; uploaded or directly linked audio; music preview/volume; tap-to-extinguish candles and optional microphone blowing; reduced-motion support; optional phone tilt; birthday story-order choices; balloons, scratch reveal, quizzes and mystery gifts; final notes and optional real-world surprise links; downloadable artwork; WhatsApp/native sharing; same-link hosted editing, expiry, deletion and a private creator inbox.
 
-Games are intentionally excluded from apology gifts. New occasions use their own core interaction instead of inheriting birthday candles or birthday-specific language. The birthday branch remains birthday-only.
+New occasions use their own core interaction instead of inheriting birthday candles or birthday-specific language. The birthday branch remains birthday-only.
 
 ## Standalone versus connected
 
@@ -107,7 +107,7 @@ Next.js serves eight curated public entry routes:
 /for/birthday-wish
 /for/romantic-proposal
 /for/show-your-love
-/for/apology-card
+/for/sorry-gift        (/for/apology-card redirects here)
 /for/anniversary
 /for/thank-you
 /for/congratulations
@@ -135,7 +135,7 @@ The common payload now includes `version: 3` and an allowlisted `occasion`. Opti
 | Memories | 3; 40-character label and 200-character text |
 | Voice / custom music | Up to 3 MiB each; direct browser recording has a 60-second limit |
 | Proposal question / each reason | 140 / 160 characters; up to 3 reasons |
-| Apology commitment / reunion thought | 300 / 200 characters |
+| Sorry coupon / sorry question / reunion thought | 90 / 80 / 200 characters |
 | Achievement label | 80 characters |
 | Hosted media upload | One request per file, each under Vercel’s 4.5 MB request-body limit; images ≤ 1,000,000 bytes and audio ≤ 3.2 MiB after decoding |
 | Hosted gift JSON (after media moves to Storage) | 64 KiB |

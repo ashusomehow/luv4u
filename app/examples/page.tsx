@@ -4,7 +4,7 @@ import { LegalPage } from '@/components/LegalPage';
 import { HERO } from '@/lib/occasion-copy';
 import { OCCASION_KEYS, OCCASIONS } from '@/lib/occasions';
 
-export const metadata: Metadata = pageMeta({ title: 'Try a sample gift before you make one', description: 'Step inside a sample of every Kholona gift: a birthday cake, a proposal, an apology, an anniversary storybook and more. See what they will feel first.', path: '/examples' });
+export const metadata: Metadata = pageMeta({ title: 'Try a sample gift before you make one', description: 'Step inside a sample of every Kholona gift: a birthday cake, a proposal, a pleading sorry teddy, an anniversary storybook and more. See what they will feel first.', path: '/examples' });
 
 export default function Examples() {
   return (

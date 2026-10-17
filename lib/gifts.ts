@@ -173,9 +173,6 @@ export function normalizeGift(input: unknown, id: string): Gift {
   if (!isOccasionKey(occasion)) throw new ApiError(400, `Unsupported occasion: ${String(occasion)}`);
   gift.occasion = occasion as OccasionKey;
 
-  if (occasion === 'apology' && gift.vibe !== undefined && !['Emotional', 'Elegant'].includes(String(gift.vibe))) {
-    throw new ApiError(400, 'Apology gifts support the Emotional and Elegant vibes.');
-  }
   if (Array.isArray(gift.photos)) gift.photos = gift.photos.slice(0, 4);
   if (Array.isArray(gift.memories)) gift.memories = gift.memories.slice(0, 3);
 

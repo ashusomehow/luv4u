@@ -28,7 +28,7 @@ Findings:
 ## Principles
 - One gesture per moment. A payoff carries on by itself; a small "continue" stays for anyone who wants to go sooner.
 - Reading scenes stay in the reader's hands. Nothing that has to be read moves on without a tap, except a short pause after a payoff.
-- An apology never moves on by itself, never celebrates, and keeps its consent step ("Read when you're ready"). Nothing auto-advances under reduced motion either.
+- Nothing auto-advances under reduced motion. (The old apology rule, never automatic and never celebrating, went with the apology card: see "The sorry gift" below.)
 - Every touch answers with light, sound and a short vibration (all synthesised, soft, silent when muted).
 
 ## After
@@ -37,7 +37,7 @@ Findings:
 | Birthday | **4** (seal, blow, present, continue) | The envelope lights the room by itself. Greeting and wish are one scene. Blow once: smoke, a fanfare, confetti from the cake, balloons rise, and it moves on to the present. Open the present: burst of light, confetti, and the letter appears and writes itself. |
 | Proposal | **4** (seal, continue, open the box, answer) | The letter comes first and builds to the question. A "yes" is a celebration (fanfare, confetti, balloons) that carries on by itself; "talk" and "no" stay quiet and in their hands. |
 | Love note | **3** (seal, one heart, then the note's own continue) | One touch and all three reasons unfold one after another, each with a rising note and a ring of light, then it moves on by itself after a reading pause (the button stays for anyone who wants to go sooner). |
-| Apology | **3** (seal, "Read when you're ready", continue) | Slower, quieter, never automatic. The letter unfolds on arrival instead of behind a second envelope. |
+| Apology (retired, now the sorry gift) | **3** (seal, "Read when you're ready", continue) | Slower, quieter, never automatic. The letter unfolds on arrival instead of behind a second envelope. |
 | Anniversary | **2-5** (seal, then the pages turn themselves; touch to turn sooner, continue) | The book opens and turns its own pages with a soft page sound. |
 | Thank you | **3** (seal, one flower, then the note's own continue) | One touch blooms the bouquet; the three thank-yous gather as cards, then it moves on by itself after a reading pause. |
 | Congratulations | **3** (seal, ribbon, continue) | Untie the ribbon: fanfare, confetti, balloons; it carries on. |
@@ -63,10 +63,31 @@ Measured with a patient player (`only touches the gift's own moments, waits to s
 | Birthday | 4 | seal, blow, open the present, then the letter's continue |
 | Proposal | 4 | seal, continue after the letter, open the box, answer |
 | Love note | 3 | the three reasons now move on by themselves |
-| Apology | 3 | never automatic, by design |
+| Apology (retired) | 3 | never automatic, by design |
 | Anniversary | 2 to 5 | pages turn themselves |
 | Thank you | 3 | the three thank-yous now move on by themselves |
 | Congratulations | 3 | |
 | Miss you | 3 | |
 
-Removed: the unlabelled round "tilt" button in the top corner (the room still tilts; there was nothing to explain), and the extra tap after the three hearts and the bouquet. What stays on purpose: the seal, every payoff moment, the apology's consent step, and one continue after the letter, because reading stays in the reader's hands.
+Removed: the unlabelled round "tilt" button in the top corner (the room still tilts; there was nothing to explain), and the extra tap after the three hearts and the bouquet. What stays on purpose: the seal, every payoff moment, and one continue after the letter, because reading stays in the reader's hands.
+
+## The sorry gift (replaced the apology card)
+
+Competitors' "sorry" sites convert well from ads, and ours was a quiet, therapist-style apology that nobody screen-records. The apology card is now a cute, romantic **sorry gift** for couples after a small fight. The internal key stays `apology`, so every gift already made keeps working (an old gift's one "commitment" shows as its first coupon). The public page moved to `/for/sorry-gift`; `/for/apology-card` redirects there permanently, and creator links take `?to=sorry`.
+
+| Moment | What happens | Touches |
+|---|---|---|
+| Seal | "Someone is very sorry 🥺" | 1 |
+| Welcome | The chosen character pouts with a tear and a sorry sign: "I'm so sorry, Priya." Button: "Open it, please? 🥺" | 1 |
+| Sorry meter | One tap: the meter climbs a little, very, extremely, "emotionally down bad 😭", overflows and shakes, hearts burst. Moves on by itself. | 1 (+ optional continue) |
+| Note | The letter writes itself, signed "Your very sorry, …" | 1 |
+| Sorry coupons | One tap claims all three ("One free hug. No expiry date.") with a stamp each. Moves on by itself. | 1 (+ optional continue) |
+| Photos, memories, voice, games, final note | As other gifts, with sorry wording ("Exhibit A: we're cute together.") | optional |
+| Forgive me? | Yes and No. **No runs away** from a finger, a mouse or a key press, says something sadder each time ("Are you sure?", "Pleeease 🥺", "I'll cry 😭"), shrinks a little, and Yes grows. Only Yes can be pressed. Yes: the character turns happy, fanfare, confetti, balloons, and a "💗 I forgive you 💗" reply is sent to the sender (hosted gifts, not previews). Moves on by itself. | 1 (+ optional continue) |
+| Ending | Happy character, "Forgiven. Best. Person. Ever.", photos reel, four sorry reactions (💗 🤗 🙄 🥺), and **Save our "Forgiven" card 📸**: a 9:16 PNG made on the phone (happy character, "Forgiven", "Priya forgave Ashu", "made on kholona.in") through the share sheet or as a download. | |
+
+The sender picks the character (teddy, kitty or just stickers), up to three coupons and the question (defaults: "Will you forgive me? 🥺"); all have ready-made options and every look (mood) is allowed. Colours: blush `#ffd6e0`, petal `#ff8fab`, deep rose `#d6336c`, lavender `#e7d9ff`. Characters are inline SVG in `sorryArt()` in `public/legacy/app.js`; styles are in `app/sorry.css`.
+
+The runaway No is a deliberate product choice (it is what the category's ads show). It only suits small fights, which the landing page, its FAQ and the ideas articles say plainly. The recipient can still close the page at any time.
+
+Funnel events: `forgive_no_tried` (once per opening), `forgive_yes`, `story_card_saved`, all with the usual `occasion` (`apology`) and `env`.

@@ -4,7 +4,7 @@ import { siteUrl } from '@/lib/env';
 import { OCCASION_KEYS, OCCASIONS } from '@/lib/occasions';
 
 const STEPS = [
-  { title: 'Choose a gift', body: 'Pick the occasion: a birthday, a proposal, an apology, a thank-you and more. Each has its own little interaction.' },
+  { title: 'Choose a gift', body: 'Pick the occasion: a birthday, a proposal, a sorry, a thank-you and more. Each has its own little interaction.' },
   { title: 'Add their name and your words', body: 'Their name is the only thing you must add. A note, photos, memories and a voice note are optional, and every written field has editable suggestions.' },
   { title: 'Preview, then share one link', body: 'See exactly what they will see, then send the link on WhatsApp or anywhere else. They open it a little at a time.' },
 ];
@@ -55,7 +55,7 @@ export function HomeContent() {
         <h2 id="seo-home">Interactive gift websites for the people you love</h2>
         <p>
           A message is read and forgotten. A Kholona gift is a tiny world made for one person: a birthday cake to light, a
-          question to answer, an apology that gives them room, a storybook of your years together. Add a name and your
+          question to answer, a sorry with a No button that runs away, a storybook of your years together. Add a name and your
           words, preview it, and share a single link.
         </p>
       </section>

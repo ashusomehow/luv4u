@@ -297,7 +297,7 @@ export const IDEAS: Idea[] = [
     ],
     faqs: [
       { q: 'Is a written apology better than calling?', a: 'It depends on the friend. Writing suits cases where emotions are high: it lets both of you think. You can always follow up with a call.' },
-      { q: 'Can I keep it gentle and quiet?', a: 'Yes. The apology journey is deliberately calm: no confetti and no pressure to respond.' },
+      { q: 'Is the Kholona sorry gift right for this?', a: 'Only for small fights. It is playful: a pleading teddy, sorry coupons and a Forgive me? question. For a friend you really hurt, a plain written apology like the one above is better.' },
       { q: 'What if they do not reply?', a: 'Give it time. You said what you needed to. A reply is theirs to give when they are ready.' },
     ],
     related: ['how-to-say-sorry-to-your-partner', 'thank-you-message-for-a-teacher', 'birthday-message-for-best-friend'],
@@ -332,7 +332,7 @@ export const IDEAS: Idea[] = [
     ],
     faqs: [
       { q: 'Is it okay to apologise in a message?', a: 'It can be a good first step, especially when talking feels overwhelming. Follow it with real conversation when they are ready.' },
-      { q: 'How is the apology gift different from a normal message?', a: 'It is quieter. There is no fanfare, and it gives the reader space to take it in and respond if and when they want to.' },
+      { q: 'How is the sorry gift different from a normal message?', a: 'It is playful. A pleading teddy, a sorry meter, sorry coupons and a Forgive me? question make it hard to stay mad. It suits small fights; after a serious hurt, start with an honest conversation.' },
       { q: 'What if it was a serious breach of trust?', a: 'A message alone will not repair it. Use it to acknowledge what happened honestly, then follow through with changed behaviour over time.' },
     ],
     related: ['how-to-apologise-to-a-friend', 'romantic-message-for-no-reason', 'anniversary-message-for-husband'],

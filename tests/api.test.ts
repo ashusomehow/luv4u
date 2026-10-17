@@ -75,9 +75,9 @@ describe('creating gifts', () => {
     expect((await create({ editKey: 'short' })).status).toBe(400);
   });
 
-  it('keeps apology gifts to the Emotional and Elegant vibes', async () => {
-    expect((await create({ gift: gift({ occasion: 'apology', vibe: 'Funny' }) })).status).toBe(400);
-    expect((await create({ gift: gift({ occasion: 'apology', vibe: 'Elegant' }) })).status).toBe(200);
+  it('accepts a sorry gift in any look, with its character, coupons and question', async () => {
+    const sorry = { occasion: 'apology', vibe: 'Funny', character: 'cat', coupons: ['One free hug.'], forgiveQuestion: 'Forgive me? 🥺' };
+    expect((await create({ gift: gift(sorry) })).status).toBe(200);
   });
 
   it('is idempotent for the same key and refuses a different key', async () => {

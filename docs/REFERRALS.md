@@ -29,7 +29,7 @@ and bank details for IMPS (account holder, account number, IFSC, PAN). Then **De
 **Copy stats link** and send both to the creator. The stats link is private: it shows their sales, tier, progress to the
 next tier and payouts, never who bought. **New stats link** replaces a leaked one.
 
-`kholona.in/r/CODE?to=proposal` opens the proposal page instead of birthday (also `love`, `apology`, `anniversary`,
+`kholona.in/r/CODE?to=proposal` opens the proposal page instead of birthday (also `love`, `sorry` (or `apology`), `anniversary`,
 `thanks`, `congrats`, `missyou`).
 
 ## Every Friday

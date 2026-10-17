@@ -34,10 +34,10 @@ export const HERO: Record<OccasionKey, HeroCopy> = {
     journey: ['A little light', 'Unfold three hearts', 'Your love letter', 'A little love back'],
   },
   apology: {
-    headingHtml: 'Honest words.<br>A little room to<br><em>be heard.</em>',
-    lead: 'An honest note, a quieter moment, and space to be heard.',
-    cta: 'Write a thoughtful apology',
-    journey: ['A quiet little light', 'Unfold an honest note', 'A step forward, if added', 'Space, not expectations'],
+    headingHtml: 'A tiny sorry.<br>A very big<br><em>pleeease.</em>',
+    lead: 'A pleading teddy, your sorry, and one very important question.',
+    cta: 'Make my sorry 🥺',
+    journey: ['A pouty little hello', 'How sorry am I? (Very.)', 'Sorry coupons and my note', 'Forgive me? 🥺'],
   },
   anniversary: {
     headingHtml: 'Your little story.<br>Another lovely<br><em>chapter.</em>',
