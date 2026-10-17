@@ -12,7 +12,7 @@ const BOT = /bot|crawl|spider|preview|facebookexternalhit|whatsapp|telegram|slac
 /**
  * A creator's link: kholona.in/r/CODE. Remembers the creator for 30 days (so the buyer gets the discount and the
  * creator gets the sale even if they come back later), counts the visit, and opens the gift maker. `?to=` picks
- * the occasion page (birthday, proposal, love, apology, anniversary, thanks, congrats, missyou); birthday by default.
+ * the occasion page (birthday, proposal, love, apology or sorry, anniversary, thanks, congratulations, missyou); birthday by default.
  * An unknown or paused code just opens the home page, without a discount.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
@@ -22,7 +22,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   const base = new URL(request.url).origin || siteUrl();
   if (!referrer) return NextResponse.redirect(`${base}/`, 302);
 
-  const to = new URL(request.url).searchParams.get('to');
+  const asked = new URL(request.url).searchParams.get('to');
+  const to = asked === 'sorry' ? 'apology' : asked;
   const occasion = isOccasionKey(to) ? to : 'birthday';
   const target = new URL(`${base}/for/${OCCASIONS[occasion].slug}`);
   target.searchParams.set('ref', referrer.code);

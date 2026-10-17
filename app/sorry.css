@@ -1,0 +1,79 @@
+/* The sorry gift: blush, petal and lavender, sticker-soft shapes, a pouting character and a No button that cannot be caught. */
+.experience[data-occasion=apology] .story-title em{color:var(--accent)}
+
+/* the character: pouts while it waits, bounces once forgiven */
+.sorry-figure,.sorry-stickers{transform-box:fill-box;transform-origin:50% 100%}
+.occasion-welcome-art .sorry-figure,.occasion-welcome-art .sorry-stickers,.sorry-forgive-art .sorry-figure,.sorry-forgive-art .sorry-stickers,.home-object .sorry-figure,.home-object .sorry-stickers{animation:sorry-pout 2.6s ease-in-out infinite}
+.sorry-tear{transform-box:fill-box;animation:sorry-tear 2.2s ease-in infinite}
+.sorry-floaters path{transform-box:fill-box;transform-origin:center;animation:sorry-float 4s ease-in-out infinite}
+.sorry-floaters path:nth-child(2){animation-delay:-1.3s}
+.sorry-floaters path:nth-child(3){animation-delay:-2.1s}
+.sorry-floaters path:nth-child(4){animation-delay:-3s}
+.welcome-scene .occasion-welcome-art:has(.sorry-figure,.sorry-stickers){width:220px;height:190px;margin-bottom:6px}
+.sorry-forgive-art{width:184px;height:160px;margin:0 0 4px}
+.sorry-hug-art{width:236px;height:205px;margin-bottom:2px}
+.sorry-forgive-art svg,.sorry-hug-art svg{width:100%;height:100%;overflow:visible}
+.sorry-forgive-art.pleading .sorry-figure,.sorry-forgive-art.pleading .sorry-stickers{animation:sorry-plead .5s ease-in-out}
+.sorry-hug-art .sorry-figure,.sorry-hug-art .sorry-stickers,.is-forgiven .sorry-forgive-art .sorry-figure,.is-forgiven .sorry-forgive-art .sorry-stickers{animation:sorry-bounce .9s cubic-bezier(.34,1.56,.64,1) infinite alternate}
+@keyframes sorry-pout{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg) translateY(-3px)}}
+@keyframes sorry-plead{0%,100%{transform:none}30%{transform:rotate(-6deg) scale(1.04)}60%{transform:rotate(5deg) scale(1.04)}}
+@keyframes sorry-bounce{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-10px) rotate(2deg)}}
+@keyframes sorry-tear{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(18px);opacity:0}}
+@keyframes sorry-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.12)}}
+
+/* how sorry am I? */
+.sorry-meter{width:min(100%,360px);margin:26px auto 6px}
+.sorry-meter-track{height:30px;border-radius:999px;background:#fff;border:2px solid #ffb3c7;box-shadow:0 8px 20px -12px #e0457b;overflow:hidden}
+.sorry-meter-fill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#ffc2d1,#ff8fab 45%,#e0457b);transition:width .7s cubic-bezier(.34,1.56,.64,1)}
+.sorry-meter-scale{display:flex;justify-content:space-between;list-style:none;margin:8px 4px 0;padding:0;font-size:12px;letter-spacing:.04em;color:#a14a6b}
+.sorry-meter[data-level="4"] .sorry-meter-scale li:last-child{font-weight:700;color:#d6336c}
+.sorry-meter.overflow .sorry-meter-track{border-color:#e0457b;animation:sorry-shake .45s ease-in-out 3}
+.sorry-meter.overflow .sorry-meter-fill{background:repeating-linear-gradient(45deg,#e0457b 0 14px,#ff5c8a 14px 28px)}
+.sorry-meter-reading{font-family:var(--serif);font-size:23px;line-height:1.35;color:#b0365f;min-height:34px;margin:12px 0 0}
+.sorry-meter-btn{margin-top:18px}
+@keyframes sorry-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px) rotate(-1deg)}75%{transform:translateX(6px) rotate(1deg)}}
+
+/* sorry coupons */
+.sorry-coupons{display:grid;gap:14px;width:min(100%,380px);margin:24px auto 12px}
+.sorry-coupon{position:relative;display:grid;gap:2px;text-align:left;padding:15px 22px;border:2px dashed #ff8fab;border-radius:16px;background:#fff7f2;color:#7a3b52;cursor:pointer;transform:rotate(var(--r,-1.5deg));transition:transform .4s var(--ease),background .4s;box-shadow:0 10px 20px -16px #c2185b}
+.sorry-coupon:nth-child(2){--r:1.2deg}
+.sorry-coupon:nth-child(3){--r:-.6deg}
+.sorry-coupon::before,.sorry-coupon::after{content:'';position:absolute;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:#ffd6e2;border:2px dashed #ff8fab}
+.sorry-coupon::before{left:-11px;clip-path:inset(0 0 0 50%)}
+.sorry-coupon::after{right:-11px;clip-path:inset(0 50% 0 0)}
+.coupon-no{font-size:10px;letter-spacing:.16em;color:#e0457b;font-weight:700}
+.coupon-text{font-family:var(--serif);font-size:18px;line-height:1.35;overflow-wrap:anywhere}
+.coupon-stamp{position:absolute;right:10px;top:-12px;padding:3px 10px;border:2px solid #e0457b;border-radius:8px;background:#fff;color:#e0457b;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:0;transform:rotate(8deg) scale(1.7);transition:opacity .3s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+.sorry-coupon.claimed{background:#ffe6ee;transform:rotate(0)}
+.sorry-coupon.claimed .coupon-stamp{opacity:1;transform:rotate(8deg) scale(1)}
+
+/* forgive me? */
+.forgive-scene .story-title{font-size:clamp(32px,4.4vw,52px)}
+.forgive-arena{position:relative;width:min(100%,420px);height:220px;margin:10px auto 0;display:flex;align-items:center;justify-content:center;gap:14px}
+.forgive-yes,.forgive-no{min-height:52px;padding:12px 28px;border-radius:999px;font-size:17px;font-weight:700;cursor:pointer;white-space:nowrap}
+.forgive-yes{position:relative;z-index:2;color:#fff;border:0;background:linear-gradient(135deg,#ff5c8a,#e0457b 60%,#c2185b);box-shadow:0 14px 26px -12px #c2185b;transform:scale(var(--grow,1));transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+/* a heartbeat ring around Yes; the button itself holds still, so it is easy to tap */
+.forgive-yes:not(:disabled){animation:sorry-beat 1.6s ease-out infinite}
+.forgive-yes:disabled{cursor:default;opacity:1}
+.forgive-scene #forgiveNote{font-size:15px;line-height:1.5;max-width:320px;margin-top:6px}
+.forgive-no{z-index:1;color:#a14a6b;background:#fff;border:2px solid #ffc2d1;transform:scale(var(--shrink,1));transition:left .3s cubic-bezier(.34,1.56,.64,1),top .3s cubic-bezier(.34,1.56,.64,1),transform .3s}
+.forgive-no.is-running{position:absolute;margin:0}
+.is-forgiven .forgive-arena{height:auto;margin-top:18px}
+@keyframes sorry-beat{0%{box-shadow:0 14px 26px -12px #c2185b,0 0 0 0 rgba(255,92,138,.6)}100%{box-shadow:0 14px 26px -12px #c2185b,0 0 0 20px rgba(255,92,138,0)}}
+.forgiven-card-btn{margin-top:20px}
+
+/* the builder */
+.sorry-character-pick button{white-space:nowrap}
+
+@media (max-width:600px){
+ .welcome-scene .occasion-welcome-art:has(.sorry-figure,.sorry-stickers){width:180px;height:156px}
+ .sorry-hug-art{width:196px;height:170px}
+ .sorry-forgive-art{width:150px;height:130px}
+ .forgive-arena{height:200px}
+ .coupon-text{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){
+ .sorry-figure,.sorry-stickers,.sorry-tear,.sorry-floaters path,.forgive-yes{animation:none!important}
+ .forgive-no,.sorry-meter-fill{transition:none}
+}
+.experience.motion-off :is(.sorry-figure,.sorry-stickers,.sorry-tear,.sorry-floaters path),.experience.motion-off .forgive-yes{animation:none!important}

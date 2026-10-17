@@ -21,7 +21,7 @@
   }
   let source = {}; try { source = JSON.parse(store('luv4u.src') || '{}'); } catch {}
 
-  const slugToKey = { 'birthday-wish': 'birthday', 'romantic-proposal': 'proposal', 'show-your-love': 'love', 'apology-card': 'apology', anniversary: 'anniversary', 'thank-you': 'thanks', congratulations: 'congratulations', 'miss-you': 'missyou' };
+  const slugToKey = { 'birthday-wish': 'birthday', 'romantic-proposal': 'proposal', 'show-your-love': 'love', 'sorry-gift': 'apology', 'apology-card': 'apology', anniversary: 'anniversary', 'thank-you': 'thanks', congratulations: 'congratulations', 'miss-you': 'missyou' };
   let occasion = '';
   const inferOccasion = () => {
     const exp = document.getElementById('experience');

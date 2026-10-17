@@ -7,6 +7,7 @@ import './creator.css';
 import './motion.css';
 import './effects.css';
 import './gift.css';
+import './sorry.css';
 import './seo.css';
 import './legal.css';
 

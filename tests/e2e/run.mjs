@@ -349,7 +349,7 @@ try {
   // 5d. Every gift, played the way a delighted recipient would: one gesture per moment, and the budget of touches never grows.
   //     (Counts include the envelope and every optional "continue" shortcut, so they are an upper bound: most scenes carry on by themselves.)
   {
-    const BUDGET = { birthday: 6, proposal: 7, love: 4, apology: 3, anniversary: 6, thanks: 4, congratulations: 4, missyou: 4 };
+    const BUDGET = { birthday: 6, proposal: 7, love: 4, apology: 9, anniversary: 6, thanks: 4, congratulations: 4, missyou: 4 };
     const play = async key => {
       const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
       const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'journey-' + key);
@@ -358,7 +358,7 @@ try {
       await pg.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await pg.mouse.down();
       await pg.waitForSelector('#sealGate', { state: 'detached', timeout: 8000 }); await pg.mouse.up();
       let touches = 1;                                            // the envelope: one press and hold lights the room by itself
-      const picks = ['[data-v3="proposal-answer"][data-answer="yes"]:not([aria-pressed="true"])', '.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '.gratitude-petals:not(:has([aria-pressed="true"])) [data-v3="flower"]',
+      const picks = ['[data-v3="proposal-answer"][data-answer="yes"]:not([aria-pressed="true"])', '[data-v3="sorry-meter"]:not([disabled])', '.sorry-coupons:not(:has(.claimed)) [data-v3="coupon"]', '[data-v3="forgive-yes"]:not([disabled])', '.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '.gratitude-petals:not(:has([aria-pressed="true"])) [data-v3="flower"]',
         '[data-story="blow"]:not(.extinguished):not([disabled])', '[data-story="open-gift"]:not(.opened):not([disabled])', '[data-v3="untie-ribbon"]:not(.opened):not([disabled])', '[data-v3="send-hug"]:not([disabled])',
         '[data-v3="reveal-question"]:not([disabled])', '#storyBook', '#storyScene .story-btn[data-story="next"]', '#storyScene .story-soft-skip[data-story="next"]'];
       const sawLit = () => pg.evaluate(() => document.querySelector('#experience').classList.contains('lit'));
@@ -385,12 +385,26 @@ try {
     await b.waitForFunction(() => /straight to|Sent to/.test(document.querySelector('#finaleSent')?.textContent || ''));
     await b.locator('[data-story="replay"]').click();
     await b.waitForSelector('#storyScene.cake-scene', { timeout: 8000 });   // lit again with no tap at all
-    // the apology never moves on by itself: that pace belongs to the reader
+    // the sorry gift: the No button runs from a finger, a click or a key and never answers; Yes forgives and the ending celebrates
     const a = all.apology.pg; await a.goto('about:blank'); await a.goto(`${APP}/#demo=apology`, { waitUntil: 'load' }); await a.waitForSelector('#sealBtn');
-    const abox = await a.locator('#sealBtn').boundingBox(); await a.mouse.move(abox.x + abox.width / 2, abox.y + abox.height / 2); await a.mouse.down();
-    await a.waitForSelector('#sealGate', { state: 'detached', timeout: 8000 }); await a.mouse.up();
-    await a.waitForSelector('#storyScene.welcome-scene', { timeout: 8000 }); await a.waitForTimeout(6500);
-    assert.match((await a.locator('#storyScene').getAttribute('class')) || '', /welcome-scene/, 'an apology waits for the reader');
+    await a.evaluate(() => document.querySelector('#sealSkip').click());
+    const toQuestion = ['[data-v3="sorry-meter"]:not([disabled])', '.sorry-coupons:not(:has(.claimed)) [data-v3="coupon"]', '#storyScene .story-btn[data-story="next"]', '#storyScene .story-soft-skip[data-story="next"]'];
+    for (const until = Date.now() + 60000; Date.now() < until && !/forgive-scene/.test((await a.locator('#storyScene').getAttribute('class')) || '');) {
+      for (const sel of toQuestion) { const l = a.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click({ timeout: 3000 }).catch(() => {}); break; } }
+      await a.waitForTimeout(400);
+    }
+    await a.waitForSelector('#storyScene.forgive-scene #forgiveNo');
+    const noAt = async () => (await a.locator('#forgiveNo').boundingBox());
+    const start = await noAt();
+    await a.locator('#forgiveNo').tap({ force: true }); await a.waitForTimeout(400);
+    assert.match((await a.locator('#storyScene').getAttribute('class')) || '', /forgive-scene/, 'a tap on No does not answer');
+    assert.equal(await a.locator('#forgiveNo').innerText(), 'Are you sure?', 'No changes its mind out loud');
+    const moved = await noAt(); assert.ok(Math.abs(moved.x - start.x) + Math.abs(moved.y - start.y) > 20, 'No ran away from the finger');
+    await a.locator('#forgiveNo').dispatchEvent('click'); await a.waitForTimeout(250);
+    assert.equal(await a.locator('#forgiveNo').innerText(), 'Really sure? 🥺', 'a keyboard press on No only makes it run again');
+    await a.locator('#forgiveYes').click();
+    await a.waitForSelector('#storyScene.celebration-scene .forgiven-card-btn', { timeout: 12000 });
+    assert.equal(await a.locator('#storyScene [data-v2="quick-react"]').count(), 4, 'the sorry ending has its own four feelings');
     // a bouquet and a row of hearts each answer to a single touch
     const th = await (await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true })).newPage(); watch(th, 'bouquet');
     await th.goto(`${APP}/#demo=thanks`, { waitUntil: 'load' }); await th.waitForSelector('#sealBtn');
@@ -406,11 +420,11 @@ try {
     const playInPhone = async key => {
       const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, userAgent: NORMAL_UA }); const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'phone-' + key);
       await pg.route('**/__harness', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: HARNESS }));
-      await pg.addInitScript(g => { window.__g = g; }, { version: 3, id: 'a'.repeat(24), name: 'Priya', occasion: key, vibe: key === 'apology' ? 'Emotional' : 'Cute', message: 'A few words for you.', sender: 'Ashu', photos: [], memories: [], voice: '', music: 'none', fun: 'none', server: true });
+      await pg.addInitScript(g => { window.__g = g; }, { version: 3, id: 'a'.repeat(24), name: 'Priya', occasion: key, vibe: 'Cute', message: 'A few words for you.', sender: 'Ashu', photos: [], memories: [], voice: '', music: 'none', fun: 'none', server: true });
       await pg.goto(`${APP}/__harness`, { waitUntil: 'load' });
       const fr = pg.frameLocator('#f'); await fr.locator('#storyScene').waitFor({ timeout: 10000 });
       await fr.locator('[data-story="light"]').click();
-      const picks = ['[data-v3="proposal-answer"][data-answer="yes"]:not([aria-pressed="true"])', '.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '.gratitude-petals:not(:has([aria-pressed="true"])) [data-v3="flower"]',
+      const picks = ['[data-v3="proposal-answer"][data-answer="yes"]:not([aria-pressed="true"])', '[data-v3="sorry-meter"]:not([disabled])', '.sorry-coupons:not(:has(.claimed)) [data-v3="coupon"]', '[data-v3="forgive-yes"]:not([disabled])', '.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '.gratitude-petals:not(:has([aria-pressed="true"])) [data-v3="flower"]',
         '[data-story="blow"]:not(.extinguished):not([disabled])', '[data-story="open-gift"]:not(.opened):not([disabled])', '[data-v3="untie-ribbon"]:not(.opened):not([disabled])', '[data-v3="send-hug"]:not([disabled])',
         '[data-v3="reveal-question"]:not([disabled])', '#storyBook', '#storyScene .story-btn[data-story="next"]', '#storyScene .story-soft-skip[data-story="next"]'];
       const deadline = Date.now() + 70000; let scene = '';

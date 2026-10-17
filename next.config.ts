@@ -16,9 +16,12 @@ const config: NextConfig = {
   // Don't generate AGENTS.md/CLAUDE.md files during `next dev`.
   agentRules: false,
   async redirects() {
-    if (!siteHost) return [];
+    // The apology card became the sorry gift; keep its old address (search results, shared links) working.
+    const renamed = [{ source: '/for/apology-card', destination: '/for/sorry-gift', permanent: true }];
+    if (!siteHost) return renamed;
     const to = `https://${siteHost}/:path*`;
     return [
+      ...renamed,
       // One address per page: www goes to the bare domain.
       { source: '/:path*', has: [{ type: 'host' as const, value: `www.${siteHost}` }], destination: to, permanent: true },
       // After the domain is live, send the old Vercel address there too (opt in with LEGACY_HOST=<that host>).

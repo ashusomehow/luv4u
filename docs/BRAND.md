@@ -73,7 +73,7 @@ icons, 4.5:1 on its soft tint).
 | Birthday | `#f2683c` | `#ffe3d6` | `#c2410c` |
 | Proposal | `#e11d48` | `#ffe1e7` | `#be123c` |
 | Love | `#ec4899` | `#ffe1f0` | `#be185d` |
-| Apology | `#5b8def` | `#e1ecff` | `#2f5fc4` |
+| Sorry | `#ff6f91` | `#ffe0ea` | `#d6336c` |
 | Anniversary | `#e5a010` | `#fff0c9` | `#a16207` |
 | Thank you | `#16a36e` | `#d9f6e8` | `#0f7a52` |
 | Congratulations | `#8b5cf6` | `#ebe3ff` | `#6d3fd6` |

@@ -21,7 +21,7 @@ Each occasion has its own colour on the landing page chips, the chooser cards an
 | Birthday | coral #f2683c | bubblegum pink (the Cute look) |
 | Proposal | crimson #e11d48 | rose (the Romantic look) |
 | Love note | pink #ec4899 | hot pink to blush |
-| Apology | blue #5b8def | calm periwinkle blue |
+| Sorry | petal pink #ff6f91 | blush and lavender, sticker-soft |
 | Anniversary | gold #e5a010 | warm amber |
 | Thank you | emerald #16a36e | mint green |
 | Congratulations | violet #8b5cf6 | violet to pink to gold |

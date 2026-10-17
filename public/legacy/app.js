@@ -64,18 +64,19 @@ const OCCASIONS = {
   seo:'Make a personalized love letter website. Unfold sweet messages, add photos and a voice note, and share a little love with one link.'
  },
  apology: {
-  slug:'apology-card',label:'Apology card',short:'Apology',symbol:'❦',art:'olive',vibe:'Emotional',group:'care',
-  description:'An honest note, a quieter moment, and space to be heard.',
-  whisper:'Not a shortcut to forgiveness. A place to start.',
-  title:'Who do you want<br><em>to reach out to?</em>',intro:'A name to begin. Honest words, at your pace. No pressure on theirs.',
-  greeting:'A quiet note for',eyebrow:'With care. Without expectations.',portrait:'SOME WORDS, SAID WITH CARE',
-  opening:'A quieter kind<br><em>of hello.</em>',welcome:'There are a few things I want to say with care. Read them when you’re ready. There is no rush, and no need to reply.',
-  path:['A quiet little light','Unfold an honest note','A step forward, if added','Space, not expectations'],
-  fallback:'{name}, I’m sorry. I know words on a screen cannot make things right on their own. I want to listen, take responsibility and do better.\n\nYou do not owe me a reply or forgiveness. Take the time and space you need.',
-  finish:'There is nothing you need to do with this moment. No deadline, no expectation. Your time and your feelings are yours.',
-  finalTitle:'A little space.<br><em>For whatever you feel.</em>',noteLabel:'An honest apology',extras:'A quiet opening, a considerate apology note and a pressure-free ending are already included.',
-  detailTitle:'A small, honest step forward',share:'a quiet note for you',cta:'Write a thoughtful apology',
-  seo:'Create a thoughtful apology card with editable words, an optional concrete next step, and space for the recipient to respond in their own time.'
+  slug:'sorry-gift',label:'Sorry gift',short:'Sorry',symbol:'🥺',art:'teddy',vibe:'Cute',group:'love',
+  description:'A pleading teddy, your sorry, and one very important question.',
+  whisper:'For the fight you want over by tonight.',
+  title:'Who are you<br><em>in trouble with? 🥺</em>',intro:'Just their name. We’ll help you say sorry in the cutest way possible.',
+  greeting:'I’m so sorry,',eyebrow:'Someone’s been a little bit of an idiot',portrait:'A VERY SORRY LITTLE SURPRISE',
+  opening:'Someone’s been<br><em>a little bit of an idiot…</em>',welcome:'I messed up. I know. And I can’t stop thinking about you. So I made you this, with my whole silly heart.',
+  path:['A pouty little hello','How sorry am I? (Very.)','Sorry coupons and my note','Forgive me? 🥺'],
+  fallback:'{name}, I’m sorry. I was wrong, you were right, and I would like that framed.\n\nI hate it when we fight. I miss your face, your voice and your terrible jokes. Can we go back to being us? 🥺',
+  finish:'Fights are temporary. You and me? Not even a little bit temporary. 💗',
+  finalTitle:'Forgiven.<br><em>Best. Person. Ever.</em>',noteLabel:'Your sorry note',extras:'A pleading teddy, a sorry meter, sorry coupons and the big question are already included.',
+  detailTitle:'Coupons and the big question',share:'a very sorry little surprise',cta:'Make my sorry 🥺',
+  coupons:['One free hug. No expiry date.','I listen first and talk second. Promise.','Your choice of food. Zero complaints.'],
+  seo:'Make a cute sorry website for your partner: a pleading teddy, a sorry meter, sorry coupons and a Forgive me? question with a No button that runs away.'
  },
  anniversary: {
   slug:'anniversary',label:'Happy anniversary',short:'Anniversary',symbol:'∞',art:'book',vibe:'Elegant',group:'love',
@@ -147,12 +148,17 @@ const validStoryDate = value => {
 const PROPOSAL_QUESTIONS={relationship:'Will you be my person?',date:'Would you like to go on a date with me?',marriage:'Will you marry me?'};
 const proposalQuestion = g => g.proposalQuestion?.trim() || PROPOSAL_QUESTIONS[g.proposalKind] || PROPOSAL_QUESTIONS.relationship;
 const GENERIC_REACTIONS=[['🥹','Moved'],['😂','Made me smile'],['❤️','Sending love'],['🎉','Celebrating']];
-const QUIET_REACTIONS=[['🤍','Received with care'],['🕊️','A little peace'],['🙏','Thank you for the words'],['💬','A conversation']];
-let homeOccasion='love',journeyReply='',proposalAnswer='',openedNotes=new Set(),chapterIndex=0,occasionSwitchBusy=false;
+const SORRY_REACTIONS=[['💗','Forgiven'],['🤗','Come here'],['🙄','Lucky you’re cute'],['🥺','Still a tiny bit mad']];
+/* The sorry gift: who says sorry for you, and the one question it asks. */
+const SORRY_CHARACTERS={teddy:'🧸 Teddy',cat:'🐱 Kitty',stickers:'🥺 Just stickers'};
+const sorryCharacter=g=>Object.hasOwn(SORRY_CHARACTERS,g?.character)?g.character:'teddy';
+const forgiveQuestion=g=>g.forgiveQuestion?.trim()||'Will you forgive me? 🥺';
+const sorryCoupons=g=>[0,1,2].map(i=>g.coupons?.[i]?.trim()||OCCASIONS.apology.coupons[i]);
+let homeOccasion='love',journeyReply='',proposalAnswer='',forgiven=false,noDodges=0,openedNotes=new Set(),chapterIndex=0,occasionSwitchBusy=false;
 let backendOccasions=['birthday'];
 const occasionDrafts=new Map();
 
-const emptyDraft = () => ({occasion:'birthday',proposalKind:'relationship',proposalQuestion:'',reasons:[],commitment:'',togetherSince:'',milestone:'',reunionMessage:'',name:'',vibe:'Cute',message:'',sender:'',photos:[],memories:[],voice:'',voiceName:'',music:'none',musicSrc:'',musicName:'',volume:.24,branch:false,motion:true,sharePreview:true,replyPhone:'',quizQuestion:'',quizAnswer:'',quizOptions:[],fun:'none',funMessage:'',finalMessage:'',finalUrl:''});
+const emptyDraft = () => ({occasion:'birthday',proposalKind:'relationship',proposalQuestion:'',reasons:[],character:'teddy',coupons:[],forgiveQuestion:'',togetherSince:'',milestone:'',reunionMessage:'',name:'',vibe:'Cute',message:'',sender:'',photos:[],memories:[],voice:'',voiceName:'',music:'none',musicSrc:'',musicName:'',volume:.24,branch:false,motion:true,sharePreview:true,replyPhone:'',quizQuestion:'',quizAnswer:'',quizOptions:[],fun:'none',funMessage:'',finalMessage:'',finalUrl:''});
 let draft=emptyDraft(), currentView='home', publishedGift=null, publishedURL='', previewReturn='creator', gift=null, scenes=[], sceneIndex=0, transitionBusy=false, experienceToken=0, saveTimer, toastTimer, localStorageOkay=true, photoBusy=false;
 let micStream=null, micFrame=null, micTimeout=null, mediaRecorder=null, recordedChunks=[], recordInterval=null, recordingSeconds=0, recordingGeneration=0;
 let musicAudio=null, audioContext=null, masterGain=null, melodyTimer=null, melodyVoices=[], soundMuted=false, musicDucked=false, scratchCleanup=null, confettiFrame=null, voiceWasMusicPlaying=false, activeAudioNodes=new Set();
@@ -371,12 +377,12 @@ function balloons(n=7){
  const exp=$('#experience');if(!exp||reducedMotion||gift?.motion===false)return;const colors=['#e66889','#fbc383','#b9c695','#ffd1a4','#d5547c','#f5a1b5'];
  for(let i=0;i<n;i++){const b=document.createElement('i');b.className='rise-balloon';b.style.cssText=`--x:${6+Math.random()*88}%;--c:${colors[i%colors.length]};--d:${(Math.random()*.9).toFixed(2)}s;--s:${(.8+Math.random()*.6).toFixed(2)}`;exp.append(b);setTimeout(()=>b.remove(),6800);}
 }
-/* After a payoff moment the gift carries on by itself. Never for an apology (that pace is theirs), and never under reduced motion;
+/* After a payoff moment the gift carries on by itself. Never under reduced motion;
    a small "continue" stays for anyone who wants to go sooner. */
 let autoTimer=0;
 const clearAuto=()=>{clearTimeout(autoTimer);autoTimer=0;};
 function autoAdvance(ms,scene){
- clearAuto();if(reducedMotion||gift.occasion==='apology')return;const token=experienceToken;
+ clearAuto();if(reducedMotion)return;const token=experienceToken;
  autoTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!==scene||transitionBusy)return;chime('soft');goToScene(sceneIndex+1);},ms);
 }
 const softNext=text=>`<button class="story-soft-skip is-ready" data-story="next">${e(text)} ${icon('arrow')}</button>`;
@@ -396,7 +402,7 @@ function toggleSound(){
 
 /* Confetti: little paper pieces, no flashing or recurring animation. */
 function confetti(count=100,origin=null){
- if(reducedMotion||(currentView==='experience'&&gift&&(gift.motion===false||gift.occasion==='apology')))return;
+ if(reducedMotion||(currentView==='experience'&&gift&&gift.motion===false))return;
  const canvas=$('#confettiCanvas'),ctx=canvas.getContext('2d');if(!ctx)return;cancelAnimationFrame(confettiFrame);canvas.hidden=false;
  const w=window.innerWidth,h=window.innerHeight,dpr=Math.min(devicePixelRatio||1,2);canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
  const colors=['#e66889','#fbc383','#b9c695','#ffd1a4','#d5547c','#f5a1b5'];
@@ -410,7 +416,7 @@ let isPreview=false, previewScrollY=0, micGeneration=0, blowSource=null;
 function storyButton(text='A little more magic',action='next'){return `<button class="btn story-btn" data-story="${action}">${e(text)} ${icon('arrow')}</button>`;}
 function sceneTitle(title,eyebrow=''){return `${eyebrow?`<div class="story-eyebrow">${eyebrow}</div>`:''}<h1 class="story-title" tabindex="-1">${title}</h1>`;}
 function startExperienceV1(data,options={}){
- cleanupExperience();gift=sanitizeGift(data);if(!gift.id)gift.id='preview';isPreview=!!options.preview;previewReturn=options.returnView||'creator';experienceToken++;transitionBusy=false;sceneIndex=0;reaction='';replySharedText='';journeyReply='';proposalAnswer='';openedNotes=new Set();chapterIndex=0;musicDucked=false;
+ cleanupExperience();gift=sanitizeGift(data);if(!gift.id)gift.id='preview';isPreview=!!options.preview;previewReturn=options.returnView||'creator';experienceToken++;transitionBusy=false;sceneIndex=0;reaction='';replySharedText='';journeyReply='';proposalAnswer='';forgiven=false;noDodges=0;openedNotes=new Set();chapterIndex=0;musicDucked=false;
  try{soundMuted=localStorage.getItem('luv4u.muted')==='true';}catch{soundMuted=false;}
  if(masterGain)masterGain.gain.setValueAtTime(soundMuted?0:.28,audioContext.currentTime);
  scenes=buildScenes(gift);
@@ -485,11 +491,11 @@ function initScratch(){
 }
 function revealScratch(){if(scratchDone)return;scratchDone=true;$('#scratchCanvas')?.classList.add('revealed');$('#scratchRevealButton').hidden=true;$('#scratchHelp').textContent='Not so secret anymore. But always, always true. ♡';$('#funAfter').innerHTML=storyButton('Keeping that one close');chime();}
 function answerQuiz(button){if($('.quiz-option.chosen'))return;button.classList.add('chosen');button.setAttribute('aria-pressed','true');$$('.quiz-option').forEach(b=>b.disabled=true);$('#funAfter').innerHTML=`<p class="quiz-answer">Correct. It was always you. ♡</p>${gift.funMessage?`<p class="story-description">${e(gift.funMessage)}</p>`:''}${storyButton('Excellent. Where’s my cake?')}`;chime('wish');}
-function selectReaction(value,play=true){if(![...GENERIC_REACTIONS,...QUIET_REACTIONS].some(r=>r[0]===value))return;reaction=value;replySharedText='';if($('#replyResult'))$('#replyResult').innerHTML='';$$('.reaction-btn').forEach(b=>{const selected=b.dataset.reaction===value;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});if(play)chime('pop');}
+function selectReaction(value,play=true){if(![...GENERIC_REACTIONS,...SORRY_REACTIONS].some(r=>r[0]===value))return;reaction=value;replySharedText='';if($('#replyResult'))$('#replyResult').innerHTML='';$$('.reaction-btn').forEach(b=>{const selected=b.dataset.reaction===value;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});if(play)chime('pop');}
 function prepareReplyV1(){
  const text=$('#recipientReply').value.trim();if(!reaction&&!text){toast('Pick a little feeling, or write a few words. Either one is lovely.');return;}
  let saved=false;try{localStorage.setItem('luv4u.reply.'+gift.id,JSON.stringify({reaction,text,at:new Date().toISOString()}));saved=true;}catch{}
- replySharedText=`A little reply from ${gift.name} ${reaction||'♡'}\n\n${text||(gift.occasion==='apology'?'I’ve read your note.':gift.occasion==='proposal'?'I’ve seen your little question.':'Thank you for making this little moment for me.')}`;
+ replySharedText=`A little reply from ${gift.name} ${reaction||'♡'}\n\n${text||(gift.occasion==='apology'?'Okay fine. You’re forgiven. 💗':gift.occasion==='proposal'?'I’ve seen your little question.':'Thank you for making this little moment for me.')}`;
  const phone=gift.replyPhone,who=e(gift.sender||'the gift creator'),canShare=!!navigator.share;
  const main=phone?`<button class="btn btn-whatsapp" data-story="whatsapp-reply">${icon('whatsapp')} Send to ${who} on WhatsApp</button>`:canShare?`<button class="btn btn-primary" data-story="share-reply">${icon('up')} Send my reply</button>`:`<button class="btn btn-primary" data-story="copy-reply">${icon('copy')} Copy my reply</button>`;
  const alt=phone||canShare?`<button type="button" class="reply-alt" data-story="copy-reply">or copy it instead</button>`:'';
@@ -519,7 +525,12 @@ const clamp=(v,min,max,fallback)=>Number.isFinite(Number(v))?Math.min(max,Math.m
 function sanitizeGift(d,needName=true){const x=sanitizeGiftV1(d,needName);x.version=3;x.server=d.server===true;x.volume=clamp(d.volume,0,.65,.24);x.branch=d.branch===true;x.motion=d.motion!==false;x.sharePreview=d.sharePreview!==false;x.replyPhone=cleanText(d.replyPhone,18).replace(/\D/g,'');x.fun=['none','balloons','scratch','quiz','gifts'].includes(d.fun)?d.fun:'none';x.quizQuestion=cleanText(d.quizQuestion,140);x.quizAnswer=cleanText(d.quizAnswer,80);x.quizOptions=(Array.isArray(d.quizOptions)?d.quizOptions:[]).slice(0,3).map(v=>cleanText(v,80));x.photos=x.photos.map((p,i)=>({...p,x:clamp(d.photos[i]?.x,0,100,50),y:clamp(d.photos[i]?.y,0,100,50),zoom:clamp(d.photos[i]?.zoom,1,2,1)}));x.occasion=Object.hasOwn(OCCASIONS,d.occasion)?d.occasion:'birthday';
  if(x.occasion==='proposal'){x.proposalKind=Object.hasOwn(PROPOSAL_QUESTIONS,d.proposalKind)?d.proposalKind:'relationship';x.proposalQuestion=cleanText(d.proposalQuestion,140);}
  if(['love','thanks'].includes(x.occasion))x.reasons=(Array.isArray(d.reasons)?d.reasons:[]).slice(0,3).map(v=>cleanText(v,160));
- if(x.occasion==='apology'){x.commitment=cleanText(d.commitment,300);x.fun='none';x.branch=false;if(!['Emotional','Elegant'].includes(x.vibe))x.vibe='Emotional';}
+ if(x.occasion==='apology'){
+  x.character=Object.hasOwn(SORRY_CHARACTERS,d.character)?d.character:'teddy';x.forgiveQuestion=cleanText(d.forgiveQuestion,80);
+  x.coupons=(Array.isArray(d.coupons)?d.coupons:[]).slice(0,3).map(v=>cleanText(v,90));
+  // Gifts made before the redesign kept one promise: it becomes their first coupon.
+  if(!x.coupons.some(v=>v.trim())&&typeof d.commitment==='string'&&d.commitment.trim())x.coupons=[cleanText(d.commitment,90)];
+ }
  if(x.occasion==='anniversary')x.togetherSince=validStoryDate(d.togetherSince);
  if(x.occasion==='congratulations')x.milestone=cleanText(d.milestone,80);
  if(x.occasion==='missyou')x.reunionMessage=cleanText(d.reunionMessage,200);
@@ -584,11 +595,11 @@ function setStep(step,focus=true){
 function advanceWizard(){if(!draft.name.trim()){setStep(0,true);validateForm();return;}stopPreviewAudio();publishGift();}
 let statusTimer=0;
 /* ---- Smart default: a ready-made note, written for this person, that you can see, shuffle and edit. ----
-   It follows the name and the mood until the sender writes their own words, and is never used for an apology (words matter there). */
+   It follows the name and the mood until the sender writes their own words. */
 let autoNoteTimer=0;
 function scheduleAutoNote(){clearTimeout(autoNoteTimer);autoNoteTimer=setTimeout(()=>autoNote(),220);}
 function autoNote(step=0){
- const ta=$('#personalMessage');if(!ta||!draft.name.trim()||occasionKey(draft)==='apology')return;
+ const ta=$('#personalMessage');if(!ta||!draft.name.trim())return;
  const st=getTemplateState(ta),cur=ta.value;
  if(cur.trim()&&cur!==st.owned)return;                 /* they wrote their own words */
  if(!cur.trim()&&st.manual&&!step)return;              /* they cleared it on purpose */
@@ -619,8 +630,8 @@ function renderMediaStatus(){
  const rows=[['noteDetail',draft.message.trim()?(own?'Your words':'Ready-made · edit freely'):'We’ll add a note',!!draft.message.trim()],['photosDetail',draft.photos.length?draft.photos.length+(draft.photos.length===1?' photo':' photos'):'Not added yet',!!draft.photos.length],['voiceDetail',draft.voice?'Added':'Not added yet',!!draft.voice]];
  for(const [id,text,done] of rows){const summary=$('#'+id+' summary');if(!summary)continue;let tag=$('.detail-status',summary);if(!tag){tag=document.createElement('span');tag.className='detail-status';summary.insertBefore(tag,$('.detail-chevron',summary));}tag.textContent=(done?'✓ ':'')+text;tag.classList.toggle('done',done);}
  const shuffle=$('#noteShuffle'),hint=$('#noteHint');
- if(shuffle){shuffle.hidden=!!own||occasionKey(draft)==='apology';}
- if(hint){hint.textContent=occasionKey(draft)==='apology'?'Your own words matter most here. Write what you really want to say.':!draft.name.trim()?'Type a name and we’ll write a first version for you.':own?'Your words. Nothing to change unless you want to.':'Written for '+draft.name.trim()+'. Change any word, or try another.';}
+ if(shuffle){shuffle.hidden=!!own;}
+ if(hint){hint.textContent=!draft.name.trim()?'Type a name and we’ll write a first version for you.':own?'Your words. Nothing to change unless you want to.':'Written for '+draft.name.trim()+'. Change any word, or try another.';}
  renderMediaNudge();
 }
 for(const type of ['input','change','click'])document.addEventListener(type,()=>{clearTimeout(statusTimer);statusTimer=setTimeout(()=>{if($('#photosDetail'))renderMediaStatus();},120);});
@@ -732,16 +743,17 @@ function buildScenes(g){
  const core=content.filter(t=>t==='message'||t==='photos'&&g.photos.length||t==='memories'&&g.memories.some(m=>m.text.trim()));
  let list;
  if(kind==='birthday')list=['opening','cake',...(g.branch?['choice']:[]),'gift',...core];
- else if(kind==='apology')list=['opening','welcome','message',...(g.commitment?.trim()?['accountability']:[]),...core.filter(t=>t!=='message')];
+ else if(kind==='apology')list=['opening','welcome','meter','message','coupons',...core.filter(t=>t!=='message')];
  else {const interaction={love:'hearts',anniversary:'storybook',thanks:'bouquet',congratulations:'ribbon',missyou:'distance'}[kind];list=['opening',...(interaction?[interaction]:[]),...core];}
- if(g.voice)list.push('voice');if(g.fun!=='none'&&kind!=='apology')list.push('fun');
+ if(g.voice)list.push('voice');if(g.fun!=='none')list.push('fun');
  if(kind==='missyou'&&g.reunionMessage?.trim())list.push('reunion');
  if(kind==='proposal')list.push('proposal');
  if(g.finalMessage.trim()||g.finalUrl)list.push('final');
+ if(kind==='apology')list.push('forgive');
  return [...list,'celebration','reply'];
 }
 function seeded(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
-function roomDetails(){const t={...THEMES[gift.vibe],motifs:gift.occasion==='birthday'?THEMES[gift.vibe].motifs:gift.occasion==='apology'?['❦','·','◌']:gift.occasion==='missyou'?['☾','✧','·']:gift.occasion==='thanks'?['✿','❦','·']:gift.occasion==='congratulations'?['✧','✦','·']:['♡','✧','❦']},rand=seeded(gift.id+gift.name+gift.vibe+gift.occasion),count=gift.vibe==='Elegant'?9:gift.vibe==='Crazy'?23:15;return `<div class="vibe-room-doodles" aria-hidden="true">${Array.from({length:count},(_,i)=>{const x=i%2?78+rand()*18:4+rand()*18;return `<span class="room-motif" style="--x:${x.toFixed(2)}%;--y:${(20+rand()*69).toFixed(2)}%;--size:${(11+rand()*18).toFixed(1)}px;--rotation:${(-25+rand()*50).toFixed(1)}deg;--delay:${(-rand()*9).toFixed(2)}s">${t.motifs[i%t.motifs.length]}</span>`;}).join('')}<i class="room-ribbon"></i><i class="room-ribbon right"></i></div>`;}
+function roomDetails(){const t={...THEMES[gift.vibe],motifs:gift.occasion==='birthday'?THEMES[gift.vibe].motifs:gift.occasion==='apology'?['♡','💗','✿','🥺']:gift.occasion==='missyou'?['☾','✧','·']:gift.occasion==='thanks'?['✿','❦','·']:gift.occasion==='congratulations'?['✧','✦','·']:['♡','✧','❦']},rand=seeded(gift.id+gift.name+gift.vibe+gift.occasion),count=gift.vibe==='Elegant'?9:gift.vibe==='Crazy'?23:15;return `<div class="vibe-room-doodles" aria-hidden="true">${Array.from({length:count},(_,i)=>{const x=i%2?78+rand()*18:4+rand()*18;return `<span class="room-motif" style="--x:${x.toFixed(2)}%;--y:${(20+rand()*69).toFixed(2)}%;--size:${(11+rand()*18).toFixed(1)}px;--rotation:${(-25+rand()*50).toFixed(1)}deg;--delay:${(-rand()*9).toFixed(2)}s">${t.motifs[i%t.motifs.length]}</span>`;}).join('')}<i class="room-ribbon"></i><i class="room-ribbon right"></i></div>`;}
 function startExperience(data,options={}){if($('.skip-link'))$('.skip-link').hidden=true;stopPreviewAudio();lightStage=0;tiltEnabled=true;startExperienceV1(data,options);$('#myGiftsView').hidden=true;$('#experience').dataset.palette=OCCASIONS[gift.occasion]?.vibe===gift.vibe?'occasion':'look';$('#experience').classList.toggle('motion-off',!gift.motion);$('#experience').insertAdjacentHTML('afterbegin',roomDetails());if(isPreview&&previewReturn==='home')$('[data-story=exit-preview]').textContent='Back to the little gifts';if(!reducedMotion&&gift.motion)enableTilt(true);/* the tilt toggle was an unlabelled control nobody needed: the room still tilts, there is just nothing to explain */if(!options.skipSeal)mountSeal();if(!options.preview&&gift.server&&/^\/g\/[a-f0-9]{24}/.test(location.pathname))countOpening();}
 /* The ritual before the first scene: a sealed envelope, opened by pressing and holding the wax seal. */
 /* Anyone holding a gift link can report it without opening it (the report page takes the link). Only for real, hosted gifts. */
@@ -749,7 +761,7 @@ function reportLink(){return gift?.server&&!isPreview&&/^[a-f0-9]{24}$/.test(gif
 function mountSeal(){
  const exp=$('#experience'),scroll=$('#storyScroll');if(!exp||!scroll)return;
  const name=e(gift.name),from=gift.sender?'<span class="seal-from">from '+e(gift.sender)+'</span>':'';
- exp.insertAdjacentHTML('beforeend',`<div class="seal-gate" id="sealGate" role="dialog" aria-modal="true" aria-label="A sealed gift for ${name}"><div class="seal-card"><p class="seal-kicker">Something is waiting</p><div class="seal-address"><span class="seal-to">For</span><span class="seal-name">${name}</span>${from}</div><div class="seal-stage"><div class="seal-envelope" aria-hidden="true"><div class="seal-letter"><span>♡</span></div><div class="seal-front"></div><div class="seal-flap"></div></div><button type="button" class="seal-btn" id="sealBtn" aria-label="Press and hold to break the seal and open the gift"><svg class="seal-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" pathLength="100"/></svg><span class="seal-heart" aria-hidden="true">♡</span></button></div><p class="seal-hint" id="sealHint" aria-live="polite">Press and hold the seal</p><button type="button" class="seal-skip" id="sealSkip">Just open it</button>${reportLink()}</div></div>`);
+ exp.insertAdjacentHTML('beforeend',`<div class="seal-gate" id="sealGate" role="dialog" aria-modal="true" aria-label="A sealed gift for ${name}"><div class="seal-card"><p class="seal-kicker">${gift.occasion==='apology'?'Someone is very sorry 🥺':'Something is waiting'}</p><div class="seal-address"><span class="seal-to">For</span><span class="seal-name">${name}</span>${from}</div><div class="seal-stage"><div class="seal-envelope" aria-hidden="true"><div class="seal-letter"><span>♡</span></div><div class="seal-front"></div><div class="seal-flap"></div></div><button type="button" class="seal-btn" id="sealBtn" aria-label="Press and hold to break the seal and open the gift"><svg class="seal-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" pathLength="100"/></svg><span class="seal-heart" aria-hidden="true">♡</span></button></div><p class="seal-hint" id="sealHint" aria-live="polite">Press and hold the seal</p><button type="button" class="seal-skip" id="sealSkip">Just open it</button>${reportLink()}</div></div>`);
  const gate=$('#sealGate'),btn=$('#sealBtn'),hint=$('#sealHint');scroll.inert=true;
  const hold=reducedMotion?1:1000;let raf=0,start=0,done=false;
  const open=()=>{
@@ -879,7 +891,7 @@ function makeCover(g){
  if(g.occasion==='birthday'){for(const [px,py,color,angle]of [[141,322,'#eab4bd',-.15],[1060,264,'#eacf94',.14]]){x.save();x.translate(px,py);x.rotate(angle);x.fillStyle=color;x.beginPath();x.ellipse(0,0,44,58,0,0,Math.PI*2);x.fill();x.strokeStyle='#d6975d';x.beginPath();x.moveTo(0,58);x.bezierCurveTo(-15,115,22,113,9,160);x.stroke();x.restore();}
  x.fillStyle='#f1aaaa';x.beginPath();x.roundRect(553,518,94,47,[8,8,10,10]);x.fill();x.fillStyle='#fff8e7';x.beginPath();x.ellipse(600,519,47,10,0,0,Math.PI*2);x.fill();x.fillStyle='#f0ac50';x.fillRect(597,492,6,25);x.fillStyle='#ffbb5d';x.beginPath();x.ellipse(600,484,5,9,0,0,Math.PI*2);x.fill();x.strokeStyle='#d88791';x.beginPath();x.moveTo(544,569);x.lineTo(656,569);x.stroke();}else{
   // A small wax-sealed envelope: the share image never reveals the question or note.
-  x.save();x.translate(600,534);x.rotate(-.04);x.fillStyle='#fde2cd';x.strokeStyle='#e09e7e';x.lineWidth=1.3;x.beginPath();x.roundRect(-65,-27,130,64,4);x.fill();x.stroke();x.beginPath();x.moveTo(-64,-25);x.lineTo(0,16);x.lineTo(64,-25);x.stroke();x.fillStyle=g.occasion==='apology'?'#a3ae7e':'#de6e94';x.beginPath();x.arc(0,15,11,0,Math.PI*2);x.fill();x.restore();
+  x.save();x.translate(600,534);x.rotate(-.04);x.fillStyle='#fde2cd';x.strokeStyle='#e09e7e';x.lineWidth=1.3;x.beginPath();x.roundRect(-65,-27,130,64,4);x.fill();x.stroke();x.beginPath();x.moveTo(-64,-25);x.lineTo(0,16);x.lineTo(64,-25);x.stroke();x.fillStyle=g.occasion==='apology'?'#ff6f91':'#de6e94';x.beginPath();x.arc(0,15,11,0,Math.PI*2);x.fill();x.restore();
   x.font='38px Georgia';x.fillStyle='#dfa577';x.fillText(occasionOf(g).symbol,165,340);x.fillText(occasionOf(g).symbol,1035,290);
  }
  x.font='italic 28px Georgia';x.fillStyle='#be466f';x.textAlign='left';x.fillText('luv4u ♡',53,581);x.textAlign='right';x.font='12px Arial';x.fillStyle='#bb7c66';x.fillText('A SMALL LINK. BIG FEELINGS.',1142,578);
@@ -1364,7 +1376,7 @@ function initEmbed(){
  /* The preview frame never boots the creator, so the gift's own touches are wired here: every one-touch moment of every gift, and nothing else. */
  document.addEventListener('click',ev=>{
   const b=ev.target.closest('[data-v3],[data-v2]');if(!b)return;
-  const v3={'open-note':()=>openOccasionNote(b),'heart-note':()=>openHeartNote(b),'flower':()=>pickFlower(b),'turn-page':()=>turnStoryPage(),'untie-ribbon':()=>untieRibbon(b),'send-hug':()=>sendPaperHug(b),'reveal-question':()=>revealProposal(b),'proposal-answer':()=>chooseProposalAnswer(b),'no-answer':()=>{journeyReply='';proposalAnswer='';goToScene(sceneIndex+1);},'quiet-close':()=>goToScene(scenes.indexOf('celebration')),'finish-reading':()=>showQuietFinish()};
+  const v3={'open-note':()=>openOccasionNote(b),'heart-note':()=>openHeartNote(b),'flower':()=>pickFlower(b),'turn-page':()=>turnStoryPage(),'untie-ribbon':()=>untieRibbon(b),'send-hug':()=>sendPaperHug(b),'reveal-question':()=>revealProposal(b),'proposal-answer':()=>chooseProposalAnswer(b),'no-answer':()=>{journeyReply='';proposalAnswer='';goToScene(sceneIndex+1);},'finish-reading':()=>showQuietFinish(),'sorry-meter':()=>measureSorry(b),'coupon':()=>claimCoupons(),'forgive-yes':()=>forgiveYes(b),'forgive-no':()=>dodgeNo(b,ev),'forgiven-card':()=>saveForgivenCard(b)};
   const v2={'choose-path':()=>choosePath(b.dataset.path),'pick-gift':()=>pickMystery(b),'custom-quiz':()=>customQuiz(b),'reveal-quiz':()=>{if($('[data-right=true]'))$('#quizHint').textContent='A tiny hint: '+gift.quizAnswer+'. Give it a tap. ♡';},'tilt':()=>toggleTilt(),'quick-react':()=>quickReact(b)};
   const act=b.dataset.v3!==undefined?v3[b.dataset.v3]:v2[b.dataset.v2];if(act){ev.preventDefault();act();}
  });
@@ -1438,7 +1450,7 @@ const MESSAGE_STARTERS={
   captions:['A moment, beautifully kept.','The quiet joy of good company.','One for the collection of lovely days.']
  }
 };
-const TEMPLATE_LABELS={note:'Borrow a few heartfelt words',secret:'A few little secrets',finale:'A lovely last line',memory:'A memory starter',memoryWhen:'A little label',caption:'Caption ideas',question:'Pick a ready-made quiz',answer:'Answer ideas',decoy:'Playful alternatives',reply:'A few words you could borrow',proposalQuestion:'A little help asking',reason:'A few little reasons',commitment:'An honest place to start',milestone:'A little dedication',reunion:'Until the next hello'};
+const TEMPLATE_LABELS={note:'Borrow a few heartfelt words',secret:'A few little secrets',finale:'A lovely last line',memory:'A memory starter',memoryWhen:'A little label',caption:'Caption ideas',question:'Pick a ready-made quiz',answer:'Answer ideas',decoy:'Playful alternatives',reply:'A few words you could borrow',proposalQuestion:'A little help asking',reason:'A few little reasons',coupon:'Coupon ideas',forgiveQuestion:'Ways to ask',milestone:'A little dedication',reunion:'Until the next hello'};
 const templateState=new WeakMap();let applyingMessageTemplate=false;
 function messageContext(input){const g=input.id==='recipientReply'&&gift?gift:draft;return {name:(g.name||'your person').trim(),vibe:MESSAGE_STARTERS[g.vibe]?g.vibe:'Cute',sender:g.sender||''};}
 function quizStarterPacks(ctx){const n=ctx.name;return [
@@ -1599,6 +1611,23 @@ window.addEventListener('hashchange',async()=>{if(!await routeV2()&&currentView=
 async function loadGiftFromLocation(){
  const token=++experienceToken;try{const g=await decodeGift(location.hash.slice(6));if(token!==experienceToken)return;startExperience(g);}catch(err){if(token!==experienceToken)return;showView('error');$('#errorMessage').textContent=err.message||'The gift link looks incomplete. Ask the sender to copy the whole link, or send the downloadable gift file.';}
 }
+/* The sorry gift's little characters: a teddy, a kitty, or a pile of stickers. Sad until forgiven, then very happy. */
+function sorryArt(kind,mood='sad'){
+ const happy=mood==='happy',heart=(x,y,s=1,c='#ff7aa2')=>`<path d="M${x} ${y+6*s}c${-11*s} ${-7*s} ${-7*s} ${-15*s} 0 ${-9*s} ${7*s} ${-6*s} ${11*s} ${2*s} 0 ${9*s}Z" fill="${c}"/>`;
+ const floaters=happy?`<g class="sorry-floaters">${heart(52,66,1.6)}${heart(246,58,1.3,'#ff5c8a')}${heart(258,150,1,'#ffb3c7')}${heart(40,150,1.1,'#ff5c8a')}</g>`:`<g class="sorry-floaters" opacity=".7">${heart(56,70,1.1,'#ffb3c7')}${heart(246,64,.9,'#ffb3c7')}</g>`;
+ if(kind==='stickers'){
+  const t=(x,y,size,glyph,r=0,cls='')=>`<text class="${cls}" x="${x}" y="${y}" font-size="${size}" transform="rotate(${r} ${x} ${y})">${glyph}</text>`;
+  return `${floaters}<g class="sorry-stickers" text-anchor="middle" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif"><circle cx="150" cy="126" r="86" fill="#fff" opacity=".72"/>${happy?t(150,168,116,'🥰',0,'sorry-main')+t(68,84,42,'💞',-12)+t(234,92,40,'✨',10)+t(236,214,38,'💗',8)+t(66,210,36,'🎉',-8):t(150,168,116,'🥺',0,'sorry-main')+t(68,84,42,'🩹',-14)+t(234,94,38,'💗',12)+t(236,214,36,'🧸',6)+t(64,208,34,'👉👈',-6)}</g>`;
+ }
+ const cat=kind==='cat',fur=cat?'#fff6ef':'#d9a06f',edge=cat?'#e2b2a8':'#b47548',inner=cat?'#ffc6d3':'#f6d2b4',ink=cat?'#3d2a2e':'#4a2c22',w=1.6;
+ const eye=cat?13:11,eyes=happy?`<path d="M${150-26-eye} 101q${eye} -13 ${eye*2} 0M${150+26-eye} 101q${eye} -13 ${eye*2} 0" stroke="${ink}" stroke-width="3.6" fill="none" stroke-linecap="round"/>`:`<g class="sorry-eyes">${[124,176].map(x=>`<circle cx="${x}" cy="99" r="${eye}" fill="${ink}"/><circle cx="${x+4}" cy="${99-5}" r="${eye*.42}" fill="#fff"/><circle cx="${x-4}" cy="${99+5}" r="${eye*.18}" fill="#fff"/>`).join('')}</g><path d="M110 ${cat?78:80}l21-7M190 ${cat?78:80}l-21-7" stroke="${ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+ const mouth=happy?(cat?`<path d="M139 129q5.5 8 11 0 5.5 8 11 0" stroke="${ink}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`:`<path d="M137 129q13 15 26 0Z" fill="#ff8fab" stroke="${ink}" stroke-width="2.4" stroke-linejoin="round"/>`):`<path d="M142 ${cat?134:137}q8-6 16 0" stroke="${ink}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+ const face=`${cat?`<path d="M144 117h12l-6 7Z" fill="#ff8fab"/><path d="M92 116l-26-4M92 125l-26 4M208 116l26-4M208 125l26 4" stroke="${edge}" stroke-width="1.6" stroke-linecap="round"/>`:`<ellipse cx="150" cy="124" rx="25" ry="18" fill="${inner}"/><ellipse cx="150" cy="115" rx="8" ry="6" fill="${ink}"/>`}${eyes}${mouth}<ellipse cx="106" cy="121" rx="11" ry="7" fill="#ff8fab" opacity="${happy?.85:.5}"/><ellipse cx="194" cy="121" rx="11" ry="7" fill="#ff8fab" opacity="${happy?.85:.5}"/>${happy?'':`<path class="sorry-tear" d="M115 108q-7 11 0 15 7-4 0-15Z" fill="#8fd0ff"/>`}`;
+ const ears=cat?`<path d="M94 86 101 28l40 34Z" fill="${fur}" stroke="${edge}" stroke-width="${w}" stroke-linejoin="round"/><path d="M103 74l4-31 22 19Z" fill="${inner}"/><path d="M206 86 199 28l-40 34Z" fill="${fur}" stroke="${edge}" stroke-width="${w}" stroke-linejoin="round"/><path d="M197 74l-4-31-22 19Z" fill="${inner}"/>`:`<circle cx="104" cy="58" r="21" fill="${fur}" stroke="${edge}" stroke-width="${w}"/><circle cx="104" cy="58" r="11" fill="${inner}"/><circle cx="196" cy="58" r="21" fill="${fur}" stroke="${edge}" stroke-width="${w}"/><circle cx="196" cy="58" r="11" fill="${inner}"/>`;
+ const held=happy?`<path class="sorry-held" d="M150 218c-38-22-34-52-13-54 7-1 12 4 13 10 1-6 6-11 13-10 21 2 25 32-13 54Z" fill="#ff5c8a" stroke="#e0507f" stroke-width="1.6"/><circle cx="118" cy="190" r="13" fill="${fur}" stroke="${edge}" stroke-width="${w}"/><circle cx="182" cy="190" r="13" fill="${fur}" stroke="${edge}" stroke-width="${w}"/>`:`<g class="sorry-held" transform="rotate(-6 150 187)"><rect x="103" y="166" width="94" height="42" rx="10" fill="#fff" stroke="#f08aa8" stroke-width="2"/><text x="150" y="195" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="23" fill="#e0507f">sorry</text></g><circle cx="105" cy="187" r="13" fill="${fur}" stroke="${edge}" stroke-width="${w}"/><circle cx="195" cy="187" r="13" fill="${fur}" stroke="${edge}" stroke-width="${w}"/>`;
+ const tail=cat?`<path d="M196 218q50-2 42-44-4-16-17-9" fill="none" stroke="${edge}" stroke-width="16" stroke-linecap="round"/><path d="M196 218q50-2 42-44-4-16-17-9" fill="none" stroke="${fur}" stroke-width="12" stroke-linecap="round"/>`:'';
+ return `${floaters}<g class="sorry-figure ${cat?'is-cat':'is-teddy'}">${tail}<ellipse cx="150" cy="196" rx="${cat?54:58}" ry="44" fill="${fur}" stroke="${edge}" stroke-width="${w}"/><ellipse cx="150" cy="204" rx="33" ry="25" fill="${cat?'#fff':inner}" opacity="${cat?.8:1}"/><ellipse cx="114" cy="230" rx="21" ry="11" fill="${fur}" stroke="${edge}" stroke-width="${w}"/><ellipse cx="186" cy="230" rx="21" ry="11" fill="${fur}" stroke="${edge}" stroke-width="${w}"/>${ears}<ellipse cx="150" cy="103" rx="${cat?64:60}" ry="${cat?52:54}" fill="${fur}" stroke="${edge}" stroke-width="${w}"/>${face}${held}</g>`;
+}
 /* Original little paper objects. No external images, fonts or network assets. */
 function occasionArt(kind,id='little-art'){
  if(kind==='cake')return cakeSVG(id);
@@ -1614,9 +1643,10 @@ function occasionArt(kind,id='little-art'){
   plane:`<path d="M66 191c-61-31-29-78 5-52 22 17-5 38-10 17-7-28 62-24 94-33" fill="none" stroke="#e59d71" stroke-width="1.5" stroke-dasharray="4 6" stroke-linecap="round"/><g class="paper-plane" transform="rotate(-9 170 120)"><path d="m77 112 169-49-62 132-32-49-49 6 7-25Z" fill="url(#${id}-paper)" stroke="#d3916f" stroke-width="1.4"/><path d="m103 151 143-88-94 83m-42-19 136-64m-94 83 32 49" fill="none" stroke="#e69272" stroke-width="1.2"/><path d="m152 146-16 24-8-32 118-75Z" fill="#f5a1b4" stroke="#d97f9f" stroke-width=".8"/></g><path d="M228 194c-20-12-9-23 0-12 9-11 20 0 0 12Z" fill="#e980a2"/><path d="M62 62q-15 31 19 28-35 24-40-4-3-16 21-24Z" fill="#f3bd7b"/>`,
   ring:`${littleStars}<ellipse cx="150" cy="219" rx="82" ry="11" fill="#d15974" opacity=".11"/><path d="M68 157q82-32 164 0v50q-82 38-164 0Z" fill="#d16087" stroke="#b14775"/><ellipse cx="150" cy="157" rx="82" ry="25" fill="#ed97ac" stroke="#c65d86"/><ellipse cx="150" cy="158" rx="68" ry="18" fill="#ae4471"/><path d="M71 152V66q79-35 158 0v86q-77-47-158 0Z" fill="#d96d93" stroke="#bd497d"/><path d="M83 132V74q68-26 134 0v58q-69-32-134 0Z" fill="#f9bfce"/><ellipse cx="150" cy="145" rx="26" ry="30" fill="none" stroke="#ffb34f" stroke-width="7"/><path d="m133 113 9-13h17l9 13-18 16Z" fill="#fff8e6" stroke="#efb870" stroke-width="1.4"/><path d="m133 113 35 0m-26-13 8 29 9-29" fill="none" stroke="#fcc988"/>`
  };
+ const sorry=/^(teddy|cat|stickers)(-happy)?$/.exec(kind);if(sorry)return svg(sorryArt(sorry[1],sorry[2]?'happy':'sad'));
  return svg(shapes[kind]||shapes.envelope);
 }
-function occasionArtFor(g){const o=occasionOf(g);return g.occasion==='proposal'&&g.proposalKind==='marriage'?'ring':o.art;}
+function occasionArtFor(g){const o=occasionOf(g);if(g.occasion==='apology')return sorryCharacter(g);return g.occasion==='proposal'&&g.proposalKind==='marriage'?'ring':o.art;}
 
 /* Every suggestion is written locally, selectable, editable, and never sent for you. */
 const OCCASION_MESSAGES={
@@ -1637,12 +1667,12 @@ const OCCASION_MESSAGES={
   replies:[['Right back at you','This made me feel so loved. Sending every bit of it right back to you. ❤️'],['Keeping this','I’m keeping this little corner of love. Thank you for making it for me. 🥹'],['My favorite surprise','No occasion, just this? You made an ordinary day feel very special. ♡']]
  },
  apology:{
-  note:[['A place to start','{name}, I’m sorry. I know a message cannot make things right on its own. I want to take responsibility, listen properly and do better. You don’t owe me a reply or forgiveness.'],['Room for your feelings','I want to apologize, {name}, without asking you to make me feel better. Your feelings matter. I’m ready to listen when you want to talk, and to respect your space when you don’t.'],['More than words','{name}, I’m sorry. I want my actions, not just this note, to show that I mean it. I know that takes time. There is no pressure to respond to this.']],
-  finale:[['Your own time','Take the time and space you need. There is no deadline and no expectation here.'],['Ready to listen','When you want to speak, I want to listen. And when you need space, I will respect that.'],['No reply owed','You don’t owe me a reply. I simply wanted to say this clearly and with care.']],
-  secret:['You are allowed to feel exactly what you feel.','There is no timer on this. Your space matters.','A conversation, only when you’re ready.'],
-  captions:[['A moment kept','A moment I wanted to acknowledge with care.'],['With care','Held gently, without expectations.'],['No pressure','A small memory. No reply needed.']],
-  memory:['I’ve been thinking about what this moment meant to you, not just to me.','I want to hold this memory with care, without using it to ask anything of you.','Some things deserve a more thoughtful conversation than I gave them.'],
-  replies:[['I need time','I’ve read your note. I need some time and space, and I’d like you to respect that.'],['We can talk','Thank you for acknowledging this. I’m open to a conversation when we can both listen.'],['Received','I’ve read what you wrote. I’m not ready to say more right now.']]
+  note:[['Cute','{name}, I’m sorry. I was wrong, you were right, and I would like that framed. I hate it when we fight. I miss your face, your voice and your terrible jokes. Can we go back to being us? 🥺'],['Romantic','I’m sorry, {name}. The truth is, nothing feels right when things aren’t right with you. You’re my favourite person, even when I’m being an idiot. Especially then. Let me make it up to you. 💗'],['Funny','Dear {name}, I have reviewed my behaviour and found it extremely silly. The court of you has every right to be mad. I humbly request a hug, a snack and one more chance. 🥺👉👈']],
+  finale:[['Not temporary','Fights are temporary. You and me? Not even a little bit temporary. 💗'],['Still my favourite','Even on our worst day, you are still my favourite person in the whole world.'],['Lesson learned','Lesson learned. Hug pending. Love: permanent. 🥺']],
+  secret:['I practised this sorry in the mirror. Twice.','You look extra cute when you’re mad. Please don’t be mad for long.','I was going to bring flowers, but you are already the prettiest thing in the room.'],
+  captions:[['Exhibit A','Exhibit A: we are cute together.'],['Before','Us, before I was an idiot.'],['Again soon','Can we go back to this, please? 🥺']],
+  memory:['Remember when we laughed until we cried? I want a hundred more of those.','This was the day I knew I never wanted to lose you.','You were right that day too. You usually are.'],
+  replies:[['Forgiven','Okay fine. You’re forgiven. 💗 Come here.'],['Lucky you’re cute','You’re lucky you’re cute. Forgiven, but you owe me a hug. 🙄💗'],['Still a bit mad','I’m still a tiny bit mad. But this helped. A lot. 🥺']]
  },
  anniversary:{
   note:[['Our little story','Happy anniversary, {name}. I love that our story is made of a thousand little things. Familiar smiles, ordinary days, and choosing to keep learning each other. Here’s to more pages. ♡'],['Still choosing us','{name}, here’s to the beginning, the everyday, and everything we haven’t discovered yet. I’m grateful for this chapter, and for you. Happy anniversary.'],['Not perfect. Ours.','Our story isn’t perfect, {name}. It’s real, still unfolding, and full of little moments I wouldn’t trade. Happy anniversary to us, and to whatever lovely thing comes next.']],
@@ -1696,14 +1726,18 @@ function occasionMessageOptions(input,kind){
    ['A small reminder: you are loved, exactly as you are.','I’m so glad I get to have you in my world.','Of all the lovely little things, you’re my favorite.']
   ];return rows(options[index%3],['A little reason','Another way to say it','Simply said']);
  }
- if(kind==='commitment')return rows([['Listen properly','I want to listen without interrupting or defending myself. I’ll respect the time and space you ask for.'],['Ask, don’t assume','I want to ask what would help, rather than decide for you. Then I want to follow through on what I can honestly commit to.'],['Respect the boundary','I will respect your boundaries, including your decision not to respond. I want my next actions to be more thoughtful than my last ones.']]);
+ if(kind==='coupon'){
+  const i=Number(input.dataset.coupon||0);
+  return rows([[['Hug','One free hug. No expiry date.'],['Massage','One back massage. No questions asked.'],['Cuddles','Unlimited cuddles for a whole evening.']],[['Listening','I listen first and talk second. Promise.'],['You win','You win the next argument. Automatically.'],['No phone','One date night. My phone stays in my pocket.']],[['Food','Your choice of food. Zero complaints.'],['Movie','You pick the movie. I don’t fall asleep.'],['Dessert','One dessert of your choice, delivered by me.']]][i%3]);
+ }
+ if(kind==='forgiveQuestion')return rows([['Simply said','Will you forgive me? 🥺'],['Pleading','Pretty please forgive me? 🥺👉👈'],['Still us','Can we go back to being us? 💗']]);
  if(kind==='milestone')return rows([['A big new chapter','Your brave new chapter'],['A well-earned win','A well-earned moment'],['All those little steps','The little steps that became something big']]);
  if(kind==='reunion')return rows([['The next hello','Here’s to the next hello. Whenever it comes, I’ll be glad to share it with you.'],['No big plans needed','No big plans needed. A little time together would be lovely.'],['Until then','Until we can share the same little corner of the world, there’s a light for you in mine.']]);
  if(!bank)return null;
  if(kind==='note'){
   const result=rows(bank.note);
   // Preserve the meaning of sensitive copy. Vibe can soften/play up other gifts.
-  if(!['apology','proposal'].includes(g.occasion)){
+  if(g.occasion!=='proposal'){
    const touch={Romantic:'Made with a little extra love. ♡',Cute:'A pocket-sized hug, just for you. ♡',Funny:'Yes, I did make a whole little website for this. Very normal of me.',Emotional:'I hope these words find you gently.',Crazy:'A whole little moment for a one-of-a-kind human. ✷',Elegant:'Thoughtfully made, just for you.'}[g.vibe];
    result[2].text+='\n\n'+touch;
   }return result;
@@ -1712,7 +1746,7 @@ function occasionMessageOptions(input,kind){
  if(kind==='secret')return rows(bank.secret,['A little reminder','A quiet thought','One more little thing']);
  if(kind==='caption')return rows(bank.captions);
  if(kind==='memory')return rows(bank.memory,['A moment to keep','The little things','Another way to say it']);
- if(kind==='memoryWhen')return rows(g.occasion==='anniversary'?['Our beginning','Somewhere along the way','This little chapter']:g.occasion==='apology'?['A moment I’m reflecting on','Something I want to acknowledge','Held with care']:['A little moment','One I’ve kept close','A day worth remembering']);
+ if(kind==='memoryWhen')return rows(g.occasion==='anniversary'?['Our beginning','Somewhere along the way','This little chapter']:g.occasion==='apology'?['Us, being cute','The day I was right (jk)','Before I messed up']:['A little moment','One I’ve kept close','A day worth remembering']);
  if(kind==='reply')return rows(bank.replies);
  const packs=[
   {label:'A little star',q:'Who is this little world made for?',a:g.name||'You',wrong:['A very dramatic houseplant','The person hiding the ribbons']},
@@ -1728,7 +1762,7 @@ function occasionMessageOptions(input,kind){
 
 function occasionPortraitSVG(id,occasion){
  if(occasion==='birthday')return portraitSVG(id);
- const soft=occasion==='apology'?'#eaedd4':occasion==='thanks'?'#faeccd':occasion==='missyou'?'#eddad7':'#fcdbcc';
+ const soft=occasion==='apology'?'#ffe0ea':occasion==='thanks'?'#faeccd':occasion==='missyou'?'#eddad7':'#fcdbcc';
  return `<svg viewBox="0 0 420 520" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="${id}-ambient"><stop stop-color="#fff8e3"/><stop offset="1" stop-color="${soft}"/></radialGradient><radialGradient id="${id}-lamp"><stop stop-color="#ffe1a4" stop-opacity=".8"/><stop offset="1" stop-color="#ffe1a4" stop-opacity="0"/></radialGradient></defs><rect width="420" height="520" fill="url(#${id}-ambient)"/><path d="M60 520V215a150 150 0 0 1 300 0v305" fill="none" stroke="#db8c551e"/><path d="M18 58q180 114 385 6M-10 99q225 124 450-10" stroke="#d79b6b" stroke-width="1.1" fill="none"/>${Array.from({length:13},(_,i)=>{const x=17+i*32,y=63+Math.sin(i/12*Math.PI)*62;return `<path d="M${x} ${y}v12" stroke="#bf8955" stroke-width="1"/><circle cx="${x}" cy="${y+16}" r="20" fill="url(#${id}-lamp)"/><ellipse cx="${x}" cy="${y+16}" rx="3.3" ry="5.5" fill="#ffcb7d"/>`;}).join('')}<g fill="none" stroke="#eca881" stroke-width="1.1"><path d="m35 234 3 9 9 3-9 3-3 9-3-9-9-3 9-3ZM372 311v15m-7-7h14m-34-119 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z"/></g><g fill="#da7294" opacity=".32"><path d="M77 335c-23-14-11-27 0-13 11-14 23 0 0 13Z"/><path d="M344 254c-16-10-8-19 0-9 8-10 16 0 0 9Z"/></g><path d="M0 454q208-18 420 0v66H0Z" fill="#d19660" opacity=".05"/></svg>`;
 }
 function setHomeOccasion(key,animate=false){
@@ -1757,18 +1791,18 @@ function renderOccasionDetails(force=false){
  let body='';
  if(key==='proposal')body=`<p class="occasion-help">A first date, a relationship, or a lifetime. Choose the kind of question you’re actually asking. The recipient can say yes, ask to talk, decline, or leave it unanswered.</p><div class="field-label" id="proposalKindLabel">What are you asking?</div><div class="proposal-kind" role="group" aria-labelledby="proposalKindLabel">${[['relationship','Be my person'],['date','A little date'],['marriage','Marry me']].map(([value,label])=>`<button type="button" data-proposal-kind="${value}" aria-pressed="${(draft.proposalKind||'relationship')===value}">${label}</button>`).join('')}</div>${field('proposalQuestion','The question, in your words','proposalQuestion',proposalQuestion(draft),140)}<p class="input-help">Blank is lovely too. We’ll use the matching question above. Choosing a new kind never replaces words you’ve written.</p>`;
  if(key==='love'||key==='thanks')body=`<p class="occasion-help">${key==='love'?'Three little paper hearts, with a reason tucked inside each one.':'Three little flowers. Three things you’re grateful for.'} Leave any blank and we’ll add a thoughtful ready-made line.</p>${[0,1,2].map(i=>`<div class="reason-field">${field('reason'+i,key==='love'?'Little reason '+(i+1):'Thank-you flower '+(i+1),'reason',o.reasons[i],160,true,`data-reason="${i}"`)}</div>`).join('')}`;
- if(key==='apology')body=`<p class="occasion-help">Words matter. A specific, realistic action can matter more. Only promise something you intend and are able to do.</p>${field('commitment','One thing you’ll do differently','commitment','A small, concrete next step. In your own words.',300,true)}<p class="occasion-quiet-warning">No games, confetti, deadlines, or requests for forgiveness are added to this journey. Their response stays entirely their choice.</p>`;
+ if(key==='apology')body=`<p class="occasion-help">Pick who says sorry for you, write three little sorry coupons, and choose the big question. Leave anything blank and we’ll use a cute ready-made one.</p><div class="field-label" id="sorryCharacterLabel">Who says sorry?</div><div class="proposal-kind sorry-character-pick" role="group" aria-labelledby="sorryCharacterLabel">${Object.entries(SORRY_CHARACTERS).map(([value,label])=>`<button type="button" data-sorry-character="${value}" aria-pressed="${sorryCharacter(draft)===value}">${label}</button>`).join('')}</div>${[0,1,2].map(i=>`<div class="reason-field">${field('coupon'+i,'Sorry coupon '+(i+1),'coupon',o.coupons[i],90,false,`data-coupon="${i}"`)}</div>`).join('')}${field('forgiveQuestion','The big question','forgiveQuestion',forgiveQuestion(draft),80)}<p class="occasion-quiet-warning">The No button runs away when they try to press it. 🥺 Only Yes can be pressed.</p>`;
  if(key==='anniversary')body=`<p class="occasion-help">A date to put in the front of your little storybook. No countdowns, no calculations—just a day that means something to you.</p><label class="field-label" for="togetherSince">When did your story begin?<small>Optional</small></label><input class="text-input" type="date" id="togetherSince" max="${new Date().toISOString().slice(0,10)}"><p class="input-help">A wedding date, a first date, or a day you both hold close. Leave it out and the storybook is just as lovely.</p>`;
  if(key==='congratulations')body=`<p class="occasion-help">A new job. A finished project. A brave first step. It doesn’t have to be a huge milestone to matter.</p>${field('milestone','What are we celebrating?','milestone','Their well-earned moment',80)}<p class="input-help">This becomes a little dedication under their spotlight. Skip it for a celebration that fits any win.</p>`;
  if(key==='missyou')body=`<p class="occasion-help">A hopeful little thought about being together again. No dates or plans need to be promised.</p>${field('reunionMessage','Until the next hello','reunion','A little thought for when you’re together again…',200,true)}<p class="input-help">This adds one quiet extra chapter. Leave it blank to end with your note and a paper hug.</p>`;
- host.innerHTML=`<summary><span class="detail-icon">${icon(key==='apology'?'pen':key==='anniversary'?'clock':'heart')}</span><span><span class="detail-title">${e(o.detailTitle)}</span><span class="detail-subtitle" style="display:block">A little detail just for this kind of gift</span></span><span class="detail-chevron">${icon('chevron')}</span></summary><div class="detail-body occasion-settings">${body}</div>`;
- const values={proposalQuestion:draft.proposalQuestion,commitment:draft.commitment,togetherSince:draft.togetherSince,milestone:draft.milestone,reunionMessage:draft.reunionMessage};
+ host.innerHTML=`<summary><span class="detail-icon">${icon(key==='anniversary'?'clock':'heart')}</span><span><span class="detail-title">${e(o.detailTitle)}</span><span class="detail-subtitle" style="display:block">A little detail just for this kind of gift</span></span><span class="detail-chevron">${icon('chevron')}</span></summary><div class="detail-body occasion-settings">${body}</div>`;
+ const values={proposalQuestion:draft.proposalQuestion,forgiveQuestion:draft.forgiveQuestion,togetherSince:draft.togetherSince,milestone:draft.milestone,reunionMessage:draft.reunionMessage};
  for(const [id,value]of Object.entries(values)){const field=$('#'+id);if(field)field.value=value||'';}
- for(let i=0;i<3;i++){const input=$('#reason'+i);if(input)input.value=draft.reasons?.[i]||'';}
+ for(let i=0;i<3;i++){const input=$('#reason'+i);if(input)input.value=draft.reasons?.[i]||'';const coupon=$('#coupon'+i);if(coupon)coupon.value=draft.coupons?.[i]||'';}
  $$('[data-occasion-template]',host).forEach(input=>mountMessageTemplates(input,input.dataset.occasionTemplate));
 }
 function occasionHasExtras(g=draft){
- return !!(g.proposalQuestion?.trim()||g.proposalKind&&g.proposalKind!=='relationship'||g.reasons?.some(v=>v.trim())||g.commitment?.trim()||g.togetherSince||g.milestone?.trim()||g.reunionMessage?.trim());
+ return !!(g.proposalQuestion?.trim()||g.proposalKind&&g.proposalKind!=='relationship'||g.reasons?.some(v=>v.trim())||g.coupons?.some(v=>v.trim())||g.forgiveQuestion?.trim()||g.occasion==='apology'&&sorryCharacter(g)!=='teddy'||g.togetherSince||g.milestone?.trim()||g.reunionMessage?.trim());
 }
 function updateOccasionUI(){
  if(!$('#occasionRibbon'))return;const key=occasionKey(draft),o=occasionOf(draft),birth=key==='birthday';
@@ -1787,18 +1821,18 @@ function updateOccasionUI(){
  const captions={Romantic:'Rose & candlelight',Cute:'Soft pink',Funny:'Warm amber',Emotional:'Quiet dusk',Crazy:'Bold terracotta',Elegant:'Muted gold'};
  $('#vibeGrid').classList.toggle('is-look',!birth);
  if($('#vibeLabel'))$('#vibeLabel').innerHTML=(birth?'Pick a mood':'Pick a look')+' <span class="field-hint">'+(birth?'Sets the words, colours and music':'Sets the colours and soft sounds')+'</span>';
- $$('#vibeGrid button').forEach(b=>{b.hidden=key==='apology'&&!['Emotional','Elegant'].includes(b.dataset.vibe);const caption=$('.vibe-caption',b);if(caption)caption.textContent=birth?THEMES[b.dataset.vibe].caption:captions[b.dataset.vibe];});
+ $$('#vibeGrid button').forEach(b=>{const caption=$('.vibe-caption',b);if(caption)caption.textContent=birth?THEMES[b.dataset.vibe].caption:captions[b.dataset.vibe];});
  const guide=$('#occasionGuide');guide.innerHTML=`<div class="guide-caption">What they will go through</div><ol>${o.path.map(line=>`<li>${e(line)}</li>`).join('')}</ol>`;
  $('[data-step="0"]>.step-count-note').textContent=birth?'Just their name. A beautiful birthday, even without the extras.':'Just their name. A complete '+o.short.toLowerCase()+', even without the extras.';
  $('#noteDetail .detail-title').textContent=o.noteLabel;$('label[for=personalMessage]').textContent=o.noteLabel;
- $('#noteDetail .input-help').textContent='Leave this blank and we’ll tuck in a thoughtful '+(birth?'birthday note':key==='apology'?'apology note':'ready-made note')+'.';
+ $('#noteDetail .input-help').textContent='Leave this blank and we’ll tuck in a thoughtful '+(birth?'birthday note':key==='apology'?'sorry note':'ready-made note')+'.';
  $('#personalMessage').placeholder=birth?'You know what I love about you? So many things. But let’s start here…':personalize(o.fallback,draft).split('\n')[0].slice(0,170);
- $('#musicDetail .detail-title').textContent=birth?'A birthday soundtrack':key==='apology'?'A quiet little soundtrack':'A little soundtrack';
+ $('#musicDetail .detail-title').textContent=birth?'A birthday soundtrack':key==='apology'?'A sorry little soundtrack':'A little soundtrack';
  $('#funChoices [data-fun=quiz]').innerHTML='<span>?</span>'+(birth?'A tiny birthday quiz':'A tiny little quiz');
  $('#voiceUrl').placeholder='https://…/voice-note.mp3';
- $('#branchToggle').closest('label').hidden=!birth;$('#funDetail').hidden=key==='apology';$('#funMessage').placeholder=birth?'You’re my favorite person in the whole birthday universe.':key==='apology'?'A little thought, held with care.':'A small secret, just for you.';
+ $('#branchToggle').closest('label').hidden=!birth;$('#funDetail').hidden=false;$('#funMessage').placeholder=birth?'You’re my favorite person in the whole birthday universe.':key==='apology'?'I practised this sorry in the mirror. Twice.':'A small secret, just for you.';
  $('#quizFields .input-help').textContent='Leave this blank for a ready-made '+(birth?'birthday':'little')+' question. Wrong guesses get a friendly hint, never a dead end.';
- $('#finalDetail .detail-title').textContent=key==='apology'?'One final thought':'One last surprise';
+ $('#finalDetail .detail-title').textContent='One last surprise';
   renderOccasionDetails();
 }
 function installOccasions(){
@@ -1808,14 +1842,16 @@ function installOccasions(){
  $('#editorRoom .portrait-title h2').innerHTML='<span id="previewGreeting">Happy Birthday,</span><br><em id="previewName">your person.</em>';
  $('#giftForm').dataset.v3Installed='true';setHomeOccasion(homeOccasion);
  $('#giftForm').addEventListener('input',event=>{
-  const input=event.target,map={proposalQuestion:'proposalQuestion',commitment:'commitment',togetherSince:'togetherSince',milestone:'milestone',reunionMessage:'reunionMessage'};
+  const input=event.target,map={proposalQuestion:'proposalQuestion',forgiveQuestion:'forgiveQuestion',togetherSince:'togetherSince',milestone:'milestone',reunionMessage:'reunionMessage'};
   if(map[input.id]){draft[map[input.id]]=input.id==='togetherSince'?validStoryDate(input.value):input.value;saveDraft();}
   if(input.dataset.reason!==undefined){draft.reasons=draft.reasons||['','',''];draft.reasons[Number(input.dataset.reason)]=input.value;saveDraft();}
+  if(input.dataset.coupon!==undefined){draft.coupons=[0,1,2].map(i=>draft.coupons?.[i]||'');draft.coupons[Number(input.dataset.coupon)]=input.value;saveDraft();}
  });
  document.addEventListener('click',event=>{
   const campaign=event.target.closest('[data-campaign]');if(campaign){event.preventDefault();openCampaign(campaign.dataset.campaign);return;}
   const choice=event.target.closest('[data-choose-occasion]');if(choice){event.preventDefault();openCreator(choice.dataset.chooseOccasion);return;}
   const demo=event.target.closest('[data-home-occasion]');if(demo){setHomeOccasion(demo.dataset.homeOccasion,true);return;}
+  const pal=event.target.closest('[data-sorry-character]');if(pal){draft.character=pal.dataset.sorryCharacter;$$('[data-sorry-character]').forEach(b=>b.setAttribute('aria-pressed',String(b===pal)));updateOccasionUI();saveDraft();return;}
   const kind=event.target.closest('[data-proposal-kind]');if(kind){draft.proposalKind=kind.dataset.proposalKind;$$('[data-proposal-kind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.proposalKind===draft.proposalKind)));$('#proposalQuestion').placeholder=PROPOSAL_QUESTIONS[draft.proposalKind];refreshMessageTemplates();updateOccasionUI();saveDraft();return;}
   const b=event.target.closest('[data-v3]');if(!b)return;event.preventDefault();
   switch(b.dataset.v3){
@@ -1833,7 +1869,11 @@ function installOccasions(){
    case'reveal-question':revealProposal(b);break;
    case'proposal-answer':chooseProposalAnswer(b);break;
    case'no-answer':journeyReply='';proposalAnswer='';goToScene(sceneIndex+1);break;
-   case'quiet-close':goToScene(scenes.indexOf('celebration'));break;
+   case'sorry-meter':measureSorry(b);break;
+   case'coupon':claimCoupons();break;
+   case'forgive-yes':forgiveYes(b);break;
+   case'forgive-no':dodgeNo(b,event);break;
+   case'forgiven-card':saveForgivenCard(b);break;
    case'finish-reading':showQuietFinish();break;
   }
  });
@@ -1841,9 +1881,9 @@ function installOccasions(){
  $('#experience').addEventListener('input',event=>{if(event.target.id==='recipientReply'){replySharedText='';if($('#replyResult'))$('#replyResult').innerHTML='';}});
 }
 function renderOccasionReview(){
- const g=sanitizeGift(draft,false),o=occasionOf(g);const labels={opening:'A little light',birthday:'Their birthday',cake:'Make a wish',choice:'A tiny choice',gift:'Open a gift',welcome:'A personal welcome',message:'Your note',hearts:'Three little hearts',bouquet:'A gratitude bouquet',storybook:'Our little storybook',ribbon:'A ribbon reveal',distance:'A paper hug',proposal:'Your little question',accountability:'An honest next step',reunion:'The next hello',photos:g.photos.length+' photos',memories:'Little memories',voice:'Your voice',fun:'A playful detour',final:g.occasion==='apology'?'One final thought':'One more surprise',celebration:g.occasion==='apology'?'A little space':'A lovely ending',reply:'An optional reply'};
+ const g=sanitizeGift(draft,false),o=occasionOf(g);const labels={opening:'A little light',birthday:'Their birthday',cake:'Make a wish',choice:'A tiny choice',gift:'Open a gift',welcome:'A personal welcome',message:'Your note',hearts:'Three little hearts',bouquet:'A gratitude bouquet',storybook:'Our little storybook',ribbon:'A ribbon reveal',distance:'A paper hug',proposal:'Your little question',meter:'How sorry am I?',coupons:'Sorry coupons',forgive:'Forgive me? 🥺',reunion:'The next hello',photos:g.photos.length+' photos',memories:'Little memories',voice:'Your voice',fun:'A playful detour',final:'One more surprise',celebration:g.occasion==='apology'?'A big happy hug':'A lovely ending',reply:'An optional reply'};
  const parts=buildScenes(g).map(k=>labels[k]);
- $('#reviewSummary').innerHTML=`<p class="v3-occasion-review">${e(o.label)} · made your way</p><div class="ready-stamp"><span>${o.symbol}</span><span>For ${e(g.name||'your person')}.<br><em>A whole little ${g.vibe.toLowerCase()} world.</em></span></div><div class="story-itinerary">${parts.map(p=>'<span>'+e(p)+'</span>').join('')}</div><p class="step-help">${g.message?'Your own words are tucked inside.':'A thoughtful '+(g.occasion==='birthday'?'birthday':'ready-made')+' note is already tucked inside.'} ${g.music==='none'?'Soft interaction sounds, no background music.':'A little soundtrack, at '+Math.round(g.volume*100)+'% volume.'}</p>${g.occasion==='proposal'?'<p class="occasion-quiet-warning">They can say yes, ask to talk, decline, or leave the question unanswered. No reply is sent automatically.</p>':g.occasion==='apology'?'<p class="occasion-quiet-warning">A quiet ending. No confetti, games or pressure to forgive. They can finish reading without replying.</p>':''}<div class="review-touches"><span>${touchCount()?touchCount()+' little '+(touchCount()===1?'touch':'touches')+' tucked inside':'Little touches: kept simple. Just as lovely.'}</span><button type="button" data-v2="edit-touches">${touchCount()?'Edit little touches':'Add little touches'} ${icon('arrow')}</button></div>`;
+ $('#reviewSummary').innerHTML=`<p class="v3-occasion-review">${e(o.label)} · made your way</p><div class="ready-stamp"><span>${o.symbol}</span><span>For ${e(g.name||'your person')}.<br><em>A whole little ${g.vibe.toLowerCase()} world.</em></span></div><div class="story-itinerary">${parts.map(p=>'<span>'+e(p)+'</span>').join('')}</div><p class="step-help">${g.message?'Your own words are tucked inside.':'A thoughtful '+(g.occasion==='birthday'?'birthday':'ready-made')+' note is already tucked inside.'} ${g.music==='none'?'Soft interaction sounds, no background music.':'A little soundtrack, at '+Math.round(g.volume*100)+'% volume.'}</p>${g.occasion==='proposal'?'<p class="occasion-quiet-warning">They can say yes, ask to talk, decline, or leave the question unanswered. No reply is sent automatically.</p>':g.occasion==='apology'?'<p class="occasion-quiet-warning">The No button runs away. 🥺 When they press Yes, you get a little “Forgiven 💗” reply.</p>':''}<div class="review-touches"><span>${touchCount()?touchCount()+' little '+(touchCount()===1?'touch':'touches')+' tucked inside':'Little touches: kept simple. Just as lovely.'}</span><button type="button" data-v2="edit-touches">${touchCount()?'Edit little touches':'Add little touches'} ${icon('arrow')}</button></div>`;
  updateDelivery();
 }
 
@@ -1855,11 +1895,11 @@ function finishOccasionRender(type){
 }
 function renderOccasionScene(type){
  const o=occasionOf(gift),name=e(gift.name),s=$('#storyScene');
- const custom=['welcome','hearts','bouquet','storybook','ribbon','distance','proposal','accountability','reunion'];
+ const custom=['welcome','hearts','bouquet','storybook','ribbon','distance','proposal','meter','coupons','forgive','reunion'];
  if(!custom.includes(type)&&!(gift.occasion!=='birthday'&&['gift','celebration'].includes(type)))return false;
  s.className='story-scene '+type+'-scene';
- if(type==='welcome')s.innerHTML=`<div class="occasion-welcome-art">${occasionArt(occasionArtFor(gift),'welcome-object')}</div>${sceneTitle(`${e(o.greeting)}<span class="name-line${gift.name.length>18?' long-name':''}"><em>${name}.</em></span>`,e(o.eyebrow))}<p class="story-description">${e(o.welcome)}</p>${gift.occasion==='congratulations'&&gift.milestone?`<p class="achievement-note">${e(gift.milestone)}</p>`:''}${storyButton(gift.occasion==='apology'?'Read when you’re ready':gift.occasion==='love'?'There are a few little reasons':gift.occasion==='thanks'?'A little bouquet for you':gift.occasion==='anniversary'?'Open our little story':gift.occasion==='missyou'?'Catch a little hug':'Step a little closer')}${gift.occasion==='apology'?'<button class="story-soft-skip" data-v3="quiet-close">Not right now. I need some space.</button>':''}`;
- if(type==='gift')s.innerHTML=`${sceneTitle(gift.occasion==='apology'?'A few words.<br><em>Said with care.</em>':'Some words,<br><em>sealed with a little courage.</em>',gift.occasion==='apology'?'No expectations tucked inside':'A little note, from the heart')}<button class="story-object" data-v3="open-note" aria-label="Unfold the personal note">${occasionArt('envelope','story-envelope')}<span class="object-tap">${icon('hand')}</span></button><p class="story-footnote soft" id="noteInstruction">${gift.occasion==='apology'?'Unfold it whenever you’re ready.':'A little envelope. A lot inside.'}</p><div id="occasionAfter" aria-live="polite"></div>`;
+ if(type==='welcome')s.innerHTML=`<div class="occasion-welcome-art">${occasionArt(occasionArtFor(gift),'welcome-object')}</div>${sceneTitle(`${e(o.greeting)}<span class="name-line${gift.name.length>18?' long-name':''}"><em>${name}.</em></span>`,e(o.eyebrow))}<p class="story-description">${e(o.welcome)}</p>${gift.occasion==='congratulations'&&gift.milestone?`<p class="achievement-note">${e(gift.milestone)}</p>`:''}${storyButton(gift.occasion==='apology'?'Open it, please? 🥺':gift.occasion==='love'?'There are a few little reasons':gift.occasion==='thanks'?'A little bouquet for you':gift.occasion==='anniversary'?'Open our little story':gift.occasion==='missyou'?'Catch a little hug':'Step a little closer')}`;
+ if(type==='gift')s.innerHTML=`${sceneTitle('Some words,<br><em>sealed with a little courage.</em>','A little note, from the heart')}<button class="story-object" data-v3="open-note" aria-label="Unfold the personal note">${occasionArt('envelope','story-envelope')}<span class="object-tap">${icon('hand')}</span></button><p class="story-footnote soft" id="noteInstruction">A little envelope. A lot inside.</p><div id="occasionAfter" aria-live="polite"></div>`;
  if(type==='hearts'){
   openedNotes=new Set();s.innerHTML=`${sceneTitle('A few little reasons.<br><em>All of them you.</em>','Three paper hearts, folded with love')}<p class="story-description">Touch one. They’ll all unfold.</p><div class="heart-notes">${[0,1,2].map(i=>`<button class="heart-note" data-v3="heart-note" data-note="${i}" aria-pressed="false" aria-label="Unfold heart ${i+1}"><span aria-hidden="true">♡</span><small>open me · 0${i+1}</small></button>`).join('')}</div><p class="note-progress" id="noteProgress" role="status">Touch a heart</p><div id="occasionAfter" aria-live="polite"></div>`;
  }
@@ -1872,20 +1912,27 @@ function renderOccasionScene(type){
  if(type==='ribbon')s.innerHTML=`${sceneTitle('A little ribbon.<br><em>A very big well done.</em>','Go on. This moment belongs to you.')}<button class="story-object" data-v3="untie-ribbon" aria-label="Untie your celebration ribbon">${occasionArt('medal','achievement-ribbon')}<span class="object-tap">${icon('hand')}</span></button><p class="story-footnote soft" id="ribbonInstruction">Tap to untie your little celebration.</p><div id="occasionAfter" aria-live="polite"></div>`;
  if(type==='distance')s.innerHTML=`${sceneTitle('A paper hug.<br><em>All the way to you.</em>','Some little things can cross the distance')}<div class="distance-route" id="distanceRoute">${occasionArt('plane','travelling-hug')}<div class="distance-label"><span>from over here</span><span>to lovely you</span></div></div><button class="btn story-btn" data-v3="send-hug" id="sendPaperHug">Catch your paper hug ${icon('heart')}</button><div id="occasionAfter" aria-live="polite"></div>`;
  if(type==='proposal')s.innerHTML=`${sceneTitle('One little question.<br><em>From the heart.</em>','A moment for the butterflies')}<button class="story-object" data-v3="reveal-question" aria-label="Open the little proposal question">${occasionArt(occasionArtFor(gift),'proposal-object')}<span class="object-tap">${icon('hand')}</span></button><p class="story-footnote soft" id="proposalInstruction">You don’t owe this question a particular answer.</p><div id="proposalReveal" class="occasion-reveal" hidden></div><button class="story-soft-skip" data-v3="no-answer">Continue without answering</button>`;
- if(type==='accountability')s.innerHTML=`<span class="quiet-stamp" aria-hidden="true">❦</span>${sceneTitle('More than words.<br><em>A small next step.</em>','An intention to follow through')}<article class="letter-paper"><p class="letter-text">${e(gift.commitment)}</p></article><p class="story-footnote soft">This is theirs to follow through on. You don’t have to do anything in return.</p>${storyButton('Keep reading, gently')}`;
+ if(type==='meter')s.innerHTML=`${sceneTitle('How sorry am I?<br><em>Let’s measure.</em>','Scientifically accurate. Probably.')}<div class="sorry-meter" id="sorryMeter" role="meter" aria-label="How sorry I am" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="sorry-meter-track"><div class="sorry-meter-fill" id="sorryFill"></div></div><ol class="sorry-meter-scale" aria-hidden="true"><li>a little</li><li>very</li><li>extremely</li><li>down bad</li></ol></div><p class="sorry-meter-reading" id="sorryReading" role="status">Tap the button to find out</p><button class="btn story-btn sorry-meter-btn" data-v3="sorry-meter">Measure my sorry 🥺</button><div id="occasionAfter" aria-live="polite"></div>`;
+ if(type==='coupons'){
+  openedNotes=new Set();s.innerHTML=`${sceneTitle('Sorry coupons.<br><em>No expiry date.</em>','Redeem anytime. I mean it.')}<div class="sorry-coupons">${sorryCoupons(gift).map((text,i)=>`<button class="sorry-coupon" data-v3="coupon" data-note="${i}" aria-pressed="false" aria-label="Claim sorry coupon ${i+1}: ${e(text)}"><span class="coupon-no">COUPON · 0${i+1}</span><span class="coupon-text">${e(text)}</span><span class="coupon-stamp" aria-hidden="true">claimed 💗</span></button>`).join('')}</div><p class="note-progress" id="noteProgress" role="status">Tap a coupon to claim them all</p><div id="occasionAfter" aria-live="polite"></div>`;
+ }
+ if(type==='forgive'){
+  noDodges=0;s.innerHTML=`<div class="sorry-forgive-art" id="sorryForgiveArt">${occasionArt(sorryCharacter(gift),'forgive-art')}</div>${sceneTitle(e(forgiveQuestion(gift)),'One very important question')}<div class="forgive-arena" id="forgiveArena"><button class="forgive-yes" data-v3="forgive-yes" id="forgiveYes">Yes 💗</button><button class="forgive-no" data-v3="forgive-no" id="forgiveNo">No</button></div><p class="story-footnote soft" id="forgiveNote" role="status">Choose carefully. There is only one right answer.</p><div id="occasionAfter" aria-live="polite"></div>`;
+  const no=$('#forgiveNo',s);if(no){const run=ev=>{if(ev.pointerType==='mouse'&&ev.type==='pointerdown')return;dodgeNo(no,ev);};no.addEventListener('pointerenter',ev=>{if(ev.pointerType==='mouse')dodgeNo(no,ev);});no.addEventListener('pointerdown',run);no.addEventListener('focus',()=>{if(noDodges)dodgeNo(no);});}
+ }
  if(type==='reunion')s.innerHTML=`<div class="occasion-welcome-art">${occasionArt('plane','next-hello')}</div>${sceneTitle('Until the next<br><em>little hello.</em>','A hopeful thought, from over here')}<p class="final-surprise-note">${e(gift.reunionMessage)}</p>${storyButton('Keep a little light for me')}`;
  if(type==='celebration'){
-  const quiet=gift.occasion==='apology'||gift.occasion==='missyou'||gift.occasion==='proposal'&&proposalAnswer!=='yes';
+  const quiet=gift.occasion==='missyou'||gift.occasion==='proposal'&&proposalAnswer!=='yes';
   let title=o.finalTitle,ending=o.finish;
   if(gift.occasion==='proposal'&&proposalAnswer==='yes'){title='A little yes.<br><em>A lovely beginning.</em>';ending='A moment to keep close. Your answer is still yours to share, when you’re ready.';}
   if(gift.occasion==='proposal'&&proposalAnswer==='no'){title='Thank you<br><em>for being honest.</em>';ending='Your answer deserves care and respect. Nothing has been sent. Share it only when you choose to.';}
   if(gift.occasion==='proposal'&&proposalAnswer==='talk'){title='A little room<br><em>for a conversation.</em>';ending='No rush to decide. Nothing has been sent. You can share your words when you’re ready.';}
   s.classList.toggle('quiet-ending',quiet);
-  s.innerHTML=`<div class="${quiet?'quiet-stamp':'celebration-halo'}" aria-hidden="true">${o.symbol}</div>${sceneTitle(title,gift.occasion==='apology'?'Your feelings. Your time.':'Made with a little heart')}<p class="finale-words" aria-label="${e(ending)}">${ending.split(' ').map((w,i)=>`<span class="fw" aria-hidden="true" style="--w:${i}">${e(w)}</span>`).join(' ')}</p>${gift.photos.length&&gift.occasion!=='apology'&&!quiet&&!reducedMotion?finaleReel():gift.photos.length&&gift.occasion!=='apology'?`<div class="finale-montage" aria-label="A few little moments to keep">${gift.photos.map((p,i)=>`<figure class="finale-photo" style="--delay:${i*.18}s"><div><img src="${e(p.src)}" alt="${e(p.caption||'A favorite moment')}" style="${cropStyle(p)}" referrerpolicy="no-referrer"></div></figure>`).join('')}</div>`:''}<p class="final-dedication">Made especially for you. ${gift.occasion==='apology'?'With care.':'♡'}${gift.sender?'<br><span style="font-size:14px">From '+e(gift.sender)+'.</span>':''}</p>${storyButton(gift.occasion==='apology'||gift.occasion==='proposal'?'Leave a reply, only if you’d like':'Send a little feeling back')}${quiet?'<button class="story-soft-skip" data-v3="finish-reading">Finish here. No reply needed.</button>':''}`;
+  s.innerHTML=`${gift.occasion==='apology'?`<div class="sorry-hug-art" aria-hidden="true">${occasionArt(sorryCharacter(gift)+'-happy','hug-art')}</div>`:`<div class="${quiet?'quiet-stamp':'celebration-halo'}" aria-hidden="true">${o.symbol}</div>`}${sceneTitle(title,gift.occasion==='apology'?'Officially forgiven. No take-backs.':'Made with a little heart')}<p class="finale-words" aria-label="${e(ending)}">${ending.split(' ').map((w,i)=>`<span class="fw" aria-hidden="true" style="--w:${i}">${e(w)}</span>`).join(' ')}</p>${gift.photos.length&&!quiet&&!reducedMotion?finaleReel():gift.photos.length?`<div class="finale-montage" aria-label="A few little moments to keep">${gift.photos.map((p,i)=>`<figure class="finale-photo" style="--delay:${i*.18}s"><div><img src="${e(p.src)}" alt="${e(p.caption||'A favorite moment')}" style="${cropStyle(p)}" referrerpolicy="no-referrer"></div></figure>`).join('')}</div>`:''}<p class="final-dedication">Made especially for you. ${gift.occasion==='apology'?'With my whole silly heart. 💗':'♡'}${gift.sender?'<br><span style="font-size:14px">From '+e(gift.sender)+'.</span>':''}</p>${storyButton(gift.occasion==='proposal'?'Leave a reply, only if you’d like':'Send a little feeling back')}${quiet?'<button class="story-soft-skip" data-v3="finish-reading">Finish here. No reply needed.</button>':''}`;
   $$('.finale-photo img',s).forEach(img=>img.addEventListener('error',()=>img.closest('figure').hidden=true,{once:true}));
   startReel(experienceToken);
   if(!quiet){const token=experienceToken;finaleTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!==type)return;sfx('fanfare');buzz([30,40,80]);confetti(gift.occasion==='congratulations'?100:46);swellMusic();},reducedMotion?0:600);}
-  if(gift.occasion!=='apology'&&!(gift.occasion==='proposal'&&proposalAnswer!=='yes'))decorateFinale(s,{quick:true,festive:!quiet});
+  if(!(gift.occasion==='proposal'&&proposalAnswer!=='yes'))decorateFinale(s,{quick:true,festive:!quiet});
  }
  finishOccasionRender(type);return true;
 }
@@ -1893,7 +1940,9 @@ function renderOccasionScene(type){
 function decorateFinale(s,{quick=true,festive=true}={}){
  const next=$('[data-story=next]',s);if(!next)return;
  next.className='story-soft-skip';next.innerHTML='Or write a few words '+icon('arrow');
- if(quick)next.insertAdjacentHTML('beforebegin',`<div class="finale-react"><p class="finale-react-title">How did that feel?</p><div class="reactions" role="group" aria-label="Tell ${e(gift.sender||'them')} how it felt. One touch sends it.">${GENERIC_REACTIONS.map(([emoji,label])=>`<button type="button" class="reaction-btn" data-v2="quick-react" data-reaction="${emoji}" aria-label="${label}. Sends it now." aria-pressed="false">${emoji}</button>`).join('')}</div><p class="finale-sent" id="finaleSent" role="status"></p></div>`);
+ const sorry=gift.occasion==='apology';
+ if(sorry)next.insertAdjacentHTML('beforebegin',`<button type="button" class="btn btn-secondary forgiven-card-btn" data-v3="forgiven-card">Save our “Forgiven” card 📸</button>`);
+ if(quick)next.insertAdjacentHTML('beforebegin',`<div class="finale-react"><p class="finale-react-title">${sorry?'Tell them how forgiven they are':'How did that feel?'}</p><div class="reactions" role="group" aria-label="Tell ${e(gift.sender||'them')} how it felt. One touch sends it.">${(sorry?SORRY_REACTIONS:GENERIC_REACTIONS).map(([emoji,label])=>`<button type="button" class="reaction-btn" data-v2="quick-react" data-reaction="${emoji}" aria-label="${label}. Sends it now." aria-pressed="false">${emoji}</button>`).join('')}</div><p class="finale-sent" id="finaleSent" role="status"></p></div>`);
  next.insertAdjacentHTML('afterend',`<div class="finale-links"><button type="button" class="story-soft-skip" data-story="replay">↻ Watch it again</button>${navigator.share?'<button type="button" class="story-soft-skip" data-v2="pass-on">Share the feeling</button>':''}<button type="button" class="story-soft-skip" data-story="make-your-own">Make someone’s day</button></div>`);
  if(festive){
   balloons(6);let last=0;
@@ -1906,13 +1955,13 @@ async function quickReact(button){
  if(isPreview){note.textContent='In the real gift, this sends '+value+' straight to '+(gift.sender||'the person who made it')+'.';return;}
  if(!gift.server){note.textContent='Lovely. Add a few words below to share your reply.';return;}
  if(quickSent>=3){note.textContent='Sent. They’ll love it. ♡';return;}
- try{await api('/api/gifts/'+gift.id+'/reactions',{method:'POST',body:{visitor:visitorToken(),reaction:value,message:''}});quickSent++;note.textContent='Sent to '+(gift.sender||'them')+'. Their day just got better. ♡';ring(button);sfx('wish');buzz([20,40,40]);if(!gift.occasion||!['apology','missyou'].includes(gift.occasion))confetti(34,originOf(button));}
+ try{await api('/api/gifts/'+gift.id+'/reactions',{method:'POST',body:{visitor:visitorToken(),reaction:value,message:''}});quickSent++;note.textContent='Sent to '+(gift.sender||'them')+'. Their day just got better. ♡';ring(button);sfx('wish');buzz([20,40,40]);if(gift.occasion!=='missyou')confetti(34,originOf(button));}
  catch(err){note.textContent='Not sent. '+err.message;}
 }
 async function passOn(){try{await navigator.share({title:'I just opened a Kholona ♡',text:(gift.sender?gift.sender+' made me':'Someone made me')+' a little world on Kholona. Make one for someone you love:',url:location.origin+'/?utm_source=recipient&utm_medium=finale'});}catch{}}
 function openOccasionNote(button){
  if(button.classList.contains('opened'))return;button.classList.add('opened');button.disabled=true;chime();
- $('#noteInstruction').textContent=gift.occasion==='apology'?'Take it at your own pace.':'A little courage, all unfolded.';
+ $('#noteInstruction').textContent='A little courage, all unfolded.';
  $('#occasionAfter').innerHTML=storyButton('Read the words inside');
 }
 let cascading=false,storyAuto=0;
@@ -1977,6 +2026,89 @@ function chooseProposalAnswer(button){
  $('#proposalContinue').innerHTML=storyButton('Keep going, at my pace');
  if(proposalAnswer==='yes'){sfx('fanfare');buzz([25,40,70]);confetti(80);balloons(5);autoAdvance(3200,'proposal');}else{clearAuto();chime('soft');}
 }
+/* The sorry gift. One tap measures the sorry, one tap claims every coupon, and the big question has only one button that can be pressed. */
+async function measureSorry(button){
+ if(button.disabled)return;button.disabled=true;button.hidden=true;const token=experienceToken,fill=$('#sorryFill'),meter=$('#sorryMeter'),reading=$('#sorryReading');
+ const steps=[[24,'A little sorry…'],[50,'Okay, very sorry.'],[76,'Extremely sorry. 😣'],[100,'Emotionally down bad. 😭']];
+ for(let i=0;i<steps.length;i++){
+  if(token!==experienceToken||scenes[sceneIndex]!=='meter')return;
+  const [value,text]=steps[i];fill.style.width=value+'%';meter.setAttribute('aria-valuenow',String(value));meter.dataset.level=String(i+1);reading.textContent=text;sfx('note',i);buzz(12);
+  await sleep(i<steps.length-1?750:900);
+ }
+ if(token!==experienceToken||scenes[sceneIndex]!=='meter')return;
+ meter.classList.add('overflow');reading.innerHTML='<strong>Off the charts.</strong> Sorry levels: illegal. 🥺';sfx('bloom');buzz([20,30,60]);confetti(60,originOf(meter));
+ $('#occasionAfter').innerHTML=storyButton('Okay okay. Read my note');autoAdvance(5200,'meter');
+}
+async function claimCoupons(){
+ if(cascading||openedNotes.size>=3)return;cascading=true;const token=experienceToken,buttons=$$('.sorry-coupon');
+ for(let i=0;i<buttons.length;i++){
+  if(token!==experienceToken||scenes[sceneIndex]!=='coupons'){cascading=false;return;}
+  openedNotes.add(i);buttons[i].classList.add('claimed');buttons[i].setAttribute('aria-pressed','true');$('#noteProgress').textContent=(i+1)+' of 3 claimed';sfx('note',i);buzz(12);ring(buttons[i]);
+  await sleep(i<buttons.length-1?900:600);
+ }
+ cascading=false;if(token!==experienceToken)return;
+ $('#noteProgress').textContent='All yours. Use them wisely (or not). 💗';sfx('bloom');buzz([20,30,50]);confetti(40);
+ $('#occasionAfter').innerHTML=storyButton(scenes[sceneIndex+1]==='forgive'?'Now, one very important question':'Keep going 🥺');autoAdvance(6500,'coupons');
+}
+const NO_LINES=['No','Are you sure?','Really sure? 🥺','Think again…','Pleeease 🥺','I’ll cry 😭','You can’t catch me','Just press yes 💗'];
+const NO_NOTES=['Choose carefully. There is only one right answer.','Hmm. That button seems broken. Try the pink one?','The No button has left the chat.','Yes is right there. It keeps getting bigger. 👀','Okay, this is just sad now. 😭'];
+let lastDodge=0;
+/* The No button never stays put: it jumps away from a finger, a mouse or a key press, says something sadder, and Yes grows. */
+function dodgeNo(button,ev){
+ ev?.preventDefault?.();const now=Date.now();if(forgiven||now-lastDodge<180)return;lastDodge=now;
+ const arena=$('#forgiveArena'),yes=$('#forgiveYes');if(!arena||!yes||!button.isConnected)return;
+ noDodges++;if(noDodges===1)track('forgive_no_tried');
+ button.textContent=NO_LINES[Math.min(noDodges,NO_LINES.length-1)];button.style.setProperty('--shrink',String(Math.max(1-noDodges*.05,.72)));
+ yes.style.setProperty('--grow',String(Math.min(1+noDodges*.1,1.75)));button.classList.add('is-running');
+ const a=arena.getBoundingClientRect(),b=button.getBoundingClientRect(),y=yes.getBoundingClientRect();
+ const px=ev?.clientX??b.left+b.width/2,py=ev?.clientY??b.top+b.height/2;let best=null;
+ for(let i=0;i<16;i++){
+  const left=Math.random()*Math.max(a.width-b.width,0),top=Math.random()*Math.max(a.height-b.height,0),cx=a.left+left+b.width/2,cy=a.top+top+b.height/2;
+  const clear=cx<y.left-b.width/2-10||cx>y.right+b.width/2+10||cy<y.top-b.height/2-10||cy>y.bottom+b.height/2+10;
+  const score=Math.hypot(cx-px,cy-py)+(clear?1e4:0);if(!best||score>best.score)best={left,top,score};
+ }
+ button.style.left=best.left.toFixed(0)+'px';button.style.top=best.top.toFixed(0)+'px';
+ const art=$('#sorryForgiveArt');if(art){art.classList.remove('pleading');void art.offsetWidth;art.classList.add('pleading');}
+ $('#forgiveNote').textContent=NO_NOTES[Math.min(noDodges,NO_NOTES.length-1)];sfx('pop');buzz(10);
+}
+async function forgiveYes(button){
+ if(forgiven)return;forgiven=true;clearAuto();const token=experienceToken,s=$('#storyScene');
+ journeyReply='Okay fine. You’re forgiven. 💗 Come here.';s.classList.add('is-forgiven');
+ const art=$('#sorryForgiveArt');if(art)art.innerHTML=occasionArt(sorryCharacter(gift)+'-happy','forgive-art');
+ $('.story-title',s).innerHTML='Yay! <em>Forgiven.</em> 💗';$('.story-eyebrow',s).textContent='Best. Answer. Ever.';
+ $('#forgiveNo')?.remove();button.disabled=true;button.textContent='Forgiven 💗';
+ track('forgive_yes');sfx('fanfare');buzz([25,40,70]);ring(button);confetti(110);balloons(6);
+ let note='They’ll be so happy. Like, embarrassingly happy. 💗';
+ if(isPreview)note='In the real gift, this tells you right away: “I forgive you 💗”.';
+ else if(gift.server){try{await api('/api/gifts/'+gift.id+'/reactions',{method:'POST',body:{visitor:visitorToken(),reaction:'💗',message:'I forgive you 💗'}});note='We told '+(gift.sender||'them')+'. They’re probably crying happy tears now. 💗';}catch{}}
+ if(token!==experienceToken||scenes[sceneIndex]!=='forgive')return;
+ $('#forgiveNote').textContent=note;$('#occasionAfter').innerHTML=storyButton('Hug it out 🤗');autoAdvance(4200,'forgive');
+}
+/* A 9:16 picture for an Instagram story: the happy character and "Forgiven". Made on this device; nothing is uploaded. */
+async function saveForgivenCard(button){
+ if(button.disabled)return;button.disabled=true;const label=button.textContent;button.textContent='Making your card…';
+ try{
+  const W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  const bg=x.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#ffd6e0');bg.addColorStop(.55,'#ffeef3');bg.addColorStop(1,'#e7d9ff');x.fillStyle=bg;x.fillRect(0,0,W,H);
+  const rand=seeded((gift.id||'')+gift.name);x.fillStyle='#ff8fab';
+  for(let i=0;i<26;i++){const hx=rand()*W,hy=rand()*H,s=12+rand()*26;x.globalAlpha=.15+rand()*.3;x.beginPath();x.moveTo(hx,hy+s*.55);x.bezierCurveTo(hx-s*1.5,hy-s*.4,hx-s*.5,hy-s*1.2,hx,hy-s*.45);x.bezierCurveTo(hx+s*.5,hy-s*1.2,hx+s*1.5,hy-s*.4,hx,hy+s*.55);x.fill();}
+  x.globalAlpha=1;
+  const img=new Image();img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(occasionArt(sorryCharacter(gift)+'-happy','card-art').replace('<svg ','<svg width="900" height="780" '));await img.decode();x.drawImage(img,90,330,900,780);
+  const sans='"Avenir Next","Segoe UI",sans-serif';x.textAlign='center';
+  x.fillStyle='#c0577f';x.font='600 40px '+sans;x.fillText('OFFICIAL NOTICE',W/2,250);
+  x.fillStyle='#d6336c';x.font='italic 700 156px Georgia, serif';x.fillText('Forgiven',W/2,1290);
+  x.font='96px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';x.fillText('💗',W/2,1430);
+  x.fillStyle='#7a3b52';x.font='600 54px '+sans;x.fillText((gift.sender?gift.name+' forgave '+gift.sender:gift.name+' said yes').slice(0,42),W/2,1550);
+  x.fillStyle='#9a5b74';x.font='46px '+sans;x.fillText('No take-backs. 🥺',W/2,1630);
+  x.fillStyle='#c0577f';x.font='600 36px '+sans;x.fillText('made on kholona.in ♡',W/2,1830);
+  const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));if(!blob)throw new Error('No image');
+  const file=new File([blob],'forgiven.png',{type:'image/png'});track('story_card_saved');
+  if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:'Forgiven 💗'});}catch(err){if(err.name!=='AbortError')downloadBlob(blob,'forgiven.png');}}
+  else downloadBlob(blob,'forgiven.png');
+  button.textContent='Saved. Post it to your story 💗';
+ }catch{button.textContent=label;toast('That card could not be made in this browser. A screenshot works too. 💗');}
+ finally{button.disabled=false;}
+}
 function showQuietFinish(){
  const s=$('#storyScene');s.className='story-scene quiet-finish-scene';
  s.innerHTML=`<span class="quiet-stamp" aria-hidden="true">${occasionOf(gift).symbol}</span>${sceneTitle('You can leave<br><em>it here.</em>','Nothing more is needed')}<p class="end-note">Thank you for sharing this little moment.</p><p class="story-footnote soft">You can close this tab whenever you’re ready. No reply has been sent by this screen.</p><button class="story-soft-skip" data-story="replay">Read it again another time</button>`;
@@ -1985,46 +2117,49 @@ function showQuietFinish(){
 function adaptOccasionScene(type,s){
  if(gift.occasion==='birthday')return;const o=occasionOf(gift);
  if(type==='opening'){
-  $('.story-title',s).innerHTML=o.opening;$('.story-description',s).textContent=gift.occasion==='apology'?'A little light, and some words said with care. Open them whenever you’re ready.':'Someone made a little space in the world for you. It starts with one small light.';
-  if(gift.occasion==='apology')$('.opening-bottom',s).textContent='No rush. This moment can wait.';
+  $('.story-title',s).innerHTML=o.opening;$('.story-description',s).textContent=gift.occasion==='apology'?'…and they have something very important (and very sorry) to tell you.':'Someone made a little space in the world for you. It starts with one small light.';
+  if(gift.occasion==='apology')$('.opening-bottom',s).textContent='Be gentle. They’re already pouting. 🥺';
  }
  if(type==='message'){
-  $('.letter-sign',s).innerHTML=gift.sender?(gift.occasion==='apology'?'With care,<br>':'From my little corner,<br>')+e(gift.sender):gift.occasion==='apology'?'Said with care. Without expectations.':'A little heart, tucked into a note.';
-  const next=$('[data-story=next]',s);if(next)next.innerHTML=(gift.occasion==='apology'?'A little more, at your pace':'There’s a little more')+' '+icon('arrow');
+  $('.letter-sign',s).innerHTML=gift.sender?(gift.occasion==='apology'?'Your very sorry,<br>':'From my little corner,<br>')+e(gift.sender):gift.occasion==='apology'?'Your very sorry person 🥺':'A little heart, tucked into a note.';
+  const next=$('[data-story=next]',s);if(next)next.innerHTML=(gift.occasion==='apology'?'There’s more. Please keep going 🥺':'There’s a little more')+' '+icon('arrow');
  }
  if(type==='memories'&&gift.occasion==='apology'){
-  $('.story-title',s).innerHTML='A little moment.<br><em>Held with care.</em>';$('.story-eyebrow',s).textContent='A thought, not an expectation';
-  $('[data-story=next]',s).innerHTML='Keep reading, gently '+icon('arrow');
+  $('.story-title',s).innerHTML='Remember<br><em>how cute we are?</em>';$('.story-eyebrow',s).textContent='Evidence for the defence';
+  $('[data-story=next]',s).innerHTML='Let’s make more of these '+icon('arrow');
+ }
+ if(type==='photos'&&gift.occasion==='apology'){
+  $('.story-title',s).innerHTML='Exhibit A:<br><em>we’re cute together.</em>';$('.story-eyebrow',s).textContent='Evidence for the defence';
+  $('[data-story=next]',s).innerHTML='The defence rests 🥺 '+icon('arrow');
  }
  if(type==='voice'){
   $('[data-story=next]',s).innerHTML='There’s a little more '+icon('arrow');
-  if(gift.occasion==='apology')$('.story-eyebrow',s).textContent='Listen when you’re ready';
+  if(gift.occasion==='apology')$('.story-eyebrow',s).textContent='Press play. I sound very sorry.';
  }
  if(type==='final'){
-  $('.story-eyebrow',s).textContent=gift.occasion==='apology'?'One final thought':'A little something, just for you';
-  if(gift.occasion==='apology')$('.story-title',s).innerHTML='One more thought.<br><em>Said gently.</em>';
-  $('[data-story=next]',s).innerHTML=(gift.occasion==='apology'?'Take a little space':'One last little moment')+' '+icon('arrow');
+  $('.story-eyebrow',s).textContent='A little something, just for you';
+  $('[data-story=next]',s).innerHTML=(gift.occasion==='apology'?'Now, one very important question':'One last little moment')+' '+icon('arrow');
  }
  if(type==='fun'){
   const eyebrow=$('.story-eyebrow',s);if(eyebrow)eyebrow.textContent=eyebrow.textContent.replace(/birthday/gi,'little');
  }
  if(type==='reply'){
-  $('.story-eyebrow',s).textContent=gift.occasion==='apology'?'Only if you’d like to respond':'A little feeling, in your own words';
-  $('.story-title',s).innerHTML=gift.occasion==='apology'?'Your feelings.<br><em>Your own words.</em>':gift.occasion==='proposal'?'Your answer.<br><em>In your own words.</em>':'A little feeling,<br><em>sent back with care.</em>';
-  $('.story-description',s).textContent=gift.occasion==='apology'?'A reply is optional. So is forgiveness. Say only what feels true.':'An emoji, a few words, or simply keeping this moment. It’s up to you.';
-  const quiet=gift.occasion==='apology',reactions=quiet?QUIET_REACTIONS:GENERIC_REACTIONS;
+  $('.story-eyebrow',s).textContent=gift.occasion==='apology'?'Say something back':'A little feeling, in your own words';
+  $('.story-title',s).innerHTML=gift.occasion==='apology'?'Okay, fine.<br><em>You’re forgiven.</em>':gift.occasion==='proposal'?'Your answer.<br><em>In your own words.</em>':'A little feeling,<br><em>sent back with care.</em>';
+  $('.story-description',s).textContent=gift.occasion==='apology'?'An emoji, a few words, or a demand for snacks. They’re waiting by their phone. 🥺':'An emoji, a few words, or simply keeping this moment. It’s up to you.';
+  const sorry=gift.occasion==='apology',reactions=sorry?SORRY_REACTIONS:GENERIC_REACTIONS;
   $('.reactions',s).setAttribute('aria-label','Choose a feeling, optionally');$('.reactions',s).innerHTML=reactions.map(([emoji,label])=>`<button class="reaction-btn" data-reaction="${emoji}" aria-label="${label}" aria-pressed="false">${emoji}</button>`).join('');
-  reaction='';$('#recipientReply').placeholder=quiet?'Your honest words… only if you’d like to reply.':gift.occasion==='proposal'?'Your answer, in your own words…':'A little feeling, in your own words… (optional)';
-  if(gift.occasion==='proposal'&&journeyReply){$('#recipientReply').value=journeyReply;}
+  reaction='';$('#recipientReply').placeholder=sorry?'You’re forgiven, but… (optional)':gift.occasion==='proposal'?'Your answer, in your own words…':'A little feeling, in your own words… (optional)';
+  if((gift.occasion==='proposal'||sorry)&&journeyReply){$('#recipientReply').value=journeyReply;}
   else{try{const old=JSON.parse(localStorage.getItem('luv4u.reply.'+gift.id)||'null');if(old){$('#recipientReply').value=cleanText(old.text,500);if(reactions.some(v=>v[0]===old.reaction))selectReaction(old.reaction,false);}}catch{}}
   $('.reply-form [data-story=prepare-reply]',s).innerHTML='Prepare my reply '+icon('heart');
-  if(quiet||gift.occasion==='proposal')$('.reply-form',s).insertAdjacentHTML('beforeend','<p class="reply-template-boundary">Choosing words doesn’t send them. Your reply stays here until you use a sharing or send button.</p><button class="story-soft-skip" data-v3="finish-reading">Finish without replying</button>');
+  if(gift.occasion==='proposal')$('.reply-form',s).insertAdjacentHTML('beforeend','<p class="reply-template-boundary">Choosing words doesn’t send them. Your reply stays here until you use a sharing or send button.</p><button class="story-soft-skip" data-v3="finish-reading">Finish without replying</button>');
   refreshMessageTemplates();
  }
  $('#storyAnnouncement').textContent=type==='opening'?'Your little '+o.short.toLowerCase()+' is waiting.':o.label+': moment '+sceneIndex+' of '+(scenes.length-1)+'.';
 }
 
-const CAMPAIGN_HEADINGS={birthday:'A birthday wish.<br>A whole little<br><em>world.</em>',proposal:'A brave question.<br>A little room for<br><em>butterflies.</em>',love:'No big occasion.<br>Just a whole lot of<br><em>love.</em>',apology:'Honest words.<br>A little room to<br><em>be heard.</em>',anniversary:'Your little story.<br>Another lovely<br><em>chapter.</em>',thanks:'A little bouquet.<br>A whole lot of<br><em>thank you.</em>',congratulations:'Their little win.<br>A very well-earned<br><em>spotlight.</em>',missyou:'A paper hug.<br>For the one you<br><em>miss.</em>'};
+const CAMPAIGN_HEADINGS={birthday:'A birthday wish.<br>A whole little<br><em>world.</em>',proposal:'A brave question.<br>A little room for<br><em>butterflies.</em>',love:'No big occasion.<br>Just a whole lot of<br><em>love.</em>',apology:'A tiny sorry.<br>A very big<br><em>pleeease.</em>',anniversary:'Your little story.<br>Another lovely<br><em>chapter.</em>',thanks:'A little bouquet.<br>A whole lot of<br><em>thank you.</em>',congratulations:'Their little win.<br>A very well-earned<br><em>spotlight.</em>',missyou:'A paper hug.<br>For the one you<br><em>miss.</em>'};
 function applyCampaign(key,keepTitle=false){
  if(!Object.hasOwn(OCCASIONS,key))return;const o=OCCASIONS[key];showView('home');
  $('#landingTitle').innerHTML=CAMPAIGN_HEADINGS[key];$('#landingLead').textContent=o.description;const b=$('#primaryCreate');b.removeAttribute('data-action');b.dataset.chooseOccasion=key;b.innerHTML=e(o.cta)+' '+icon('arrow');
