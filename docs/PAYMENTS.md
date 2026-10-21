@@ -80,6 +80,24 @@ These have no Razorpay keys, so Unlock would answer "not set up". Set `PAYMENT_S
 3. Redeploy. Make one real ₹199 payment yourself, check the dashboard, and refund it (below).
 4. Watch the first days: Vercel logs for `Razorpay error`, Razorpay Dashboard → Webhooks for failed deliveries.
 
+## Free codes (100% off, for testing and gifting)
+
+A free code typed in the "Have a code?" box on the unlock page unlocks the gift without opening Razorpay. It is not a sale: no order, no payment row, no Meta `Purchase`, no creator credit. The funnel records `free_code_used` instead of `payment_succeeded`.
+
+Run `supabase/migrations/0009_free_codes.sql` once, then make codes in the Supabase SQL editor. Use 12 to 20 random letters and digits so a code cannot be guessed, and keep codes out of git and public posts:
+
+```sql
+-- unlimited uses, for the team's own testing
+insert into free_codes (code, note) values ('YOURSECRETCODE12', 'team testing');
+-- 5 uses, for gifting
+insert into free_codes (code, note, max_uses) values ('ANOTHERCODE34567', 'gift for creators', 5);
+-- pause one, or see what each code unlocked
+update free_codes set active = false where code = 'YOURSECRETCODE12';
+select u.created_at, u.code, u.gift_id, c.note from free_code_uses u join free_codes c using (code) order by u.created_at desc;
+```
+
+A paused code, or one with no uses left, simply answers "not valid", and the buyer pays as usual. The last use of a limited code can only unlock one gift, even if two people press Unlock at the same moment.
+
 ## Refunds and duplicates
 The policy (no change-of-mind refunds; duplicate or failed charges and our-fault failures are refunded) is on the Refund page. Refunds are made **in the Razorpay dashboard** (Transactions → Payments → Refund). They go back to the buyer's original method, normally in 5–7 working days. The app does not refund by itself.
 
