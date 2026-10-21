@@ -224,6 +224,49 @@ describe('checkout with a creator code', () => {
   });
 });
 
+describe('free codes (100% off, for testing and gifting)', () => {
+  const addFree = (code: string, max_uses: number | null = null, active = true) =>
+    (fake.tables.free_codes ??= []).push({ code, note: 'test', max_uses, uses: 0, active });
+
+  it('the code box answers "free" for a free code, and nothing for a paused one', async () => {
+    addFree('KHOLONAGIFTTEST1');
+    addFree('PAUSEDFREECODE1', null, false);
+    expect(await (await checkCode(req('/api/referral?code=kholonagifttest1'))).json()).toEqual({ ok: true, code: 'KHOLONAGIFTTEST1', discountInr: 199, priceInr: 0, free: true });
+    expect((await checkCode(req('/api/referral?code=PAUSEDFREECODE1'))).status).toBe(404);
+  });
+
+  it('unlocks the gift with no order, no charge and no creator credit, and logs the use', async () => {
+    addFree('KHOLONAGIFTTEST1');
+    await makeGift(ids[0]);
+    const res = await (await startCheckout(ids[0], { ref: 'kholonagifttest1' }, 'kholona_ref=PRIYA')).json();
+    expect(res).toEqual({ ok: true, status: 'paid', free: true });
+    expect(fake.tables.gifts[0].status).toBe('paid');
+    expect(fake.tables.payments ?? []).toEqual([]);
+    expect(orders.size).toBe(0);
+    expect(fake.tables.free_codes[0].uses).toBe(1);
+    expect(fake.tables.free_code_uses.map((r) => [r.code, r.gift_id])).toEqual([['KHOLONAGIFTTEST1', ids[0]]]);
+  });
+
+  it('a code with one use unlocks one gift; the next buyer pays as usual', async () => {
+    addFree('ONEUSEFREECODE1', 1);
+    await makeGift(ids[0]);
+    await makeGift(ids[1]);
+    expect((await (await startCheckout(ids[0], { ref: 'ONEUSEFREECODE1' })).json()).status).toBe('paid');
+    const second = await (await startCheckout(ids[1], { ref: 'ONEUSEFREECODE1' })).json();
+    expect(second.status).toBe('pending');
+    expect(second.order.amount).toBe(19900);
+    expect((await checkCode(req('/api/referral?code=ONEUSEFREECODE1'))).status).toBe(404);
+  });
+
+  it('never unlocks two gifts with the last use, even at the same moment', async () => {
+    addFree('ONEUSEFREECODE1', 1);
+    const { redeemFreeCode } = await import('@/lib/free-codes');
+    const results = await Promise.all([redeemFreeCode('ONEUSEFREECODE1', ids[0]), redeemFreeCode('ONEUSEFREECODE1', ids[1])]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(fake.tables.free_codes[0].uses).toBe(1);
+  });
+});
+
 describe('admin', () => {
   it('needs the admin token', async () => {
     expect((await adminGet(req('/api/admin/referrals'))).status).toBe(401);

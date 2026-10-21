@@ -38,6 +38,8 @@ export const EVENT_NAMES = [
   'forgive_no_tried',
   'forgive_yes',
   'story_card_saved',
+  // a gift unlocked with a free code (testing and gifting; not a sale)
+  'free_code_used',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

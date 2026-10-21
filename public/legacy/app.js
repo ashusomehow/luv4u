@@ -986,10 +986,10 @@ try{const c=(new URLSearchParams(location.search).get('ref')||'').trim().toUpper
 /* What the checkout is told: the applied code, nothing if the buyer removed it, else whatever the creator link left behind. */
 const refBody=()=>({ref:payRef?payRef.code:payRefRemoved?'':savedRefCode()});
 const fullPriceText=()=>payPrice?'₹'+payPrice.toLocaleString('en-IN'):'';
-const priceText=()=>payPrice?'₹'+Math.max(1,payPrice-(payRef?.discount||0)).toLocaleString('en-IN'):'';
+const priceText=()=>payRef?.free?'Free':payPrice?'₹'+Math.max(1,payPrice-(payRef?.discount||0)).toLocaleString('en-IN'):'';
 function refBoxHtml(){
- if(payRef)return `<p class="ref-applied"><span aria-hidden="true">🎟️</span><span>Code <strong>${e(payRef.code)}</strong> applied · ₹${e(String(payRef.discount))} off</span><button type="button" id="refRemove">Remove</button></p>`;
- return `<details class="ref-entry" id="refEntry"><summary>Have a creator code?</summary><div class="ref-form"><input id="refInput" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. PRIYA" aria-label="Creator code"><button type="button" id="refApply">Apply</button></div><p class="ref-msg" id="refMsg" role="status" hidden></p></details>`;
+ if(payRef)return `<p class="ref-applied"><span aria-hidden="true">${payRef.free?'🎁':'🎟️'}</span><span>Code <strong>${e(payRef.code)}</strong> applied · ${payRef.free?'nothing to pay':'₹'+e(String(payRef.discount))+' off'}</span><button type="button" id="refRemove">Remove</button></p>`;
+ return `<details class="ref-entry" id="refEntry"><summary>Have a code?</summary><div class="ref-form"><input id="refInput" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. PRIYA" aria-label="Creator or gift code"><button type="button" id="refApply">Apply</button></div><p class="ref-msg" id="refMsg" role="status" hidden></p></details>`;
 }
 /* Puts the current price (and code) everywhere on the unlock card without rebuilding the preview. */
 function refreshPayPrice(){
@@ -1004,13 +1004,13 @@ function refreshPayPrice(){
   const say=t=>{msg.textContent=t;msg.hidden=!t;};
   if(!REF_CODE.test(code)){say('Codes are 3 to 20 letters or numbers.');return;}
   btn.disabled=true;say('Checking…');
-  try{payRef=await checkRef(code);payRefRemoved=false;rememberRef(payRef.code);track('referral_applied');refreshPayPrice();}
+  try{payRef=await checkRef(code);payRefRemoved=false;if(!payRef.free){rememberRef(payRef.code);track('referral_applied');}refreshPayPrice();}
   catch(ex){say(ex&&ex.status===404?'That code is not valid. Check the spelling with the creator.':'We could not check the code just now. Try again.');btn.disabled=false;}
  };
  $('#refApply')?.addEventListener('click',apply);
  $('#refInput')?.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();apply();}});
 }
-async function checkRef(code){const r=await api('/api/referral?code='+encodeURIComponent(code),{timeout:8000});return {code:String(r.code),discount:Number(r.discountInr)||0};}
+async function checkRef(code){const r=await api('/api/referral?code='+encodeURIComponent(code),{timeout:8000});return {code:String(r.code),discount:Number(r.discountInr)||0,free:r.free===true};}
 /* A code from a creator's link is applied by itself; a code the server no longer knows is forgotten. */
 function autoApplyRef(){
  if(payRef||payRefRemoved)return;const code=savedRefCode();if(!code)return;
@@ -1211,7 +1211,8 @@ async function startPayment(){
   }
   if(r.status!=='paid')throw new Error('We could not confirm the payment. Nothing was unlocked.');
   if(r.meta&&window.kholonaMeta)window.kholonaMeta.fire(r.meta);
-  payPendingRef='';track('payment_succeeded');unlockDone(name);
+  /* A free code is not a sale: it is counted on its own and never reaches Meta as a purchase. */
+  payPendingRef='';track(r.free?'free_code_used':'payment_succeeded');unlockDone(name);
  }catch(ex){
   status('');idle();
   err.textContent=(ex&&ex.message)||'We could not take the payment. Your gift is still saved.';err.hidden=false;
