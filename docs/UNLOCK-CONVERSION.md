@@ -47,3 +47,23 @@ the gift scenes and phone mockup were raised: 8 and 9 to 12, 10 and 11 to 13, 12
 
 Send both Meta ads to `https://kholona.in/for/birthday-wish?...`: one tap from there reaches the creator. The home
 page adds a step.
+
+## Speed: from the ad to the unlock page
+
+Measured on a simulated mid-range Android (CPU slowed 4x, 4G: 1.6 Mbps down, 0.75 Mbps up), from opening `/for/sorry-gift` to seeing the unlock page:
+
+| | Before | After |
+|---|---|---|
+| Name only | ~19 s | 5.8 s |
+| With 2 phone photos | ~49 s | 8.3 s |
+| Pressing Create to the unlock page | 11.5 s | 1.1 to 1.4 s |
+| Adding 2 photos (12 MP) | ~30 s | 1.2 s |
+
+What changed:
+- The link-preview image is a ~40 KB JPEG instead of a ~900 KB PNG, drawn once per gift, and uploaded after the gift is created, in the background. The media endpoint attaches it to the gift (only if nobody saved the gift in between).
+- Photos start uploading the moment they are added, under the id the gift will be created with; Create reuses those uploads and sends anything left in parallel. Unused uploads are removed by the daily cleanup.
+- Photos are decoded straight at 960 px (`createImageBitmap`) and encoded once, asynchronously, instead of re-encoding a full-size image up to five times on the main thread.
+- Opening the editor no longer waits for the previous draft to be saved.
+- A tap on the main button before the gift engine has loaded is no longer lost: a tiny inline script turns it into `#make=<occasion>`, which the engine opens as soon as it starts.
+
+Still slow: opening the editor (~2.5 s on that phone), mostly style and layout of a large page. Worth a look if `creator_opened` to `publish_clicked` shows a drop.

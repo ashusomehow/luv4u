@@ -223,6 +223,19 @@ describe('media uploads', () => {
     expect((await mediaPost(req('/x', 'POST', { dataUri: PNG, kind: 'audio' }, KEY), ctx())).status).toBe(415);
   });
 
+  it('attaches a JPEG cover uploaded after the gift was created, unless the preview is discreet', async () => {
+    const JPEG = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==';
+    await create();
+    const res = await (await mediaPost(req('/x', 'POST', { dataUri: JPEG, kind: 'cover' }, KEY), ctx())).json();
+    expect(res.url).toMatch(/\/cover\.jpg$/);
+    expect((fake.tables.gifts[0].gift as { coverUrl?: string }).coverUrl).toBe(res.url);
+
+    fake.tables = {};
+    await create({ gift: gift({ sharePreview: false }) });
+    await mediaPost(req('/x', 'POST', { dataUri: JPEG, kind: 'cover' }, KEY), ctx());
+    expect((fake.tables.gifts[0].gift as { coverUrl?: string }).coverUrl).toBe('');
+  });
+
   it('caps the number of files per gift', async () => {
     for (let i = 0; i < 12; i++) fake.files.set(`gifts/${ID}/f${i}.png`, { bytes: Buffer.from('x'), contentType: 'image/png', createdAt: new Date().toISOString() });
     expect((await mediaPost(req('/x', 'POST', { dataUri: PNG, kind: 'image' }, KEY), ctx())).status).toBe(409);

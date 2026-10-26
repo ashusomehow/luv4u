@@ -208,7 +208,7 @@ try {
   assert.match(link, /\/g\/[a-f0-9]{24}$/);
   let s = await state();
   assert.equal(s.gifts, 1);
-  assert.ok(s.files.some(f => f[0].endsWith('cover.png')) && s.files.some(f => f[1] === 'image/jpeg'), 'photo + cover stored');
+  assert.ok(s.files.some(f => f[0].endsWith('cover.jpg') && f[2] < 150000) && s.files.some(f => !f[0].includes('cover') && f[1] === 'image/jpeg'), 'photo + a small JPEG cover stored (the cover goes up in the background after Create)');
 
   // 3. Recipient opens it in a fresh browser
   const rctx = await browser.newContext({ viewport: { width: 390, height: 800 }, userAgent: NORMAL_UA });

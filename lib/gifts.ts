@@ -229,7 +229,7 @@ export async function storeDataUri(id: string, dataUri: string, kind: MediaKind)
   const type = match[1].toLowerCase();
   const table = kind === 'audio' ? AUDIO_TYPES : IMAGE_TYPES;
   const extension = table[type];
-  if (!extension || (kind === 'cover' && type !== 'image/png')) {
+  if (!extension) {
     throw new ApiError(415, 'That media type is not supported.');
   }
 
@@ -240,7 +240,7 @@ export async function storeDataUri(id: string, dataUri: string, kind: MediaKind)
   }
 
   const name =
-    kind === 'cover' ? 'cover.png' : `${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}.${extension}`;
+    kind === 'cover' ? `cover.${extension}` : `${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}.${extension}`;
   const existing = await listFolder(id);
   if (!existing.includes(name) && existing.length >= MAX_OBJECTS_PER_GIFT) {
     throw new ApiError(409, 'This gift already has the maximum number of media files.');
@@ -270,7 +270,7 @@ export async function offloadEmbeddedMedia(id: string, gift: Gift): Promise<Gift
   return next;
 }
 
-/** Resolves the share-cover URL from either an already-uploaded URL or a PNG data URI. */
+/** Resolves the share-cover URL from either an already-uploaded URL or an image data URI. */
 export async function resolveCover(
   id: string,
   body: { cover?: unknown; coverUrl?: unknown },
