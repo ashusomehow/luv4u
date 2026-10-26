@@ -17,11 +17,16 @@ import type { OccasionKey } from '@/lib/occasions';
  * For /for/<slug>, pass `occasion` so the headline, lead and button are that occasion's own in
  * the server HTML, and pass the page's SEO content as `children` (rendered below the app).
  */
+const EARLY_TAP = `document.addEventListener('click',function(e){var f=document.getElementById('giftForm');if(f&&f.dataset.v3Installed==='true')return;var b=e.target&&e.target.closest&&e.target.closest('button[data-choose-occasion]');if(!b)return;var k=b.getAttribute('data-choose-occasion');if(!/^[a-z]+$/.test(k))return;e.preventDefault();b.classList.add('is-busy');location.hash='make='+k;},true);`;
+
 export function LegacyApp({ occasion, children }: { occasion?: OccasionKey; children?: ReactNode }) {
   const pixelId = metaPixelId();
   const html = occasion ? bodyForOccasion(occasion) : LEGACY_BODY_HTML;
   return (
     <>
+      {/* On a slow phone the buttons show a second or more before the gift engine is ready. A tap in that gap is not lost:
+          it sets #make=<occasion>, which the engine opens as soon as it starts. */}
+      <script dangerouslySetInnerHTML={{ __html: EARLY_TAP }} />
       <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: html }} />
       {children}
       <script id="giftPayload" type="application/json" dangerouslySetInnerHTML={{ __html: 'null' }} />

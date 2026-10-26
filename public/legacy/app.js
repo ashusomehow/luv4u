@@ -254,9 +254,26 @@ function renderMemoryListV1(){
  $('#memoryList').innerHTML=draft.memories.map((m,i)=>`<div class="memory-edit"><label class="field-label" for="memoryWhen${i}">Little memory ${i+1}</label><button type="button" class="remove-btn" data-remove-memory="${i}" aria-label="Remove memory ${i+1}">${icon('x')}</button><input class="text-input" id="memoryWhen${i}" data-memory-when="${i}" maxlength="40" placeholder="When was it? (optional)" value="${e(m.when)}" aria-label="When memory ${i+1} happened"><textarea class="text-area" id="memoryText${i}" data-memory-text="${i}" maxlength="200" aria-label="Memory ${i+1}" placeholder="That time we got completely lost and somehow found the best little café…">${e(m.text)}</textarea></div>`).join('');updatePreview();
 }
 function readDataURL(file){return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=()=>reject(new Error('This file could not be read.'));fr.readAsDataURL(file);});}
+/* Shrinks a photo to 960 px on its long side. The browser decodes it straight at that size (createImageBitmap) and encodes it once,
+   asynchronously, so a 12 MP phone photo takes a moment instead of freezing the page. */
+const blobToDataURL=blob=>new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=()=>reject(new Error('This file could not be read.'));fr.readAsDataURL(blob);});
+const canvasJpeg=(canvas,quality)=>new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+async function fastPhoto(file){
+ if(typeof createImageBitmap!=='function'||!HTMLCanvasElement.prototype.toBlob)return null;
+ let bitmap;try{bitmap=await createImageBitmap(file,{resizeWidth:960,resizeQuality:'high'});}catch{return null;}
+ try{
+  const scale=Math.min(1,960/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff8ef';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+  // the same budget as before (a data URL under ~145 KB), reached in one to three encodes
+  for(const q of [.72,.55,.4,.28]){const blob=await canvasJpeg(canvas,q);if(blob&&blob.size<=105000)return blobToDataURL(blob);}
+  const last=await canvasJpeg(canvas,.24);if(last&&last.size<=290000)return blobToDataURL(last);
+  throw new Error('That photo is too detailed for a compact link. Try an image URL instead.');
+ }finally{bitmap.close?.();}
+}
 async function compressPhoto(file){
  if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Choose a JPG, PNG or WebP photo.');
  if(file.size>15*1024*1024)throw new Error('That photo is a little big. Please choose one under 15 MB.');
+ const fast=await fastPhoto(file);if(fast)return fast;
  const url=URL.createObjectURL(file);
  try{
  const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('That photo could not be opened. Try a JPG or PNG.'));img.src=url;});
@@ -267,7 +284,7 @@ async function compressPhoto(file){
 async function uploadPhotos(files){
  if(photoBusy)return;if(draft.photos.length>=4){toast('Four little photos is the perfect little album. Remove one to add another.');return;}
  photoBusy=true;const list=[...files].slice(0,4-draft.photos.length);let added=0;
- try{for(const file of list){try{const src=await compressPhoto(file);draft.photos.push({src,caption:''});added++;renderPhotoList();}catch(err){toast(err.message);}}}finally{photoBusy=false;$('#photoUpload').value='';saveDraft();if(added)toast(`${added===1?'A lovely photo':'Your lovely photos'}, tucked inside. You can frame and reorder them below.`);}
+ try{for(const file of list){try{const src=await compressPhoto(file);draft.photos.push({src,caption:''});added++;renderPhotoList();preupload(src,'image');}catch(err){toast(err.message);}}}finally{photoBusy=false;$('#photoUpload').value='';saveDraft();if(added)toast(`${added===1?'A lovely photo':'Your lovely photos'}, tucked inside. You can frame and reorder them below.`);}
 }
 async function uploadAudio(file,kind){
  if(!file)return;if(!file.type.startsWith('audio/')){toast('Choose an audio file, like MP3, M4A or OGG.');return;}if(file.size>3*1024*1024){toast('That audio is a little big. Use a file under 3 MB, or add a public audio link.');return;}
@@ -556,14 +573,15 @@ async function openCreator(key='birthday'){
  try{
   key=Object.hasOwn(OCCASIONS,key)?key:'birthday';stopPreviewAudio();
   const old=JSON.parse(JSON.stringify(draft));clearTimeout(saveTimer);saveGeneration++;occasionDrafts.set(occasionKey(old),old);
-  await store('draft:'+occasionKey(old),old).catch(()=>{try{localStorage.setItem('luv4u.draft.'+occasionKey(old),JSON.stringify(old));}catch{}});
+  // Saved in the background: the editor does not wait for the browser's storage.
+  store('draft:'+occasionKey(old),old).catch(()=>{try{localStorage.setItem('luv4u.draft.'+occasionKey(old),JSON.stringify(old));}catch{}});
   if(key!==occasionKey(draft)){
    let saved=occasionDrafts.get(key);if(!saved)try{saved=await store('draft:'+key);}catch{}
    if(!saved)try{saved=JSON.parse(localStorage.getItem('luv4u.draft.'+key)||'null');}catch{}
    draft=saved?sanitizeGift(saved,false):{...emptyDraft(),occasion:key,vibe:OCCASIONS[key].vibe};
   }
   clearGiftHash();try{history.replaceState(null,'',location.pathname+location.search+'#make='+key);}catch{}
-  editing=null;publishAttempt=null;setOpensAt('');await removeStored('pending-create').catch(()=>{});
+  editing=null;publishAttempt=null;setOpensAt('');removeStored('pending-create').catch(()=>{});
   wizardStep=0;populateForm();showView('creator');setStep(0,true);saveDraft();
  }finally{occasionSwitchBusy=false;}
 }
@@ -894,38 +912,62 @@ function makeCover(g){
   x.save();x.translate(600,534);x.rotate(-.04);x.fillStyle='#fde2cd';x.strokeStyle='#e09e7e';x.lineWidth=1.3;x.beginPath();x.roundRect(-65,-27,130,64,4);x.fill();x.stroke();x.beginPath();x.moveTo(-64,-25);x.lineTo(0,16);x.lineTo(64,-25);x.stroke();x.fillStyle=g.occasion==='apology'?'#ff6f91':'#de6e94';x.beginPath();x.arc(0,15,11,0,Math.PI*2);x.fill();x.restore();
   x.font='38px Georgia';x.fillStyle='#dfa577';x.fillText(occasionOf(g).symbol,165,340);x.fillText(occasionOf(g).symbol,1035,290);
  }
- x.font='italic 28px Georgia';x.fillStyle='#be466f';x.textAlign='left';x.fillText('luv4u ♡',53,581);x.textAlign='right';x.font='12px Arial';x.fillStyle='#bb7c66';x.fillText('A SMALL LINK. BIG FEELINGS.',1142,578);
- return c.toDataURL('image/png');
+ x.font='italic 28px Georgia';x.fillStyle='#be466f';x.textAlign='left';x.fillText('kholona ♡',53,581);x.textAlign='right';x.font='12px Arial';x.fillStyle='#bb7c66';x.fillText('A SMALL LINK. BIG FEELINGS.',1142,578);
+ return c.toDataURL('image/jpeg',.84);
 }
+/* One cover per gift version: drawing it takes a noticeable moment on a phone, so it is not redrawn for the same gift. */
+let coverMemo={k:'',v:''};
+function coverFor(g){const k=JSON.stringify([g.id,g.name,g.vibe,g.occasion,g.proposalKind,g.character]);if(coverMemo.k!==k)coverMemo={k,v:makeCover(g)};return coverMemo.v;}
 /* Hosted mode: upload embedded photos/audio/cover to Storage first, so the publish request stays tiny
    (serverless platforms cap request bodies at a few MB). Already-hosted URLs pass through untouched. */
-async function offloadMedia(id,key,g,cover){
- const up=(dataUri,kind)=>api('/api/gifts/'+id+'/media',{method:'POST',key,body:{dataUri,kind}}).then(r=>r.url);
- const out=JSON.parse(JSON.stringify(g));
- for(const p of out.photos)if(p.src.startsWith('data:'))p.src=await up(p.src,'image');
- if(out.voice.startsWith('data:'))out.voice=await up(out.voice,'audio');
- if(out.musicSrc.startsWith('data:'))out.musicSrc=await up(out.musicSrc,'audio');
- return {gift:out,coverUrl:cover?await up(cover,'cover'):''};
+/* Media goes up as soon as it is added (photos) and all at once at Create, so pressing Create waits for almost nothing.
+   Uploads are keyed by the gift id they were made for and the file itself, so a retry or a second Create reuses them. */
+const mediaUploads=new Map();
+function uploadMedia(id,key,dataUri,kind){
+ const k=id+'|'+kind+'|'+dataUri.length+'|'+dataUri.slice(-64);
+ if(!mediaUploads.has(k))mediaUploads.set(k,api('/api/gifts/'+id+'/media',{method:'POST',key,body:{dataUri,kind}}).then(r=>r.url).catch(err=>{mediaUploads.delete(k);throw err;}));
+ return mediaUploads.get(k);
+}
+/* The id and key a new gift will be created with, made early so its photos can start uploading before Create is pressed. */
+function pendingOwner(){
+ if(editing?.mode==='hosted')return editing;
+ if(!backendReady||!paymentsRequired&&delivery!=='hosted')return null;
+ if(!publishAttempt)publishAttempt={id:hexToken(12),key:hexToken(32)};
+ return publishAttempt;
+}
+function preupload(dataUri,kind){const owner=pendingOwner();if(owner&&dataUri.startsWith('data:'))uploadMedia(owner.id,owner.key,dataUri,kind).catch(()=>{});}
+async function offloadMedia(id,key,g){
+ const out=JSON.parse(JSON.stringify(g)),jobs=[];
+ out.photos.forEach(p=>{if(p.src.startsWith('data:'))jobs.push(uploadMedia(id,key,p.src,'image').then(url=>{p.src=url;}));});
+ if(out.voice.startsWith('data:'))jobs.push(uploadMedia(id,key,out.voice,'audio').then(url=>{out.voice=url;}));
+ if(out.musicSrc.startsWith('data:'))jobs.push(uploadMedia(id,key,out.musicSrc,'audio').then(url=>{out.musicSrc=url;}));
+ await Promise.all(jobs);return {gift:out};
+}
+/* The link-preview image is only needed once the link is shared, so it is drawn and uploaded after the gift exists, in the
+   background. The server attaches it to the gift (app/api/gifts/[id]/media). */
+function uploadCoverLater(id,key,g){
+ if(g.sharePreview===false)return;
+ setTimeout(()=>{try{const cover=coverFor(g);if(cover)uploadMedia(id,key,cover,'cover').catch(()=>{});}catch{}},400);
 }
 async function publishGift(){
  if(publishing||!validateForm())return;publishing=true;stopPreviewAudio();const btn=$('#createGiftBtn');btn.disabled=true;btn.textContent='Tying the little ribbon…';
  try{
- const g=collectGift();g.version=3;const mode=editing?.mode==='hosted'?'hosted':paymentsRequired?'hosted':delivery;coverData=makeCover(g);
+ const g=collectGift();g.version=3;const mode=editing?.mode==='hosted'?'hosted':paymentsRequired?'hosted':delivery;btn.textContent='Making '+g.name+'’s gift…';
  if(mode==='hosted'){
  if(!backendReady)throw new Error(paymentsRequired?'Gifts are created online. Check your connection and try again.':'The gift server is not connected. Choose standalone mode to make a gift file.');if(!backendOccasions.includes(g.occasion))throw new Error('This gift server needs the v3 update for '+occasionOf(g).label.toLowerCase()+'. Choose standalone to export this gift, or update the server.');
  if(editing?.mode==='hosted'){
- const media=await offloadMedia(editing.id,editing.key,g,g.sharePreview?coverData:'');
- const data=await api('/api/gifts/'+editing.id,{method:'PATCH',key:editing.key,body:{gift:media.gift,coverUrl:media.coverUrl,revision:editing.revision,...($('#expiryDays').dataset.changed==='true'?{expiresDays:+$('#expiryDays').value}:{}),...opensAtBody(false)}});
+ const media=await offloadMedia(editing.id,editing.key,g);
+ const data=await api('/api/gifts/'+editing.id,{method:'PATCH',key:editing.key,body:{gift:media.gift,revision:editing.revision,...($('#expiryDays').dataset.changed==='true'?{expiresDays:+$('#expiryDays').value}:{}),...opensAtBody(false)}});
  publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';publishedExpiresAt=data.expiresAt||'';setOpensAt(data.opensAt);editing.revision=data.revision;
- rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});
+ rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});uploadCoverLater(editing.id,editing.key,publishedGift);
  }else{
  // Keep these values after a network failure, so retrying does not duplicate gifts.
  if(!publishAttempt)publishAttempt={id:hexToken(12),key:hexToken(32)};
  await store('pending-create',{...publishAttempt,gift:g}).catch(()=>{});
- const media=await offloadMedia(publishAttempt.id,publishAttempt.key,g,g.sharePreview?coverData:'');
- const data=await api('/api/gifts',{method:'POST',body:{id:publishAttempt.id,editKey:publishAttempt.key,gift:media.gift,coverUrl:media.coverUrl,expiresDays:+$('#expiryDays').value,...opensAtBody(true)}});
+ const media=await offloadMedia(publishAttempt.id,publishAttempt.key,g);
+ const data=await api('/api/gifts',{method:'POST',body:{id:publishAttempt.id,editKey:publishAttempt.key,gift:media.gift,expiresDays:+$('#expiryDays').value,...opensAtBody(true)}});
  publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';publishedExpiresAt=data.expiresAt||'';setOpensAt(data.opensAt);editing={id:publishedGift.id,key:publishAttempt.key,revision:data.revision,mode:'hosted'};
- rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});publishAttempt=null;await removeStored('pending-create').catch(()=>{});
+ rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});uploadCoverLater(editing.id,editing.key,publishedGift);publishAttempt=null;await removeStored('pending-create').catch(()=>{});
  }
  }else{
  publishedStatus='paid';publishedGift={...g,id:hexToken(12),server:false};const encoded=await encodeGift(publishedGift);const candidate=buildGiftURL(encoded);publishedURL=candidate.length<=8000?candidate:'';
@@ -945,7 +987,7 @@ function showShare(){
  $('.share-privacy').innerHTML=isHosted?'Your gift is stored on this gift server. Anyone with its link can open it.<br>Keep the private recovery link to edit, see replies, or remove it.':tooLarge?'Your gift is wrapped in the HTML file. Share it with someone you trust.<br>No server inbox, opening counts, or link expiry.':'Your gift travels inside its link. Anyone with the link can open it.<br>No server inbox, opening counts, or link expiry.';
  if(isHosted&&!publicHosting())$('#hostingWarning').innerHTML='<strong>Your gift is still at home.</strong> This gift is on your local server, so its URL will not open on another device. Deploy the complete project on a public HTTPS domain and create your gift there. Or use <strong>Download gift HTML</strong> and send the file itself.';
  $('#nativeShareGift').hidden=!publishedURL;$('#nativeShareGift').disabled=!publicHosting();
- coverData=makeCover(publishedGift);$('#shareCover').src=coverData;$('#shareCover').hidden=!coverData;
+ coverData=coverFor(publishedGift);$('#shareCover').src=coverData;$('#shareCover').hidden=!coverData;
  const entry=libraryCache.find(v=>v.id===publishedGift.id);
  $('#ownerNote').innerHTML=isHosted&&entry?`<strong>Save your private edit link.</strong><br>Your recipient link opens the surprise. Your private edit link lets you change it, see replies, or remove it. Keep it to yourself.<br><button data-v2="copy-recovery" data-id="${entry.id}">Copy my private edit link</button>`:'<strong>Beautifully portable.</strong><br>Your gift file opens without this website. Uploaded photos and audio go with it. External media links still need the internet.<br><button data-v2="library">Back to my little gifts</button>';
  applyShareLock();renderScheduledNote();
@@ -1284,7 +1326,7 @@ async function downloadGiftHTML(){
  }catch(err){toast(err.message||'The gift file could not be wrapped.');}finally{if(b){b.disabled=false;b.innerHTML=icon('download')+' Download gift HTML';}}
 }
 async function nativeShare(){if(!publishedURL||!publicHosting())return;const data={title:occasionOf(publishedGift).label+(publishedGift.sharePreview===false?' for you':' for '+publishedGift.name),text:'Psst… I made you a little Kholona. Kholo na, when you have a quiet moment. ♡',url:publishedURL};try{if(navigator.share)await navigator.share(data);else await copyText(publishedURL);}catch(err){if(err.name!=='AbortError')toast('Sharing is unavailable here. Copy the little link instead.');}}
-async function shareCover(){if(!coverData)return;const blob=await (await fetch(coverData)).blob();const file=new File([blob],'a-little-gift.png',{type:'image/png'});try{if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:occasionOf(publishedGift).label,text:publishedURL||'A little world, made just for you.'});else{downloadBlob(blob,'a-little-gift.png');toast('Artwork saved. Attach it with the gift link in your message.');}}catch(err){if(err.name!=='AbortError')toast('This browser cannot share artwork directly. Use Save the little artwork.');}}
+async function shareCover(){if(!coverData)return;const blob=await (await fetch(coverData)).blob();const file=new File([blob],'a-little-gift.jpg',{type:blob.type||'image/jpeg'});try{if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:occasionOf(publishedGift).label,text:publishedURL||'A little world, made just for you.'});else{downloadBlob(blob,'a-little-gift.jpg');toast('Artwork saved. Attach it with the gift link in your message.');}}catch(err){if(err.name!=='AbortError')toast('This browser cannot share artwork directly. Use Save the little artwork.');}}
 async function showLibrary(){clearGiftHash();showView('library');$('#savedGiftList').innerHTML=libraryCache.length?libraryCache.map(entry=>`<article class="saved-gift"><span aria-hidden="true">${THEMES[entry.vibe]?.symbol||'♡'}</span><div><h2>For ${e(entry.name||'your person')}.</h2><p>${e(occasionOf(entry).short)} · ${e(entry.vibe||'A little')} · ${entry.mode==='hosted'?'A live little world':'A standalone keepsake'}${entry.at?' · '+e(new Date(entry.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</p><div class="saved-actions"><button data-v2="edit-saved" data-id="${e(entry.id)}">Open & edit</button><button data-v2="copy-saved" data-id="${e(entry.id)}">${entry.url?'Copy gift link':'Open gift file options'}</button>${entry.mode==='hosted'?`<button data-v2="stats" data-id="${e(entry.id)}">Little replies</button><button data-v2="copy-recovery" data-id="${e(entry.id)}">Private recovery link</button>`:''}<button class="danger" data-v2="delete-saved" data-id="${e(entry.id)}">${entry.mode==='hosted'?'Remove gift':'Forget here'}</button></div><div class="saved-stats" id="stats-${e(entry.id)}" hidden></div></div></article>`).join(''):'<p class="empty-shelf">No ribbons tied just yet.<br>Your first little gift belongs right here.</p>';}
 async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);publishedStatus=result.status||'paid';publishedExpiresAt=result.expiresAt||'';setOpensAt(result.opensAt);editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt,waiting:publishedStatus==='preview'});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
 async function showStats(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const root=$('#stats-'+id);root.hidden=false;root.textContent='Opening the little postbox…';try{const stats=await api('/api/gifts/'+id+'/stats',{key:entry.key});const counts=stats.reactions.map(r=>`${e(r.reaction)} ${r.count}`).join(' · ')||'No emoji replies yet';root.innerHTML=`${stats.status==='preview'?`<p><strong>Waiting to be unlocked.</strong> Only you can see this gift until then. <button type="button" data-v3="unlock-saved" data-id="${e(id)}">Unlock & get link</button></p>`:''}<p>${stats.opens} ${stats.opens===1?'opening':'openings'} · ${counts}</p><p class="privacy-small">Approximate openings, deduplicated per browser session. Replies are anonymous; we don’t verify who sends them.</p>${stats.replies.length?stats.replies.map(r=>`<blockquote>${e(r.reaction)} ${e(r.message||'A little feeling, sent back with love.')}</blockquote>`).join(''):'<p>Nothing here yet. Give them a little room to smile.</p>'}${stats.expiresAt?'<p>Expires '+e(new Date(stats.expiresAt).toLocaleString())+'</p>':''}`;}catch(err){root.textContent=err.message;}}
@@ -1319,7 +1361,7 @@ function bindV2(){
  case'reveal-quiz':{const right=$('[data-right=true]');if(right){$('#quizHint').textContent='A tiny hint: '+gift.quizAnswer+'. Give it a tap. ♡';}break;}
  case'tilt':toggleTilt();break;case'native-share':nativeShare();break;case'share-cover':shareCover();break;
  case'download-qr':downloadQr();break;
- case'download-cover':if(coverData){const blob=await (await fetch(coverData)).blob();downloadBlob(blob,'a-little-gift.png');}break;
+ case'download-cover':if(coverData){const blob=await (await fetch(coverData)).blob();downloadBlob(blob,'a-little-gift.jpg');}break;
  case'edit-saved':editSaved(id);break;case'stats':showStats(id);break;case'delete-saved':deleteSaved(id);break;case'send-reply':sendDirectReply(b);break;
  case'copy-recovery':{const entry=libraryCache.find(v=>v.id===id);if(entry?.key)copyText(recoveryURL(entry),'Your private edit link is copied. Keep this one just for you.');break;}
  case'save-recovery':{const entry=libraryCache.find(v=>v.id===id);if(entry?.key)downloadBlob(new Blob(['Kholona — PRIVATE gift recovery\n\nFor: '+entry.name+'\n\nPRIVATE edit/recovery link (do not share):\n'+recoveryURL(entry)+'\n\nRecipient link (safe to share):\n'+entry.url+'\n\nAnyone with the private link can edit or delete this gift and read replies.\n'],{type:'text/plain;charset=utf-8'}),'kholona-private-recovery.txt');break;}
