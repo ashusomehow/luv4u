@@ -349,7 +349,7 @@ try {
   // 5d. Every gift, played the way a delighted recipient would: one gesture per moment, and the budget of touches never grows.
   //     (Counts include the envelope and every optional "continue" shortcut, so they are an upper bound: most scenes carry on by themselves.)
   {
-    const BUDGET = { birthday: 6, proposal: 7, love: 4, apology: 9, anniversary: 6, thanks: 4, congratulations: 4, missyou: 4 };
+    const BUDGET = { birthday: 5, proposal: 7, love: 4, apology: 9, anniversary: 6, thanks: 4, congratulations: 4, missyou: 4 };
     const play = async key => {
       const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
       const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'journey-' + key);
@@ -362,9 +362,10 @@ try {
         '[data-story="blow"]:not(.extinguished):not([disabled])', '[data-story="open-gift"]:not(.opened):not([disabled])', '[data-v3="untie-ribbon"]:not(.opened):not([disabled])', '[data-v3="send-hug"]:not([disabled])',
         '[data-v3="reveal-question"]:not([disabled])', '#storyBook', '#storyScene .story-btn[data-story="next"]', '#storyScene .story-soft-skip[data-story="next"]'];
       const sawLit = () => pg.evaluate(() => document.querySelector('#experience').classList.contains('lit'));
-      const deadline = Date.now() + 60000;
+      const deadline = Date.now() + 60000, seen = new Set();
       while (Date.now() < deadline) {
         const cls = (await pg.locator('#storyScene').getAttribute('class')) || '';
+        seen.add(cls.replace('story-scene', '').trim());
         if (/celebration-scene/.test(cls)) break;
         let hit = false;
         for (const sel of picks) { const l = pg.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click({ timeout: 3000 }).catch(() => {}); touches++; hit = true; break; } }
@@ -373,18 +374,20 @@ try {
       assert.match((await pg.locator('#storyScene').getAttribute('class')) || '', /celebration-scene/, `${key}: reached the ending`);
       assert.equal(await sawLit(), true, `${key}: the room lit up by itself after the envelope`);
       assert.ok(touches <= BUDGET[key], `${key}: ${touches} touches, budget ${BUDGET[key]}`);
-      return { pg, ctx, touches };
+      return { pg, ctx, touches, seen };
     };
     const first = await Promise.all(['birthday', 'love', 'apology', 'proposal'].map(play));
     const second = await Promise.all(['anniversary', 'thanks', 'congratulations', 'missyou'].map(play));
     const all = Object.fromEntries([...first, ...second].map((r, i) => [['birthday', 'love', 'apology', 'proposal', 'anniversary', 'thanks', 'congratulations', 'missyou'][i], r]));
     // the ending: one touch to answer, replay without a tap
     const b = all.birthday.pg;
+    for (const scene of ['hbd-scene', 'cake-scene', 'wrapped-scene', 'message-scene']) assert.ok([...all.birthday.seen].some(c => c.includes(scene)), `birthday: played ${scene}`);
+    assert.equal(await b.locator('[data-v3="birthday-card"]').count(), 1, 'the birthday ending offers a card for their story');
     assert.equal(await b.locator('[data-v2="quick-react"]').count(), 4, 'one touch answers: four feelings on the ending itself');
     await b.locator('[data-v2="quick-react"]').nth(2).click();
     await b.waitForFunction(() => /straight to|Sent to/.test(document.querySelector('#finaleSent')?.textContent || ''));
     await b.locator('[data-story="replay"]').click();
-    await b.waitForSelector('#storyScene.cake-scene', { timeout: 8000 });   // lit again with no tap at all
+    await b.waitForSelector('#storyScene.hbd-scene', { timeout: 8000 });   // lit again with no tap at all, straight to the big moment (no countdown)
     // the sorry gift: the No button runs from a finger, a click or a key and never answers; Yes forgives and the ending celebrates
     const a = all.apology.pg; await a.goto('about:blank'); await a.goto(`${APP}/#demo=apology`, { waitUntil: 'load' }); await a.waitForSelector('#sealBtn');
     await a.evaluate(() => document.querySelector('#sealSkip').click());

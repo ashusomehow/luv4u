@@ -156,6 +156,9 @@ const TEXT_LIMITS: Record<string, number> = {
   message: 1200,
   finalMessage: 500,
   funMessage: 140,
+  birthDate: 10,
+  topTrait: 40,
+  mostPlayed: 40,
 };
 
 export function normalizeGift(input: unknown, id: string): Gift {

@@ -1,0 +1,71 @@
+/* The birthday, made for Instagram: a midnight countdown, a big neon "Happy Birthday" under fireworks, a sealed wish,
+   photos that drop in, their Birthday Wrapped in bold full-screen cards, and a card for their story. */
+.experience[data-occasion=birthday] .story-title{font-weight:500;letter-spacing:-.03em}
+.experience[data-occasion=birthday] .story-title em{color:#e0457b;font-weight:500}
+.experience[data-occasion=birthday] .opening-scene .story-title em{color:#ff8fb1}
+
+/* 3 · 2 · 1, in the dark */
+.bday-countdown{position:absolute;inset:0;z-index:60;display:grid;place-items:center;align-content:center;gap:6px;background:radial-gradient(circle at 50% 45%,#2b1030 0,#120a12 72%);transition:opacity .6s ease;pointer-events:none}
+.bday-countdown.done{opacity:0}
+.bday-countdown span{font-family:var(--serif);font-size:min(50vw,280px);line-height:1;color:#fff;text-shadow:0 0 24px #ff5c8a,0 0 70px #ff5c8a99;animation:bday-count .82s cubic-bezier(.2,.9,.3,1.3) both}
+.bday-countdown small{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:#ffc2d6}
+@keyframes bday-count{0%{transform:scale(2.3);opacity:0}22%{transform:scale(1);opacity:1}78%{opacity:1}100%{transform:scale(.7);opacity:0}}
+
+/* the night sky and fireworks sit under the words, over the room */
+.party-sky{position:absolute;inset:0;z-index:2;background:radial-gradient(circle at 50% 36%,#3b1442 0,#1a0b1c 56%,#0d070e 100%);opacity:0;transition:opacity .9s ease;pointer-events:none}
+.party-sky.on{opacity:1}
+.fireworks-canvas{position:absolute;inset:0;z-index:2;width:100%;height:100%;pointer-events:none}
+
+/* HAPPY BIRTHDAY, and their name in neon */
+.hbd{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 0}
+.hbd-kicker{font-size:13px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;color:#ffc2d6;animation:hbd-fade .6s ease both}
+.experience .story-scene.hbd-scene .hbd-title{font-family:var(--sans);font-weight:900;font-size:clamp(52px,16vw,108px);line-height:.92;letter-spacing:-.02em;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 6px 22px #ff5c8a88);margin:6px 0 10px}
+.hbd-line b{display:inline-block;font-weight:900;background:linear-gradient(180deg,#fff 10%,#ffd1e1 95%);-webkit-background-clip:text;background-clip:text;color:transparent;animation:hbd-pop .7s cubic-bezier(.2,.9,.3,1.45) both;animation-delay:calc(var(--i) * 60ms + .1s)}
+.hbd-line.l2 b{background-image:linear-gradient(180deg,#fff3c4 10%,#ffb65a 95%);animation-delay:calc(var(--i) * 60ms + .45s)}
+.hbd-name{font-family:var(--serif);font-style:italic;font-size:clamp(46px,14vw,92px);line-height:1.1;color:#fff4f8;overflow-wrap:anywhere;max-width:100%;text-shadow:0 0 4px #fff,0 0 14px #ff5c8a,0 0 32px #ff2e74,0 0 64px #ff2e74;animation:neon-on 1.6s 1s both}
+.hbd-name.long{font-size:clamp(36px,10vw,64px)}
+.hbd-age{margin-top:12px;padding:8px 18px;border-radius:999px;background:#ffd16622;border:1px solid #ffd16677;color:#ffe7a3;font-weight:700;letter-spacing:.04em;animation:hbd-fade .6s 2s both}
+@keyframes hbd-pop{0%{transform:translateY(40px) scale(.3) rotate(-14deg);opacity:0}60%{transform:translateY(-6px) scale(1.14);opacity:1}100%{transform:none;opacity:1}}
+@keyframes neon-on{0%{opacity:0}10%{opacity:1}14%{opacity:.25}20%{opacity:1}52%{opacity:.8}56%{opacity:1}100%{opacity:1}}
+@keyframes hbd-fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* the wish, sealed */
+.wish-sealed{display:inline-block;margin:12px auto 4px;padding:7px 18px;border:2px dashed #e0457b;border-radius:12px;color:#c2185b;font-weight:800;letter-spacing:.05em;transform:rotate(-4deg);animation:wish-stamp .5s cubic-bezier(.2,.9,.3,1.4) both}
+@keyframes wish-stamp{from{transform:scale(2.2) rotate(-4deg);opacity:0}to{transform:rotate(-4deg);opacity:1}}
+
+/* photos that land one by one */
+.photo-drop .polaroid{animation:polaroid-drop .8s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:calc(.35s + var(--i,0) * .42s)}
+@keyframes polaroid-drop{0%{transform:translateY(-110vh) rotate(-24deg);opacity:0}55%{opacity:1}100%{transform:rotate(var(--r,0deg));opacity:1}}
+
+/* Birthday Wrapped: bold cards, one at a time, story-style bars on top */
+.wrapped{width:min(100%,380px);display:flex;flex-direction:column;align-items:center;gap:12px}
+.wrapped-stage{position:relative;display:block;width:100%;aspect-ratio:9/14;max-height:62vh;padding:0;border-radius:30px;overflow:hidden;text-align:left;color:#fff;box-shadow:0 24px 50px -24px #5a164099;cursor:pointer}
+.wrapped-bars{display:flex;gap:4px;width:100%;padding:0 4px}
+.wrapped-bars i{flex:1;height:4px;border-radius:4px;background:#e0457b2e;overflow:hidden}
+.wrapped-bars b{display:block;height:100%;width:0;background:#e0457b;border-radius:inherit}
+.wrapped-bars i.done b{width:100%}
+.wrapped-bars i.now b{animation:wrapped-bar var(--ms,2600ms) linear forwards}
+@keyframes wrapped-bar{to{width:100%}}
+.wrapped-slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:34px 28px;opacity:0;transform:translateX(34px) scale(.97);transition:opacity .45s ease,transform .55s cubic-bezier(.2,.9,.3,1)}
+.wrapped-slide.is-on{opacity:1;transform:none}
+.wrapped-slide.is-past{transform:translateX(-34px) scale(.97)}
+.wrapped-slide.w0{background:radial-gradient(circle at 85% 12%,#ffd16688 0,transparent 42%),linear-gradient(160deg,#ff5c8a,#ff8a5c)}
+.wrapped-slide.w1{background:radial-gradient(circle at 15% 85%,#ff8fb177 0,transparent 45%),linear-gradient(160deg,#5b21c9,#b45cff)}
+.wrapped-slide.w2{background:radial-gradient(circle at 80% 80%,#ff5c8a55 0,transparent 45%),linear-gradient(160deg,#ffd166,#ffb35c);color:#3a1020}
+.wrapped-slide.w3{background:radial-gradient(circle at 50% 30%,#ff2e7466 0,transparent 55%),#140a14}
+.wrapped-slide.w4{background:radial-gradient(circle at 20% 20%,#fff3 0,transparent 40%),linear-gradient(160deg,#e0245e,#ff6f9a)}
+.w-kicker{font-size:14px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.92}
+.w-big{font-family:var(--sans);font-weight:900;font-size:clamp(38px,11vw,60px);line-height:.98;letter-spacing:-.03em;overflow-wrap:anywhere}
+.w-big em{font-family:var(--serif);font-style:italic;font-weight:400}
+.w-count{font-size:clamp(48px,15vw,78px);font-variant-numeric:tabular-nums}
+.w-sub{font-size:17px;font-weight:600;line-height:1.35;opacity:.95;max-width:26ch}
+.w-brand{position:absolute;right:18px;bottom:14px;font-size:12px;font-weight:700;letter-spacing:.06em;opacity:.7}
+.wrapped-slide.w3 .w-big{color:#fff;text-shadow:0 0 18px #ff2e74}
+.wrapped-slide.is-on .w-big{animation:w-pop .6s cubic-bezier(.2,.9,.3,1.35) .12s both}
+@keyframes w-pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.w-hint{font-size:13px;color:#8a4a62}
+
+/* the ending: the one thing to do is post it */
+.birthday-card-btn{background:linear-gradient(135deg,#ff8fb1,#e0457b 60%,#c2185b);color:#fff;font-size:15px;font-weight:700;padding:14px 26px;box-shadow:0 14px 30px -14px #c2185b;margin:20px auto 6px}
+
+@media (prefers-reduced-motion:reduce){.hbd-line b,.hbd-name,.hbd-age,.hbd-kicker,.photo-drop .polaroid,.wish-sealed,.wrapped-slide.is-on .w-big{animation:none}}

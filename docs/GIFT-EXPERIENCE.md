@@ -91,3 +91,24 @@ The sender picks the character (teddy, kitty or just stickers), up to three coup
 The runaway No is a deliberate product choice (it is what the category's ads show). It only suits small fights, which the landing page, its FAQ and the ideas articles say plainly. The recipient can still close the page at any time.
 
 Funnel events: `forgive_no_tried` (once per opening), `forgive_yes`, `story_card_saved`, all with the usual `occasion` (`apology`) and `env`.
+
+## The birthday, made for Instagram
+
+The birthday was soft and quiet: small text, an empty pink pause after the lights, a present that did little, and nothing a recipient would post. It now has one moment per scene that looks good in a screen recording, and an ending made to be shared.
+
+| Moment | What happens | Touches |
+|---|---|---|
+| Seal | As every gift. | 1 |
+| Countdown | Dark room: "11:59 PM · Just for Priya", "It's almost your day…". The seal starts a big **3 · 2 · 1** (a rising note and a buzz on each beat). Skipped on replay and for reduced motion. | 0 |
+| The big moment | Night sky, fireworks, **HAPPY BIRTHDAY** letter by letter, their name in neon, and "turning 22 ✨" if the sender chose to show the age. Confetti, then on to the cake by itself (a tap skips it). | 0 |
+| Cake | "Make a wish, Priya." Tap or blow into the mic. Three candles, or **number candles with their age** when the sender switched that on. Then "Wish sealed 🤫", fanfare, balloons. | 1 (+ optional continue) |
+| Photos | If added: the polaroids drop in one by one with a pop each. "Look what I kept." | 1 |
+| Birthday Wrapped | Bold full-screen cards with story-style bars, one every ~2.7 s (tap for the next): "Priya's birthday, wrapped." · "You've been alive for 8,035 days" · "That's 1,92,840 hours of being iconic." · "Level 22" (only with age shown) · "Your top trait: Main character energy" · "Most played: Your laugh 🎶" · "Up next: Your best year yet." Numbers count up, in Indian grouping. The last card says "Screenshot this one 📸"; every card carries a small kholona.in. | 1 |
+| Note, memories, voice, games, final | As before. | |
+| Ending | The finale as before, with **Add to your story 📸** first: a 9:16 PNG made on the phone ("IT'S MY BIRTHDAY 🎂", "Someone made me a whole website for my birthday 🥹", their name in neon, the cake with their candles, "8,035 days of being iconic ✨", "made with kholona.in ♡") through the share sheet or as a download. | |
+
+The present scene is gone from new and old birthday gifts alike; "let them choose what to open first" now offers their Birthday Wrapped or the note.
+
+**For the sender, everything is optional and costs no extra step.** A name is still all it takes. One collapsed panel, "Birthday Wrapped & age candles · all optional", holds: their birthday (`birthDate`, unlocks the day and hour numbers), "Show their age as number candles 🎂" (`ageCandles`, off by default, only with a birthday; the panel says the age they are turning), "Their top trait" (`topTrait`) and "Most played" (`mostPlayed`), each with ready-made picks. Blank answers follow the mood (Cute: "Main character energy", Funny: "Certified chaos 🤪", …). The age is the one they are turning when the birthday is today or within a month, otherwise the one they turned.
+
+Styles are in `app/birthday.css`; the scenes are `hbd` and `wrapped` in `public/legacy/app.js`. Funnel: `story_card_saved` with `occasion: birthday`.

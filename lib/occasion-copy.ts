@@ -17,9 +17,9 @@ export interface HeroCopy {
 export const HERO: Record<OccasionKey, HeroCopy> = {
   birthday: {
     headingHtml: 'A birthday wish.<br>A whole little<br><em>world.</em>',
-    lead: 'A wish, a little cake, and their very own pocket-sized party.',
+    lead: 'A midnight countdown, a cake to wish on, and their very own Birthday Wrapped.',
     cta: 'Make a birthday wish',
-    journey: ['Light up the room', 'Make a wish', 'Open a gift', 'All the birthday love'],
+    journey: ['A midnight countdown', 'Make a wish', 'Their Birthday Wrapped', 'A card for their story'],
   },
   proposal: {
     headingHtml: 'A brave question.<br>A little room for<br><em>butterflies.</em>',

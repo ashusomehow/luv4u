@@ -30,10 +30,10 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
   birthday: {
     metaTitle: 'Birthday Wish Website — A Gift They Can Open | Kholona',
     metaDescription:
-      'Make a personal birthday website: a cake to light, a wish to make and a gift to open. Add photos and a note, preview it, then share one link.',
+      'Make a personal birthday website: a midnight countdown, a cake to wish on and their own Birthday Wrapped. Add photos and a note, preview it, then share one link.',
     introHeading: 'A birthday message they can actually play with',
     intro: [
-      'A text is read in two seconds and buried by the evening. A Kholona birthday wish is a tiny world with their name on it: fairy lights come on, they light the candles, make a wish, blow them out and open a gift, one small moment at a time.',
+      'A text is read in two seconds and buried by the evening. A Kholona birthday wish is a tiny world with their name on it: a countdown to midnight, “Happy Birthday” in fireworks, candles to blow out and their own Birthday Wrapped, one small moment at a time. At the end they can post a card of it to their story.',
       'All you need is their name. Add a note, up to four photos, a few memories or a voice note if you want to, and choose the mood — cute, funny, romantic, emotional, crazy or elegant. You see exactly what they will see before you send it.',
     ],
     goodFor: [
@@ -58,6 +58,8 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
       { q: 'Can I add a quiz or a small game?', a: 'Birthday gifts can include balloons to pop, a scratch-to-reveal, a short quiz or a mystery gift. All are optional, and you can preview them first.' },
       { q: 'Will it work when I share it on WhatsApp?', a: 'Yes. You get a short link that opens on any phone or computer, with a preview image if you allow one. You can also choose a discreet preview that leaves their name out.' },
       { q: 'Can they reply?', a: 'They can choose a reaction and write a few words back. It goes only to you, in a private inbox on your recovery link.' },
+      { q: 'What is Birthday Wrapped?', a: 'A few bold cards, like a year in review: how many days they have been alive (if you add their birthday), their top trait and their most played. Pick the words or leave them blank and we choose ones that fit the mood.' },
+      { q: 'Will it show their age?', a: 'Only if you want it to. Age candles on the cake are off unless you switch them on.' },
     ],
     related: ['thanks', 'love', 'congratulations'],
   },
