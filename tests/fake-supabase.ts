@@ -6,6 +6,7 @@ class Query {
   private filters: Filter[] = [];
   private op: 'select' | 'insert' | 'update' | 'delete' | 'upsert' = 'select';
   private payload: Row | null = null;
+  private batch: Row[] | null = null;
   private opts: { count?: boolean; head?: boolean; ignoreDuplicates?: boolean; onConflict?: string } = {};
   private max = Infinity;
   private offset = 0;
@@ -25,8 +26,8 @@ class Query {
   }
   insert(row: Row) { this.op = 'insert'; this.payload = row; return this; }
   update(row: Row) { this.op = 'update'; this.payload = row; return this; }
-  upsert(row: Row, opts: { onConflict?: string; ignoreDuplicates?: boolean } = {}) {
-    this.op = 'upsert'; this.payload = row; this.opts = opts; return this;
+  upsert(row: Row | Row[], opts: { onConflict?: string; ignoreDuplicates?: boolean } = {}) {
+    this.op = 'upsert'; this.batch = Array.isArray(row) ? row : [row]; this.opts = opts; return this;
   }
   delete() { this.op = 'delete'; return this; }
   eq(column: string, value: unknown) { this.filters.push((r) => r[column] === value); return this; }
@@ -56,9 +57,11 @@ class Query {
       }
       case 'upsert': {
         const cols = (this.opts.onConflict ?? 'id').split(',');
-        const dup = rows.find((r) => cols.every((c) => r[c] === this.payload![c]));
-        if (!dup) rows.push({ ...this.payload, id: rows.length + 1 });
-        else if (!this.opts.ignoreDuplicates) Object.assign(dup, this.payload);
+        for (const payload of this.batch ?? []) {
+          const dup = rows.find((r) => cols.every((c) => r[c] === payload[c]));
+          if (!dup) rows.push({ ...payload, id: rows.length + 1 });
+          else if (!this.opts.ignoreDuplicates) Object.assign(dup, payload);
+        }
         return { data: null, error: null };
       }
       case 'update': {
@@ -96,6 +99,16 @@ export class FakeSupabase {
   files = new Map<string, { bytes: Buffer; contentType: string; createdAt: string }>();
 
   from(table: string) { return new Query(this, table); }
+  /** Database functions: tests set what each one returns (or an error). */
+  functions: Record<string, (args: Record<string, unknown>) => { data?: unknown; error?: { code?: string; message: string } }> = {};
+  rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
+  async rpc(name: string, args: Record<string, unknown> = {}) {
+    this.rpcCalls.push({ name, args });
+    const fn = this.functions[name];
+    if (!fn) return { data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } };
+    const out = fn(args);
+    return { data: out.data ?? null, error: out.error ?? null };
+  }
 
   storage = {
     from: (_bucket: string) => ({
