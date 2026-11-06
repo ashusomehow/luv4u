@@ -80,6 +80,13 @@ describe('creating gifts', () => {
     expect((await create({ gift: gift(sorry) })).status).toBe(200);
   });
 
+  it('keeps a birthday’s optional Wrapped details, trimmed to size', async () => {
+    const extras = { occasion: 'birthday', birthDate: '2004-11-06', ageCandles: true, topTrait: 'Main character energy'.repeat(3), mostPlayed: 'Your laugh 🎶' };
+    const data = await (await create({ gift: gift(extras) })).json();
+    expect(data.gift).toMatchObject({ birthDate: '2004-11-06', ageCandles: true, mostPlayed: 'Your laugh 🎶' });
+    expect(data.gift.topTrait).toHaveLength(40);
+  });
+
   it('is idempotent for the same key and refuses a different key', async () => {
     await create();
     const retry = await create();

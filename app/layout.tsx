@@ -8,6 +8,7 @@ import './motion.css';
 import './effects.css';
 import './gift.css';
 import './sorry.css';
+import './birthday.css';
 import './seo.css';
 import './legal.css';
 
