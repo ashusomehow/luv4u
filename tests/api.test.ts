@@ -17,6 +17,7 @@ import { POST as reactionPost } from '@/app/api/gifts/[id]/reactions/route';
 import { POST as mediaPost } from '@/app/api/gifts/[id]/media/route';
 import { GET as cleanup } from '@/app/api/cron/cleanup/route';
 import { markPaid } from '@/lib/gifts';
+import { GET as calendarGet } from '@/app/api/gifts/[id]/calendar/route';
 
 const ID = 'a1b2c3d4e5f6a1b2c3d4e5f6';
 const KEY = 'f'.repeat(64);
@@ -281,3 +282,45 @@ describe('cleanup cron', () => {
     expect([...fake.files.keys()]).toEqual([`gifts/${fresh}/a.png`]);
   });
 });
+
+describe('wedding invite calendar file', () => {
+  const wedding = {
+    occasion: 'wedding', name: 'Aanya', partner: 'Aditya', weddingDate: '2026-12-12', hashtag: 'Aanya Weds Aditya', blessing: 'ganesh', groomFirst: true,
+    events: [{ title: 'Haldi', date: '2026-12-11', time: '10:00', venue: 'Rambagh Palace, Jaipur' }, { title: 'Wedding', date: '2026-12-12', time: '', venue: 'Jai Mahal Palace' }],
+  };
+  const cal = (query = '') => calendarGet(new Request(`https://kholona.test/api/gifts/${ID}/calendar${query}`), ctx());
+
+  it('keeps the hashtag (made one word, with #), the blessing and the name order', async () => {
+    const data = await (await create({ gift: gift(wedding) })).json();
+    expect(data.gift).toMatchObject({ hashtag: '#AanyaWedsAditya', blessing: 'ganesh', groomFirst: true });
+    fake.tables = {}; // a fresh gift (the same id would return the one already made)
+    expect((await (await create({ gift: gift({ ...wedding, blessing: 'nope' }) })).json()).gift.blessing).toBe('shubh');
+  });
+
+  it('is only there once the invite is unlocked', async () => {
+    await create({ gift: gift(wedding) });
+    expect((await cal()).status).toBe(404);
+  });
+
+  it('gives every function in India time, or just one', async () => {
+    await create({ gift: gift(wedding) }); await markPaid(ID);
+    const res = await cal();
+    expect(res.headers.get('content-type')).toMatch(/text\/calendar/);
+    const ics = await res.text();
+    expect(ics).toMatch(/^BEGIN:VCALENDAR\r\n/);
+    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+    expect(ics).toContain('DTSTART:20261211T043000Z'); // 10:00 in India
+    expect(ics).toContain('DTSTART;VALUE=DATE:20261212'); // no time: the whole day
+    expect(ics).toContain('SUMMARY:Haldi · Aanya & Aditya');
+    expect(ics).toContain('LOCATION:Rambagh Palace\\, Jaipur');
+    const one = await (await cal('?e=1')).text();
+    expect(one.match(/BEGIN:VEVENT/g)).toHaveLength(1);
+    expect(one).toContain('SUMMARY:Wedding · Aanya & Aditya');
+  });
+
+  it('is not offered for other gifts', async () => {
+    await create(); await markPaid(ID);
+    expect((await cal()).status).toBe(404);
+  });
+});
+

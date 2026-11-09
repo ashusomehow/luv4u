@@ -109,7 +109,7 @@ export const OCCASIONS: Record<OccasionKey, Occasion> = {
     short: 'Wedding',
     symbol: '❀',
     vibe: 'Elegant',
-    title: 'Whose big day is it?',
+    title: 'Your wedding invite',
     description: 'A royal digital wedding invite: your names in gold under marigolds, every function with a map, and a personal link for each guest.',
     seo: 'Create a digital wedding invitation website: your names in gold under marigolds, a countdown, Haldi, Mehendi, Sangeet and wedding cards with Google Maps and calendar, and a personal link for every guest.',
   },

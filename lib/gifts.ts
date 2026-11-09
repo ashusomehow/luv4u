@@ -187,12 +187,16 @@ export function normalizeGift(input: unknown, id: string): Gift {
 
 const clip = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
-/** A wedding invite: the second name, the families line, the city, the wedding date and up to eight functions. */
+/** A wedding invite: the second name, the families line, the city, the wedding date, the hashtag and blessing, and up to eight functions. */
 function normalizeWedding(gift: Gift): void {
   gift.partner = clip(gift.partner, 40);
   gift.families = clip(gift.families, 160);
   gift.city = clip(gift.city, 60);
   gift.weddingDate = /^\d{4}-\d{2}-\d{2}$/.test(String(gift.weddingDate ?? '')) ? gift.weddingDate : '';
+  const tag = clip(gift.hashtag, 40).replace(/\s+/g, '');
+  gift.hashtag = tag && !tag.startsWith('#') ? `#${tag}` : tag;
+  gift.blessing = ['shubh', 'ganesh', 'none'].includes(String(gift.blessing)) ? gift.blessing : 'shubh';
+  gift.groomFirst = gift.groomFirst === true;
   const events = Array.isArray(gift.events) ? gift.events.slice(0, 8) : [];
   gift.events = events.map((raw) => {
     const e = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
