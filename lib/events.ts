@@ -40,6 +40,8 @@ export const EVENT_NAMES = [
   'story_card_saved',
   // a gift unlocked with a free code (testing and gifting; not a sale)
   'free_code_used',
+  // the wedding invite: the couple made personal links for their guest list
+  'guest_links_made',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

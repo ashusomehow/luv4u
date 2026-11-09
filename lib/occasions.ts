@@ -8,7 +8,8 @@ export type OccasionKey =
   | 'anniversary'
   | 'thanks'
   | 'congratulations'
-  | 'missyou';
+  | 'missyou'
+  | 'wedding';
 
 export interface Occasion {
   slug: string;
@@ -101,6 +102,16 @@ export const OCCASIONS: Record<OccasionKey, Occasion> = {
     title: 'Who feels a little far away?',
     description: 'A paper hug for the person you wish was a little closer.',
     seo: 'For the miles, and the moments between hellos. Send a travelling paper hug and a thoughtful note.',
+  },
+  wedding: {
+    slug: 'wedding-invite',
+    label: 'Wedding invite',
+    short: 'Wedding',
+    symbol: '❀',
+    vibe: 'Elegant',
+    title: 'Whose big day is it?',
+    description: 'A royal digital wedding invite: your names in gold under marigolds, every function with a map, and a personal link for each guest.',
+    seo: 'Create a digital wedding invitation website: your names in gold under marigolds, a countdown, Haldi, Mehendi, Sangeet and wedding cards with Google Maps and calendar, and a personal link for every guest.',
   },
 };
 

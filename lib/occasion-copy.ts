@@ -63,4 +63,10 @@ export const HERO: Record<OccasionKey, HeroCopy> = {
     cta: 'Send a paper hug',
     journey: ['A light across the distance', 'Catch a paper hug', 'A note from over here', 'Until the next hello'],
   },
+  wedding: {
+    headingHtml: 'Your big day.<br>An invite they’ll<br><em>remember.</em>',
+    lead: 'A royal digital wedding invite: your names in gold under marigolds, every function with a map, and a personal link for each guest.',
+    cta: 'Make our wedding invite',
+    journey: ['A sealed envelope with their name', 'Marigolds part, your names in gold', 'Every function, with maps', 'A countdown to your big day'],
+  },
 };

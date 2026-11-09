@@ -89,7 +89,8 @@ try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
   const page = await ctx.newPage(); page.setDefaultTimeout(15000); watch(page, 'creator');
   await page.goto(APP + '/', { waitUntil: 'load' }); await page.waitForSelector('#homeView');
-  assert.equal(await page.locator('.occasion-card').count(), 8, 'eight gift cards');
+  assert.equal(await page.locator('.occasion-grid .occasion-card').count(), 8, 'eight gift cards');
+  assert.equal(await page.locator('.bigday-row .occasion-card[data-occasion="wedding"]').count(), 1, 'and the wedding invite under Big days');
   await page.goto(APP + '/for/miss-you', { waitUntil: 'load' }); await page.waitForTimeout(800);
   assert.match(await page.title(), /Miss You Website/);
 
@@ -196,7 +197,7 @@ try {
   assert.doesNotMatch(await page.locator('[data-step="2"]').innerText(), /postbox|gift server/i, 'no internal jargon');
   await page.click('#createGiftBtn'); await page.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
   assert.equal(await page.locator('#unlockPanel').isVisible(), true, 'a new gift is locked until paid for');
-  assert.deepEqual((await (await fetch(`${APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365, simulated: true });
+  assert.deepEqual((await (await fetch(`${APP}/api/config`)).json()).payments, { required: true, priceInr: 199, prices: { wedding: 499 }, linkDays: 365, simulated: true });
   assert.equal(await page.locator('#downloadGift').isDisabled(), true, 'the file download is locked too');
   await payAndUnlock(page);
   for (const id of ['copyGiftLink', 'downloadGift', 'qrGift']) assert.equal(await page.locator('#' + id).isDisabled(), false, `${id} works again after paying`);
@@ -349,7 +350,7 @@ try {
   // 5d. Every gift, played the way a delighted recipient would: one gesture per moment, and the budget of touches never grows.
   //     (Counts include the envelope and every optional "continue" shortcut, so they are an upper bound: most scenes carry on by themselves.)
   {
-    const BUDGET = { birthday: 5, proposal: 7, love: 4, apology: 9, anniversary: 6, thanks: 4, congratulations: 4, missyou: 4 };
+    const BUDGET = { birthday: 5, proposal: 7, love: 4, apology: 9, anniversary: 6, thanks: 4, congratulations: 4, missyou: 4, wedding: 4 };
     const play = async key => {
       const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
       const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'journey-' + key);
@@ -368,7 +369,7 @@ try {
         seen.add(cls.replace('story-scene', '').trim());
         if (/celebration-scene/.test(cls)) break;
         let hit = false;
-        for (const sel of picks) { const l = pg.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click({ timeout: 3000 }).catch(() => {}); touches++; hit = true; break; } }
+        for (const sel of picks) { const l = pg.locator(sel).first(); if (await l.count() && await l.isVisible()) { seen.add(((await pg.locator('#storyScene').getAttribute('class')) || '').replace('story-scene', '').trim()); await l.click({ timeout: 3000 }).catch(() => {}); touches++; hit = true; break; } }
         await pg.waitForTimeout(hit ? 500 : 300);
       }
       assert.match((await pg.locator('#storyScene').getAttribute('class')) || '', /celebration-scene/, `${key}: reached the ending`);
@@ -377,8 +378,11 @@ try {
       return { pg, ctx, touches, seen };
     };
     const first = await Promise.all(['birthday', 'love', 'apology', 'proposal'].map(play));
-    const second = await Promise.all(['anniversary', 'thanks', 'congratulations', 'missyou'].map(play));
-    const all = Object.fromEntries([...first, ...second].map((r, i) => [['birthday', 'love', 'apology', 'proposal', 'anniversary', 'thanks', 'congratulations', 'missyou'][i], r]));
+    const second = await Promise.all(['anniversary', 'thanks', 'congratulations', 'missyou', 'wedding'].map(play));
+    const all = Object.fromEntries([...first, ...second].map((r, i) => [['birthday', 'love', 'apology', 'proposal', 'anniversary', 'thanks', 'congratulations', 'missyou', 'wedding'][i], r]));
+    // the wedding invite: the curtain, the names in gold with a countdown, every function with maps and calendar, and the story card
+    for (const scene of ['reveal-scene', 'functions-scene', 'message-scene']) assert.ok([...all.wedding.seen].some(c => c.includes(scene)), `wedding: played ${scene}`);
+    assert.equal(await all.wedding.pg.locator('[data-v3="wedding-card"]').count(), 1, 'the wedding ending offers an “I’m invited” story card');
     // the ending: one touch to answer, replay without a tap
     const b = all.birthday.pg;
     for (const scene of ['hbd-scene', 'cake-scene', 'wrapped-scene', 'message-scene']) assert.ok([...all.birthday.seen].some(c => c.includes(scene)), `birthday: played ${scene}`);
@@ -418,7 +422,7 @@ try {
 
   // 5e. The preview on the payment page: every gift plays to its very end inside the phone, and the end nudges to unlock.
   {
-    const KEYS = ['birthday', 'proposal', 'love', 'apology', 'anniversary', 'thanks', 'congratulations', 'missyou'];
+    const KEYS = ['birthday', 'proposal', 'love', 'apology', 'anniversary', 'thanks', 'congratulations', 'missyou', 'wedding'];
     const HARNESS = '<!doctype html><meta charset="utf-8"><body style="margin:0"><iframe id="f" src="/preview-frame" style="width:390px;height:844px;border:0"></iframe><script>window.__unlock=0;window.addEventListener("message",ev=>{if(ev.data&&ev.data.type==="kholona-embed-ready")ev.source.postMessage({type:"kholona-embed-play",gift:window.__g,price:"₹199"},location.origin);if(ev.data&&ev.data.type==="kholona-embed-unlock")window.__unlock++;});</script></body>';
     const playInPhone = async key => {
       const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, userAgent: NORMAL_UA }); const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'phone-' + key);
@@ -453,13 +457,26 @@ try {
 
 
   // 7. Preview first, pay after: a new gift is a private preview (this server has no provider and an old PAYMENTS_REQUIRED=false, which must change nothing)
-  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365 });
+  assert.deepEqual((await (await fetch(`${LOCKED_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, prices: { wedding: 499 }, linkDays: 365 });
   const lp = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA })).newPage(); lp.setDefaultTimeout(15000);
   await lp.goto(LOCKED_APP + '/', { waitUntil: 'load' }); await lp.waitForSelector('#priceStrip');
   const strip = await lp.locator('#priceStrip').innerText();
   assert.match(strip, /Free to build\. ₹199 to send\./); assert.match(strip, /One-time, no subscription/); assert.match(strip, /not refundable/);
   assert.equal((await lp.locator('.cta-free').innerText()).trim(), 'Free preview', 'the free preview note sits under the button');
   assert.equal(await lp.locator('[data-pay-only]').first().isVisible(), true, 'the pay-only promise appears once payments are on');
+  { // the wedding invite is priced on its own: ₹499 on the maker, on the unlock page and on the button
+    const wctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA }); const w = await wctx.newPage(); w.setDefaultTimeout(15000); watch(w, 'wedding-price');
+    await w.goto(LOCKED_APP + '/#make=wedding', { waitUntil: 'load' }); await w.waitForSelector('#recipientName');
+    await w.fill('#recipientName', 'Aanya'); await w.fill('#weddingPartner', 'Aditya'); await w.fill('#weddingDate', '2026-12-12'); await w.fill('#weddingCity', 'Jaipur');
+    assert.match(await w.locator('#priceLine').innerText(), /₹499/, 'the wedding price is stated before creating');
+    await w.click('#createGiftBtn'); await w.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
+    assert.match(await w.locator('#unlockPanel').innerText(), /Your wedding invite is ready/);
+    assert.match(await w.locator('[data-v3="unlock"]').innerText(), /Unlock & get link · ₹499/);
+    assert.equal(await w.locator('#guestLinks').isVisible().catch(() => false), false, 'personal links wait until it is unlocked');
+    const made = await w.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
+    assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${made.id}`, { method: 'DELETE', headers: { authorization: `Bearer ${made.key}` } })).status, 200);
+    await wctx.close();
+  }
   const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
   await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');
@@ -565,7 +582,7 @@ try {
   // 8. Razorpay: the whole payment, in a browser, against a fake Razorpay. The real checkout script is replaced
   //    by a stub that either "closes the window" or "pays" through the mock (which signs like Razorpay does).
   {
-    assert.deepEqual((await (await fetch(`${RZP_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, linkDays: 365, provider: 'razorpay', testMode: true });
+    assert.deepEqual((await (await fetch(`${RZP_APP}/api/config`)).json()).payments, { required: true, priceInr: 199, prices: { wedding: 499 }, linkDays: 365, provider: 'razorpay', testMode: true });
     const zctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA, permissions: ['clipboard-read', 'clipboard-write'] });
     const rzpStub = `
       window.Razorpay = function (o) { const on = {}; this.on = (ev, fn) => { on[ev] = fn; }; this.open = async () => {

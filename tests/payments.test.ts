@@ -68,8 +68,18 @@ describe('payment is always required', () => {
     delete process.env.PAYMENTS_REQUIRED;
   });
 
-  it('advertises the requirement and the ₹199 price', async () => {
-    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 199, linkDays: 365 });
+  it('advertises the requirement, the ₹199 price and the ₹499 wedding invite', async () => {
+    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 199, prices: { wedding: 499 }, linkDays: 365 });
+  });
+
+  it('prices the wedding invite on its own, with its own override', async () => {
+    process.env.PAYMENT_PRICE_INR = '149';
+    process.env.PAYMENT_PRICE_WEDDING_INR = '399';
+    expect((await (await getConfig()).json()).payments).toMatchObject({ priceInr: 149, prices: { wedding: 399 } });
+    process.env.PAYMENT_PRICE_WEDDING_INR = 'lots';
+    expect((await (await getConfig()).json()).payments.prices.wedding).toBe(499);
+    delete process.env.PAYMENT_PRICE_INR;
+    delete process.env.PAYMENT_PRICE_WEDDING_INR;
   });
 
   it('takes the price from PAYMENT_PRICE_INR and falls back to the default for nonsense', async () => {

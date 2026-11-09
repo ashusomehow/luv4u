@@ -11,9 +11,18 @@ export const PAID_LINK_DAYS = 365;
 /** One-time price in whole rupees: ₹199. PAYMENT_PRICE_INR can override it (for a price test or a seasonal price). */
 export const DEFAULT_PRICE_INR = 199;
 
-export function priceInr(): number {
-  const n = Number(process.env.PAYMENT_PRICE_INR);
-  return Number.isFinite(n) && n >= 1 && n <= 100000 ? Math.round(n) : DEFAULT_PRICE_INR;
+/** A wedding invite reaches a whole guest list and replaces printed cards, so it is priced on its own: ₹499. */
+export const WEDDING_PRICE_INR = 499;
+
+const envPrice = (value: string | undefined, fallback: number): number => {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 1 && n <= 100000 ? Math.round(n) : fallback;
+};
+
+/** The price for a gift of this occasion. PAYMENT_PRICE_INR (gifts) and PAYMENT_PRICE_WEDDING_INR can override it. */
+export function priceInr(occasion?: unknown): number {
+  if (occasion === 'wedding') return envPrice(process.env.PAYMENT_PRICE_WEDDING_INR, WEDDING_PRICE_INR);
+  return envPrice(process.env.PAYMENT_PRICE_INR, DEFAULT_PRICE_INR);
 }
 
 /** How long an unpaid preview is kept before the daily cleanup removes it. */

@@ -45,7 +45,7 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
     const attribution = readAttribution(request);
     // A creator code: the one the page sends, else the one remembered from the creator's link. Checked here, priced here.
     const referral = await referralFor(request, body && 'ref' in body ? body.ref : undefined);
-    const { fresh, ...order } = await openOrderFor(id, attribution, referral);
+    const { fresh, ...order } = await openOrderFor(id, attribution, referral, row.gift?.occasion);
     // Ad measurement: a new order is a "checkout started". The browser fires the same event with the same id.
     const meta = fresh ? browserEvent(request, 'InitiateCheckout', order.id, order.amount) : undefined;
     if (meta) {

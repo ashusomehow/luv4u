@@ -176,12 +176,36 @@ export function normalizeGift(input: unknown, id: string): Gift {
   if (!isOccasionKey(occasion)) throw new ApiError(400, `Unsupported occasion: ${String(occasion)}`);
   gift.occasion = occasion as OccasionKey;
 
+  if (occasion === 'wedding') normalizeWedding(gift);
   if (Array.isArray(gift.photos)) gift.photos = gift.photos.slice(0, 4);
   if (Array.isArray(gift.memories)) gift.memories = gift.memories.slice(0, 3);
 
   gift.id = id;
   gift.server = true;
   return gift;
+}
+
+const clip = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+
+/** A wedding invite: the second name, the families line, the city, the wedding date and up to eight functions. */
+function normalizeWedding(gift: Gift): void {
+  gift.partner = clip(gift.partner, 40);
+  gift.families = clip(gift.families, 160);
+  gift.city = clip(gift.city, 60);
+  gift.weddingDate = /^\d{4}-\d{2}-\d{2}$/.test(String(gift.weddingDate ?? '')) ? gift.weddingDate : '';
+  const events = Array.isArray(gift.events) ? gift.events.slice(0, 8) : [];
+  gift.events = events.map((raw) => {
+    const e = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const map = clip(e.map, 400);
+    return {
+      title: clip(e.title, 40),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(String(e.date ?? '')) ? e.date : '',
+      time: /^\d{2}:\d{2}$/.test(String(e.time ?? '')) ? e.time : '',
+      venue: clip(e.venue, 140),
+      map: /^https:\/\//.test(map) ? map : '',
+      dress: clip(e.dress, 60),
+    };
+  });
 }
 
 export function assertGiftSize(gift: Gift): void {

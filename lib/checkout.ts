@@ -21,7 +21,7 @@ export interface PaymentRow {
   discount?: number;
 }
 
-export const pricePaise = (): number => Math.round(priceInr() * 100);
+export const pricePaise = (occasion?: unknown): number => Math.round(priceInr(occasion) * 100);
 
 export async function findOrder(orderId: string): Promise<PaymentRow | null> {
   const { data, error } = await supabase().from('payments').select('*').eq('order_id', orderId).maybeSingle();
@@ -38,8 +38,9 @@ export async function openOrderFor(
   giftId: string,
   attribution?: Attribution | null,
   referral?: Referral | null,
+  occasion?: unknown,
 ): Promise<{ id: string; amount: number; currency: string; fresh: boolean }> {
-  const amount = pricePaise() - (referral?.discount ?? 0);
+  const amount = pricePaise(occasion) - (referral?.discount ?? 0);
   const db = supabase();
   const { data, error } = await db
     .from('payments')

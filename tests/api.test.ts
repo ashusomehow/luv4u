@@ -44,10 +44,11 @@ beforeEach(() => {
 });
 
 describe('config', () => {
-  it('advertises product, version, hosted mode and all 8 occasions', async () => {
+  it('advertises product, version, hosted mode and all 9 occasions', async () => {
     const data = await (await getConfig()).json();
     expect(data).toMatchObject({ product: 'luv4u', version: 3, hosted: true });
-    expect(data.occasions).toHaveLength(8);
+    expect(data.occasions).toHaveLength(9);
+    expect(data.occasions).toContain('wedding');
     expect(data.mediaBase).toBe('https://fake.supabase.co/storage/v1/object/public/gift-media/gifts/');
   });
 });
@@ -85,6 +86,16 @@ describe('creating gifts', () => {
     const data = await (await create({ gift: gift(extras) })).json();
     expect(data.gift).toMatchObject({ birthDate: '2004-11-06', ageCandles: true, mostPlayed: 'Your laugh 🎶' });
     expect(data.gift.topTrait).toHaveLength(40);
+  });
+
+  it('keeps a wedding invite’s names, families, functions and maps, and drops anything unsafe', async () => {
+    const wedding = { occasion: 'wedding', name: 'Aanya', partner: ' Aditya ', families: 'With the blessings of the Sharma and Rao families', city: 'Jaipur', weddingDate: '2026-12-12',
+      events: [{ title: 'Haldi', date: '2026-12-10', time: '10:00', venue: 'Rambagh Palace', map: 'https://maps.app.goo.gl/abc', dress: 'Yellow' }, { title: 'Sangeet', date: 'soon', time: '7pm', map: 'javascript:alert(1)' }, ...Array(9).fill({ title: 'More' })] };
+    const data = await (await create({ gift: gift(wedding) })).json();
+    expect(data.gift).toMatchObject({ partner: 'Aditya', city: 'Jaipur', weddingDate: '2026-12-12' });
+    expect(data.gift.events).toHaveLength(8);
+    expect(data.gift.events[0]).toEqual({ title: 'Haldi', date: '2026-12-10', time: '10:00', venue: 'Rambagh Palace', map: 'https://maps.app.goo.gl/abc', dress: 'Yellow' });
+    expect(data.gift.events[1]).toMatchObject({ title: 'Sangeet', date: '', time: '', map: '' });
   });
 
   it('is idempotent for the same key and refuses a different key', async () => {

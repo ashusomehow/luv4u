@@ -303,4 +303,38 @@ export const PAGES: Record<OccasionKey, OccasionPage> = {
     ],
     related: ['love', 'apology', 'anniversary'],
   },
+  wedding: {
+    metaTitle: 'Digital Wedding Invitation Website — Royal Marigold | Kholona',
+    metaDescription:
+      'A digital wedding invite your guests open like a royal envelope: names in gold, a countdown, every function with maps and calendar, and a personal link per guest.',
+    introHeading: 'A wedding invite that opens like a royal envelope',
+    intro: [
+      'Each guest gets a sealed envelope with their own name on it. They hold the wax seal, marigold garlands part to soft shehnai, and your names appear in gold with the date and a countdown to the day.',
+      'Then every function, one card at a time: Haldi, Mehendi, Sangeet, the wedding and the reception, each with the date, time, venue, dress code, a Google Maps button and Add to calendar. Add a few photos of the two of you and a note from the families if you like.',
+    ],
+    goodFor: [
+      'Inviting guests on WhatsApp without a PDF that nobody opens',
+      'Families with several functions across different days and venues',
+      'Guests travelling from out of town who need maps and timings in one place',
+      'A save-the-date that also looks good on Instagram stories',
+      'Couples who want each invite to feel personal, with the guest’s name on the envelope',
+    ],
+    starters: [
+      'With the blessings of our families, we invite you to celebrate our wedding with us.',
+      'Two families, one celebration. Your presence is the only gift we need.',
+      'We’re getting married! Come dance, eat and bless us.',
+    ],
+    tips: [
+      { title: 'Send personal links', body: 'Paste your guest list and send each family their own link: their name on the envelope makes the invite feel hand-delivered.' },
+      { title: 'Add the map for every venue', body: 'Paste the Google Maps link for each function so out-of-town guests never have to call for directions.' },
+      { title: 'Tell them the dress code', body: 'A colour for Haldi or Sangeet gets into everyone’s photos, and guests love knowing what to wear.' },
+    ],
+    faqs: [
+      { q: 'Can each guest see their own name?', a: 'Yes. Paste your guest list and you get one link per guest or family, each with their name on the envelope, ready to send on WhatsApp.' },
+      { q: 'Can I add several functions?', a: 'Yes, up to eight: Haldi, Mehendi, Sangeet, the wedding, the reception or anything else, each with its own date, time, venue, dress code and map.' },
+      { q: 'Can guests add the functions to their calendar?', a: 'Yes. Every function has an Add to calendar button and an Open in Maps button.' },
+      { q: 'Can I change details after sending it?', a: 'Yes. Edit the invite from your private link and everyone who opens it sees the latest timings and venues.' },
+    ],
+    related: ['anniversary', 'love', 'congratulations'],
+  },
 };
