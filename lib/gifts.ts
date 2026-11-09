@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { STORAGE_BUCKET, salt } from './env';
 import { ApiError } from './http';
 import { isOccasionKey, type OccasionKey } from './occasions';
@@ -13,6 +13,8 @@ const MAX_OBJECTS_PER_GIFT = 12; // 4 photos + voice + music + cover, with headr
 const MAX_IMAGE_BYTES = 1_000_000;
 const MAX_COVER_BYTES = 1_500_000;
 const MAX_AUDIO_BYTES = 3.2 * 1024 * 1024;
+/** A whole song (a wedding invite's music) goes straight from the browser to Storage through a signed URL. */
+export const MAX_SONG_BYTES = 12 * 1024 * 1024;
 
 export type Gift = Record<string, unknown> & {
   name?: unknown;
@@ -177,6 +179,8 @@ export function normalizeGift(input: unknown, id: string): Gift {
   gift.occasion = occasion as OccasionKey;
 
   if (occasion === 'wedding') normalizeWedding(gift);
+  const start = Math.round(Number(gift.musicStart));
+  gift.musicStart = Number.isFinite(start) ? Math.min(900, Math.max(0, start)) : 0;
   if (Array.isArray(gift.photos)) gift.photos = gift.photos.slice(0, 4);
   if (Array.isArray(gift.memories)) gift.memories = gift.memories.slice(0, 3);
 
@@ -187,12 +191,18 @@ export function normalizeGift(input: unknown, id: string): Gift {
 
 const clip = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
-/** A wedding invite: the second name, the families line, the city, the wedding date and up to eight functions. */
+/** A wedding invite: the second name, each side's family (who is inviting), the families line, the city, the wedding date, the hashtag and blessing, and up to eight functions. */
 function normalizeWedding(gift: Gift): void {
   gift.partner = clip(gift.partner, 40);
+  gift.family1 = clip(gift.family1, 40);
+  gift.family2 = clip(gift.family2, 40);
   gift.families = clip(gift.families, 160);
   gift.city = clip(gift.city, 60);
   gift.weddingDate = /^\d{4}-\d{2}-\d{2}$/.test(String(gift.weddingDate ?? '')) ? gift.weddingDate : '';
+  const tag = clip(gift.hashtag, 40).replace(/\s+/g, '');
+  gift.hashtag = tag && !tag.startsWith('#') ? `#${tag}` : tag;
+  gift.blessing = ['shubh', 'ganesh', 'none'].includes(String(gift.blessing)) ? gift.blessing : 'shubh';
+  gift.groomFirst = gift.groomFirst === true;
   const events = Array.isArray(gift.events) ? gift.events.slice(0, 8) : [];
   gift.events = events.map((raw) => {
     const e = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
@@ -225,6 +235,9 @@ const AUDIO_TYPES: Record<string, string> = {
   'audio/wav': 'wav',
   'audio/x-wav': 'wav',
   'audio/aac': 'aac',
+  'audio/x-m4a': 'm4a',
+  'audio/m4a': 'm4a',
+  'audio/mp3': 'mp3',
 };
 const DATA_URI = /^data:([a-z]+\/[a-z0-9.+-]+)(?:;codecs=[A-Za-z0-9.,-]+)?;base64,([A-Za-z0-9+/=]+)$/i;
 
@@ -279,6 +292,24 @@ export async function storeDataUri(id: string, dataUri: string, kind: MediaKind)
     .upload(path, bytes, { contentType: type, upsert: true, cacheControl: kind === 'cover' ? '3600' : '31536000' });
   if (error) throw error;
   return publicMediaUrl(path);
+}
+
+/**
+ * A one-time signed URL the browser uploads a song to directly, so a full track (up to 12 MB) never passes through
+ * this server's 4.5 MB request limit. The file lands in the gift's own folder; unused songs are pruned on the next save.
+ */
+export async function signSongUpload(id: string, type: unknown, size: unknown): Promise<{ uploadUrl: string; url: string }> {
+  const mime = String(type ?? '').toLowerCase().split(';')[0];
+  const extension = AUDIO_TYPES[mime];
+  if (!extension) throw new ApiError(415, 'Use an MP3, M4A, AAC, OGG or WAV song.');
+  const bytes = Number(size);
+  if (!Number.isFinite(bytes) || bytes <= 0 || bytes > MAX_SONG_BYTES) throw new ApiError(413, 'That song is too large. Use one under 12 MB.');
+  const existing = await listFolder(id);
+  if (existing.length >= MAX_OBJECTS_PER_GIFT) throw new ApiError(409, 'This gift already has the maximum number of media files.');
+  const path = `gifts/${id}/song-${randomBytes(12).toString('hex')}.${extension}`;
+  const { data, error } = await supabase().storage.from(STORAGE_BUCKET).createSignedUploadUrl(path);
+  if (error || !data) throw error ?? new ApiError(502, 'The song upload could not start. Try again.');
+  return { uploadUrl: data.signedUrl, url: publicMediaUrl(path) };
 }
 
 /** Moves any embedded data-URI media out of the gift JSON and into Storage. */

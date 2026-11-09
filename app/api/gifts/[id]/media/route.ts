@@ -1,4 +1,4 @@
-import { assertId, findGift, hashSecret, KEY_PATTERN, storeDataUri, type MediaKind } from '@/lib/gifts';
+import { assertId, findGift, hashSecret, KEY_PATTERN, signSongUpload, storeDataUri, type MediaKind } from '@/lib/gifts';
 import { supabase } from '@/lib/supabase';
 import { ApiError, bearer, handle, json, readJson, requireBackend } from '@/lib/http';
 import { LIMITS, rateLimit } from '@/lib/rate-limit';
@@ -16,6 +16,9 @@ const KINDS: MediaKind[] = ['image', 'audio', 'cover'];
  *
  * The share cover is drawn and uploaded after the gift is created (so pressing Create never waits for it): when the
  * gift already exists and allows a link preview, the new cover is attached to it here.
+ *
+ * A song (kind "song", with its type and size) is too big for this route's body, so it returns a one-time signed URL
+ * the browser uploads the file to directly, and the public URL to put in the gift.
  */
 export const POST = handle(async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
   const unavailable = requireBackend();
@@ -32,7 +35,8 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
     throw new ApiError(403, 'Incorrect edit key or gift not found.');
   }
 
-  const body = await readJson<{ dataUri?: unknown; kind?: unknown }>(request);
+  const body = await readJson<{ dataUri?: unknown; kind?: unknown; type?: unknown; size?: unknown }>(request);
+  if (body?.kind === 'song') return json({ ok: true, ...(await signSongUpload(id, body.type, body.size)) });
   const kind = body?.kind as MediaKind;
   if (!body || typeof body.dataUri !== 'string' || !KINDS.includes(kind)) {
     throw new ApiError(400, 'Invalid media upload.');

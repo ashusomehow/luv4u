@@ -5,7 +5,7 @@ Kholona needs one Supabase project (database + storage) and one Vercel project. 
 ## 1. Supabase
 
 1. Create a project.
-2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), [`0002_events.sql`](../supabase/migrations/0002_events.sql), then [`0003_gift_status.sql`](../supabase/migrations/0003_gift_status.sql), [`0004_safety.sql`](../supabase/migrations/0004_safety.sql) and [`0005_scheduled_delivery.sql`](../supabase/migrations/0005_scheduled_delivery.sql) and [`0006_payments.sql`](../supabase/migrations/0006_payments.sql). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
+2. Apply the migrations in order: [`0001_init.sql`](../supabase/migrations/0001_init.sql), [`0002_events.sql`](../supabase/migrations/0002_events.sql), then [`0003_gift_status.sql`](../supabase/migrations/0003_gift_status.sql), [`0004_safety.sql`](../supabase/migrations/0004_safety.sql) and [`0005_scheduled_delivery.sql`](../supabase/migrations/0005_scheduled_delivery.sql) and [`0006_payments.sql`](../supabase/migrations/0006_payments.sql), and so on through [`0011_song_uploads.sql`](../supabase/migrations/0011_song_uploads.sql) (wedding songs up to 12 MB). Either paste each into the SQL editor, or use the Supabase CLI (`supabase link` then `supabase db push`). `0001` creates:
    - `gifts`, `gift_views`, `gift_replies` with Row Level Security **enabled and no policies**: the browser can never read or write them directly; only the server can, using the service-role key.
    - a public Storage bucket `gift-media` (4 MiB per file; image and audio MIME types only).
 3. From the project's API settings, copy the **Project URL** and the **service_role** key.

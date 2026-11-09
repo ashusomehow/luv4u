@@ -17,6 +17,7 @@ import { POST as reactionPost } from '@/app/api/gifts/[id]/reactions/route';
 import { POST as mediaPost } from '@/app/api/gifts/[id]/media/route';
 import { GET as cleanup } from '@/app/api/cron/cleanup/route';
 import { markPaid } from '@/lib/gifts';
+import { GET as calendarGet } from '@/app/api/gifts/[id]/calendar/route';
 
 const ID = 'a1b2c3d4e5f6a1b2c3d4e5f6';
 const KEY = 'f'.repeat(64);
@@ -96,6 +97,14 @@ describe('creating gifts', () => {
     expect(data.gift.events).toHaveLength(8);
     expect(data.gift.events[0]).toEqual({ title: 'Haldi', date: '2026-12-10', time: '10:00', venue: 'Rambagh Palace', map: 'https://maps.app.goo.gl/abc', dress: 'Yellow' });
     expect(data.gift.events[1]).toMatchObject({ title: 'Sangeet', date: '', time: '', map: '' });
+  });
+
+  it('keeps who is inviting and where the song starts', async () => {
+    const wedding = { occasion: 'wedding', name: 'Aanya', partner: 'Aditya', family1: ' Sharma ', family2: 'V'.repeat(60), music: 'shehnai', musicStart: 47.6 };
+    const data = await (await create({ gift: gift(wedding) })).json();
+    expect(data.gift).toMatchObject({ family1: 'Sharma', music: 'shehnai', musicStart: 48 });
+    expect(data.gift.family2).toHaveLength(40);
+    expect((await (await create({ id: 'b1b2c3d4e5f6a1b2c3d4e5f6', editKey: 'e'.repeat(64), gift: gift({ musicStart: -5 }) })).json()).gift.musicStart).toBe(0);
   });
 
   it('is idempotent for the same key and refuses a different key', async () => {
@@ -254,6 +263,20 @@ describe('media uploads', () => {
     expect((fake.tables.gifts[0].gift as { coverUrl?: string }).coverUrl).toBe('');
   });
 
+  it('hands out a signed upload URL for a whole song (up to 12 MB) in the gift’s own folder', async () => {
+    const res = await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 9 * 1024 * 1024 }, KEY), ctx());
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.url).toMatch(new RegExp(`/gift-media/gifts/${ID}/song-[a-f0-9]{24}\\.mp3$`));
+    expect(data.uploadUrl).toContain('/object/upload/sign/');
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/x-m4a', size: 1000 }, KEY), ctx())).status).toBe(200);
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 13 * 1024 * 1024 }, KEY), ctx())).status).toBe(413);
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'video/mp4', size: 1000 }, KEY), ctx())).status).toBe(415);
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 1000 }, 'short'), ctx())).status).toBe(401);
+    await create();
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 1000 }, 'a'.repeat(64)), ctx())).status).toBe(403);
+  });
+
   it('caps the number of files per gift', async () => {
     for (let i = 0; i < 12; i++) fake.files.set(`gifts/${ID}/f${i}.png`, { bytes: Buffer.from('x'), contentType: 'image/png', createdAt: new Date().toISOString() });
     expect((await mediaPost(req('/x', 'POST', { dataUri: PNG, kind: 'image' }, KEY), ctx())).status).toBe(409);
@@ -281,3 +304,45 @@ describe('cleanup cron', () => {
     expect([...fake.files.keys()]).toEqual([`gifts/${fresh}/a.png`]);
   });
 });
+
+describe('wedding invite calendar file', () => {
+  const wedding = {
+    occasion: 'wedding', name: 'Aanya', partner: 'Aditya', weddingDate: '2026-12-12', hashtag: 'Aanya Weds Aditya', blessing: 'ganesh', groomFirst: true,
+    events: [{ title: 'Haldi', date: '2026-12-11', time: '10:00', venue: 'Rambagh Palace, Jaipur' }, { title: 'Wedding', date: '2026-12-12', time: '', venue: 'Jai Mahal Palace' }],
+  };
+  const cal = (query = '') => calendarGet(new Request(`https://kholona.test/api/gifts/${ID}/calendar${query}`), ctx());
+
+  it('keeps the hashtag (made one word, with #), the blessing and the name order', async () => {
+    const data = await (await create({ gift: gift(wedding) })).json();
+    expect(data.gift).toMatchObject({ hashtag: '#AanyaWedsAditya', blessing: 'ganesh', groomFirst: true });
+    fake.tables = {}; // a fresh gift (the same id would return the one already made)
+    expect((await (await create({ gift: gift({ ...wedding, blessing: 'nope' }) })).json()).gift.blessing).toBe('shubh');
+  });
+
+  it('is only there once the invite is unlocked', async () => {
+    await create({ gift: gift(wedding) });
+    expect((await cal()).status).toBe(404);
+  });
+
+  it('gives every function in India time, or just one', async () => {
+    await create({ gift: gift(wedding) }); await markPaid(ID);
+    const res = await cal();
+    expect(res.headers.get('content-type')).toMatch(/text\/calendar/);
+    const ics = await res.text();
+    expect(ics).toMatch(/^BEGIN:VCALENDAR\r\n/);
+    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+    expect(ics).toContain('DTSTART:20261211T043000Z'); // 10:00 in India
+    expect(ics).toContain('DTSTART;VALUE=DATE:20261212'); // no time: the whole day
+    expect(ics).toContain('SUMMARY:Haldi · Aanya & Aditya');
+    expect(ics).toContain('LOCATION:Rambagh Palace\\, Jaipur');
+    const one = await (await cal('?e=1')).text();
+    expect(one.match(/BEGIN:VEVENT/g)).toHaveLength(1);
+    expect(one).toContain('SUMMARY:Wedding · Aanya & Aditya');
+  });
+
+  it('is not offered for other gifts', async () => {
+    await create(); await markPaid(ID);
+    expect((await cal()).status).toBe(404);
+  });
+});
+

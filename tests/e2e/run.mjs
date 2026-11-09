@@ -354,10 +354,18 @@ try {
     const play = async key => {
       const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, hasTouch: true, isMobile: true });
       const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'journey-' + key);
-      await pg.goto(`${APP}/#demo=${key}`, { waitUntil: 'load' }); await pg.waitForSelector('#sealBtn');
-      const box = await pg.locator('#sealBtn').boundingBox();
-      await pg.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await pg.mouse.down();
-      await pg.waitForSelector('#sealGate', { state: 'detached', timeout: 8000 }); await pg.mouse.up();
+      await pg.goto(`${APP}/#demo=${key}`, { waitUntil: 'load' });
+      if (key === 'wedding') {                                    // the wedding's own envelope: one tap on the wax seal, then the pages play by themselves
+        await pg.waitForSelector('.we-envelope');
+        assert.equal(await pg.locator('.we-kicker').innerText(), 'THE SHARMA & VERMA FAMILIES', 'the envelope says who is inviting');
+        assert.match(await pg.locator('.we-to').innerText(), /to the wedding of Aanya & Aditya/);
+        await pg.locator('.we-envelope').click();
+      } else {
+        await pg.waitForSelector('#sealBtn');
+        const box = await pg.locator('#sealBtn').boundingBox();
+        await pg.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await pg.mouse.down();
+        await pg.waitForSelector('#sealGate', { state: 'detached', timeout: 8000 }); await pg.mouse.up();
+      }
       let touches = 1;                                            // the envelope: one press and hold lights the room by itself
       const picks = ['[data-v3="proposal-answer"][data-answer="yes"]:not([aria-pressed="true"])', '[data-v3="sorry-meter"]:not([disabled])', '.sorry-coupons:not(:has(.claimed)) [data-v3="coupon"]', '[data-v3="forgive-yes"]:not([disabled])', '.heart-notes:not(:has(.revealed)) [data-v3="heart-note"]', '.gratitude-petals:not(:has([aria-pressed="true"])) [data-v3="flower"]',
         '[data-story="blow"]:not(.extinguished):not([disabled])', '[data-story="open-gift"]:not(.opened):not([disabled])', '[data-v3="untie-ribbon"]:not(.opened):not([disabled])', '[data-v3="send-hug"]:not([disabled])',
@@ -381,7 +389,7 @@ try {
     const second = await Promise.all(['anniversary', 'thanks', 'congratulations', 'missyou', 'wedding'].map(play));
     const all = Object.fromEntries([...first, ...second].map((r, i) => [['birthday', 'love', 'apology', 'proposal', 'anniversary', 'thanks', 'congratulations', 'missyou', 'wedding'][i], r]));
     // the wedding invite: the curtain, the names in gold with a countdown, every function with maps and calendar, and the story card
-    for (const scene of ['reveal-scene', 'functions-scene', 'message-scene']) assert.ok([...all.wedding.seen].some(c => c.includes(scene)), `wedding: played ${scene}`);
+    assert.ok([...all.wedding.seen].some(c => c.includes('invite-scene')), 'wedding: played the poster pages');
     assert.equal(await all.wedding.pg.locator('[data-v3="wedding-card"]').count(), 1, 'the wedding ending offers an “I’m invited” story card');
     // the ending: one touch to answer, replay without a tap
     const b = all.birthday.pg;
@@ -466,14 +474,26 @@ try {
   assert.equal(await lp.locator('[data-pay-only]').first().isVisible(), true, 'the pay-only promise appears once payments are on');
   { // the wedding invite is priced on its own: ₹499 on the maker, on the unlock page and on the button
     const wctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA }); const w = await wctx.newPage(); w.setDefaultTimeout(15000); watch(w, 'wedding-price');
-    await w.goto(LOCKED_APP + '/#make=wedding', { waitUntil: 'load' }); await w.waitForSelector('#recipientName');
-    await w.fill('#recipientName', 'Aanya'); await w.fill('#weddingPartner', 'Aditya'); await w.fill('#weddingDate', '2026-12-12'); await w.fill('#weddingCity', 'Jaipur');
-    assert.match(await w.locator('#priceLine').innerText(), /₹499/, 'the wedding price is stated before creating');
+    await w.goto(LOCKED_APP + '/#make=wedding', { waitUntil: 'load' }); await w.waitForSelector('#weddingBuilder');
+    // only the names and the date are needed; the wedding is already there, and one tap adds a function with its date and time
+    await w.click('#createGiftBtn'); assert.match(await w.locator('#wbError').innerText(), /first name/, 'it says what is missing, where it goes');
+    await w.fill('#wbName1', 'Aanya'); await w.fill('#wbName2', 'Aditya'); await w.fill('#wbDate', '2026-12-12'); await w.fill('#wbVenue', 'Jai Mahal Palace, Jaipur');
+    await w.locator('[data-wb="add"][data-title="Haldi"]').click();
+    assert.deepEqual(await w.locator('.wb-ev-text span').allInnerTexts(), ['Fri, 11 Dec · 10 am · Jai Mahal Palace, Jaipur', 'Sat, 12 Dec · 7 pm · Jai Mahal Palace, Jaipur'], 'Haldi the day before at 10 am, the wedding at 7 pm, same venue');
+    await w.fill('#wbDate', '2026-12-20');
+    assert.match((await w.locator('.wb-ev-text span').allInnerTexts())[0], /Sat, 19 Dec/, 'functions follow a new wedding date');
+    await w.fill('#wbFam1', 'Sharma'); await w.fill('#wbFam2', 'Verma family');
+    assert.match(await w.locator('#wbHosts').innerText(), /The Sharma & Verma families invite you/, 'the two family names become the envelope line');
+    assert.equal(await w.locator('#wbMusic .wb-song.is-on').getAttribute('data-key'), 'shehnai', 'a new invite starts with the shehnai');
+    await w.locator('[data-wb="song"][data-key="sitar"]').click();
+    assert.equal(await w.locator('#wbMusic .wb-song.is-on').getAttribute('data-key'), 'sitar');
+    assert.match(await w.locator('#wbPrice').innerText(), /₹499/, 'the wedding price is stated before creating');
     await w.click('#createGiftBtn'); await w.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
     assert.match(await w.locator('#unlockPanel').innerText(), /Your wedding invite is ready/);
     assert.match(await w.locator('[data-v3="unlock"]').innerText(), /Unlock & get link · ₹499/);
     assert.equal(await w.locator('#guestLinks').isVisible().catch(() => false), false, 'personal links wait until it is unlocked');
     const made = await w.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
+    assert.deepEqual(await (await fetch(`${LOCKED_APP}/api/gifts/${made.id}/owner`, { headers: { authorization: `Bearer ${made.key}` } })).json().then(r => [r.gift.family1, r.gift.family2, r.gift.music]), ['Sharma', 'Verma family', 'sitar'], 'the families and the music are saved');
     assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${made.id}`, { method: 'DELETE', headers: { authorization: `Bearer ${made.key}` } })).status, 200);
     await wctx.close();
   }

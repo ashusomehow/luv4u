@@ -65,7 +65,7 @@ export const HERO: Record<OccasionKey, HeroCopy> = {
   },
   wedding: {
     headingHtml: 'Your big day.<br>An invite they’ll<br><em>remember.</em>',
-    lead: 'A royal digital wedding invite: your names in gold under marigolds, every function with a map, and a personal link for each guest.',
+    lead: 'A wedding invite your guests open like a wax-sealed envelope: story pages for every function, maps, calendar, your song, and a personal link for each guest.',
     cta: 'Make our wedding invite',
     journey: ['A sealed envelope with their name', 'Marigolds part, your names in gold', 'Every function, with maps', 'A countdown to your big day'],
   },

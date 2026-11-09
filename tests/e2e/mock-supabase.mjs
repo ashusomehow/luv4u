@@ -99,6 +99,12 @@ http.createServer(async (req, res) => {
     if (!f) return send(res, 404, { error: 'not found' });
     res.writeHead(200, { 'content-type': f.type, ...cors }); return res.end(f.bytes);
   }
+  // signed uploads: the server asks for a URL, the browser PUTs the raw file to it
+  if ((m = p.match(/^\/storage\/v1\/object\/upload\/sign\/([^/]+)\/(.+)$/))) {
+    const path = decodeURIComponent(m[2]);
+    if (req.method === 'POST') return send(res, 200, { url: `/object/upload/sign/${m[1]}/${m[2]}?token=t${Date.now()}` });
+    if (req.method === 'PUT') { files.set(path, { bytes: raw, type: req.headers['content-type'] || 'application/octet-stream', created_at: new Date().toISOString() }); return send(res, 200, { Key: m[1] + '/' + path }); }
+  }
   if ((m = p.match(/^\/storage\/v1\/object\/([^/]+)\/(.+)$/)) && req.method === 'POST') {
     const path = decodeURIComponent(m[2]);
     // supabase-js sends multipart/form-data for Buffer bodies
