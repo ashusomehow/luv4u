@@ -112,3 +112,39 @@ The present scene is gone from new and old birthday gifts alike; "let them choos
 **For the sender, everything is optional and costs no extra step.** A name is still all it takes. One collapsed panel, "Birthday Wrapped & age candles · all optional", holds: their birthday (`birthDate`, unlocks the day and hour numbers), "Show their age as number candles 🎂" (`ageCandles`, off by default, only with a birthday; the panel says the age they are turning), "Their top trait" (`topTrait`) and "Most played" (`mostPlayed`), each with ready-made picks. Blank answers follow the mood (Cute: "Main character energy", Funny: "Certified chaos 🤪", …). The age is the one they are turning when the birthday is today or within a month, otherwise the one they turned.
 
 Styles are in `app/birthday.css`; the scenes are `hbd` and `wrapped` in `public/legacy/app.js`. Funnel: `story_card_saved` with `occasion: birthday`.
+
+## The wedding invite (Royal marigold)
+
+A new kind of product: the couple buys one invite (₹499, `PAYMENT_PRICE_WEDDING_INR`) and sends it to the whole guest list,
+so every guest sees kholona.in. It lives at `/for/wedding-invite` and under **Big days** on the home page, away from the
+impulse gifts. The internal key is `wedding`.
+
+| Moment | What happens | Touches |
+|---|---|---|
+| Envelope | "You’re invited 💛", addressed **For {guest}** (from a personal link, `?to=Sharma%20family`), "from Aanya & Aditya". Press and hold the seal. | 1 |
+| Curtain | Strings of marigolds part to reveal the room (deep maroon, gold lights). | 0 |
+| The invitation | A jharokha-arched card under a marigold toran: ॥ शुभ विवाह ॥, "Dear Sharma family,", the families line, **Aanya & Aditya** in gold script (Great Vibes) with a slow shine, the date and city (Cinzel), and a live countdown (days · hours · min · sec). A short shehnai-like phrase (Yaman, synthesised) and drifting petals. | 1 |
+| Photos | If added, as other gifts, in gold frames. | 1 |
+| The celebrations | One arched card per function, swiped: Haldi, Mehendi, Sangeet, Wedding, Reception (in date order), with date, time, venue, dress code, **📍 Open in Maps** (the couple's Maps link, or a Maps search for the venue) and **📅 Add to calendar** (Google Calendar, India time). No functions added: one card for the wedding. | 1 |
+| A note from the families | The letter, "Dear Sharma family,", signed by the couple or families. | 1 |
+| Finale | Rings under a marigold arch, "We can’t wait to celebrate with you", petals, **Post “I’m invited” to your story 📸** (a 9:16 card: I’M INVITED, the names in gold, the date, city, made with kholona.in), quick reactions and "Send your blessings" (the reply goes to the couple's inbox). | |
+
+**For the couple, as fast as a gift:** "Your names" (two fields), the wedding date and the city on the first screen; the
+mood picker and games are hidden. One panel, **Functions & families**, opens by itself: one-tap chips (＋ Haldi, ＋ Mehendi,
+＋ Sangeet, ＋ Wedding, ＋ Reception, ＋ Other) add a function with sensible defaults (Haldi: shades of yellow), each with date,
+time, venue, Maps link and dress code; plus the families line. Everything but the first name is optional.
+
+**Personal invites.** Once the invite is unlocked, the share page has **Personal invites 💌**: paste the guest list (one
+name per line, duplicates dropped, kept on this device), get one row per guest with **WhatsApp** (a ready message:
+"Dear Sharma family, you’re invited! 💛 Aanya & Aditya are getting married on Saturday 12 December in Jaipur. Open your
+invite: …?to=Sharma%20family") and **Copy**, plus **Copy all links**. The name is only in the link; nothing is stored.
+
+**Link preview** (WhatsApp): maroon and gold, "YOU’RE INVITED TO THE WEDDING OF", the names in gold script, the date and city.
+
+Fonts: Great Vibes and Cinzel, self-hosted in `public/fonts` (SIL OFL, licence beside them), loaded only by the wedding styles.
+Data: `partner`, `families`, `city`, `weddingDate`, `events[]` (≤ 8: title, date, time, venue, https Maps link, dress),
+validated on the server (`normalizeWedding` in `lib/gifts.ts`). Styles: `app/wedding.css`. Funnel: `guest_links_made`,
+`story_card_saved` (occasion `wedding`). Not yet: RSVP with head counts per function (v2), more themes, Hindi lines.
+
+Also fixed on the way: the unlock page's phone preview stopped half-way through setting up every gift (it looked for the
+"My gifts" list, which the preview page does not have), so no gift showed its own colours there; it now does, still without the envelope.

@@ -37,6 +37,8 @@ export function GET() {
       ? {
           required: true,
           priceInr: priceInr(),
+          // Occasions priced differently from the gifts (₹499 wedding invite).
+          prices: { wedding: priceInr('wedding') },
           linkDays: PAID_LINK_DAYS,
           // Razorpay wins when configured; test-mode simulation only applies when there is no provider.
           ...(razorpayConfigured() ? { provider: 'razorpay', testMode: razorpayTestMode() } : simulatePayments() ? { simulated: true } : {}),

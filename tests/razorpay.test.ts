@@ -122,7 +122,7 @@ describe('config', () => {
   it('announces Razorpay and test mode, without any secret', async () => {
     const res = await getConfig();
     const text = JSON.stringify(await res.json());
-    expect(JSON.parse(text).payments).toEqual({ required: true, priceInr: 199, linkDays: 365, provider: 'razorpay', testMode: true });
+    expect(JSON.parse(text).payments).toEqual({ required: true, priceInr: 199, prices: { wedding: 499 }, linkDays: 365, provider: 'razorpay', testMode: true });
     expect(text).not.toContain(SECRET);
     expect(text).not.toContain(KEY_ID);
   });
@@ -149,7 +149,7 @@ describe('config', () => {
 
   it('shows no provider when Razorpay is not configured', async () => {
     delete process.env.RAZORPAY_KEY_SECRET;
-    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 199, linkDays: 365 });
+    expect((await (await getConfig()).json()).payments).toEqual({ required: true, priceInr: 199, prices: { wedding: 499 }, linkDays: 365 });
   });
 });
 
@@ -174,6 +174,13 @@ describe('starting a payment', () => {
     expect(fake.tables.payments).toHaveLength(1);
     expect(fake.tables.payments[0]).toMatchObject({ gift_id: ID, amount: 19900, status: 'created' });
     expect(await isPublic()).toBe(false);
+  });
+
+  it('charges ₹499 for a wedding invite', async () => {
+    await createGift(req('/api/gifts', 'POST', { id: ID, editKey: KEY, gift: { name: 'Aanya', partner: 'Aditya', occasion: 'wedding', vibe: 'Elegant', photos: [] } }));
+    const data = await (await start()).json();
+    expect(data.order).toMatchObject({ amount: 49900, currency: 'INR' });
+    expect(fake.tables.payments[0]).toMatchObject({ gift_id: ID, amount: 49900 });
   });
 
   it('follows PAYMENT_PRICE_INR, and ignores any amount the browser sends', async () => {

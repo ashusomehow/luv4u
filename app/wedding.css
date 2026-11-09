@@ -1,0 +1,110 @@
+/* The wedding invite, Royal marigold: deep maroon, antique gold and marigold orange, the couple's names in Great Vibes,
+   capitals in Cinzel (both self-hosted, OFL; public/fonts). */
+@font-face{font-family:'Great Vibes';src:url('/fonts/great-vibes.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Cinzel';src:url('/fonts/cinzel-600.woff2') format('woff2');font-weight:600;font-display:swap}
+
+.experience[data-palette=occasion][data-occasion=wedding]{--accent:#c2410c;--accent-soft:#f6d27a;--scene:radial-gradient(120% 80% at 50% 0%,#7a1428 0%,#4a0d1b 55%,#2c0610 100%);--petal:#f7a21b}
+.experience[data-occasion=wedding].lit{color:#fbe9c8}
+.experience[data-occasion=wedding].lit .story-title,.experience[data-occasion=wedding].lit .story-eyebrow,.experience[data-occasion=wedding].lit .story-description,.experience[data-occasion=wedding].lit .story-footnote,.experience[data-occasion=wedding].lit .scratch-help,.experience[data-occasion=wedding].lit .finale-words,.experience[data-occasion=wedding].lit .final-dedication,.experience[data-occasion=wedding].lit .finale-react-title,.experience[data-occasion=wedding].lit .story-soft-skip{color:#fbe9c8}
+.experience[data-occasion=wedding] .story-title em{color:#f6d27a}
+.experience[data-occasion=wedding] .story-eyebrow{font-family:'Cinzel',Georgia,serif;letter-spacing:.22em;color:#e9c98f}
+.experience[data-occasion=wedding] .story-btn{background:linear-gradient(135deg,#e9b950,#c98a2b);color:#3d0a16;font-weight:700;box-shadow:0 10px 26px -12px #000}
+.experience[data-occasion=wedding] .letter-paper{background:#fff8ec;border:1px solid #e9c98f;box-shadow:0 0 0 6px #fff8ec,0 0 0 7px #d4a24c,0 24px 50px -24px #000}
+.experience[data-occasion=wedding] .letter-to{font-family:'Great Vibes',Georgia,serif;font-size:38px;color:#8a1c33}
+.experience[data-occasion=wedding] .polaroid{background:#fff8ec;box-shadow:0 0 0 3px #d4a24c,0 18px 30px -14px #000}
+
+/* the curtain of marigold strings that parts when the seal breaks */
+.wedding-curtain{position:absolute;inset:0;z-index:60;display:flex;pointer-events:none;background:#2c0610}
+.wedding-curtain .curtain-side{flex:1;display:flex;justify-content:space-around;background:linear-gradient(180deg,#4a0d1b,#2c0610);transition:transform 1.4s cubic-bezier(.7,0,.2,1)}
+.wedding-curtain .curtain-side i{display:flex;flex-direction:column;width:22px;animation:strand-sway 2.4s ease-in-out infinite alternate;animation-delay:calc(var(--k) * -.3s)}
+.wedding-curtain .curtain-side svg{width:22px;height:22px;margin-top:-4px}
+.wedding-curtain.open{background:transparent;transition:background .6s ease .8s}
+.wedding-curtain.open .left{transform:translateX(-105%)}
+.wedding-curtain.open .right{transform:translateX(105%)}
+@keyframes strand-sway{from{transform:rotate(-1.5deg)}to{transform:rotate(1.5deg)}}
+
+/* the invitation */
+.wedding-card{position:relative;width:min(100%,400px);padding:58px 22px 26px;border:1.5px solid #d4a24c;outline:1px solid #d4a24c88;outline-offset:6px;border-radius:200px 200px 16px 16px;background:radial-gradient(90% 60% at 50% 30%,#7a142855,transparent 70%);text-align:center;margin:10px auto 0;animation:scene-in 1s var(--ease) both}
+.wedding-toran{position:absolute;left:8%;right:8%;top:6px;width:84%;height:62px;overflow:visible}
+.wedding-om{font-size:15px;letter-spacing:.12em;color:#f6d27a;margin:30px 0 6px}
+.wedding-dear{font-family:'Great Vibes',Georgia,serif;font-size:30px;color:#fbe9c8;margin-bottom:4px}
+.wedding-kicker{font-family:'Cinzel',Georgia,serif;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;line-height:1.7;color:#e9c98f;margin:6px 0}
+.experience .story-scene .wedding-names{font-family:'Great Vibes',Georgia,serif;font-weight:400;font-size:clamp(54px,15vw,84px);line-height:1.05;letter-spacing:0;margin:10px 0 6px;background:linear-gradient(100deg,#b8862b 0%,#f6d27a 30%,#fff3c4 45%,#e9b950 60%,#b8862b 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gold-shine 4s ease-in-out infinite;filter:drop-shadow(0 4px 14px #0008)}
+.wedding-amp{display:block;font-size:.55em;line-height:1;margin:2px 0}
+@keyframes gold-shine{0%,100%{background-position:100% 0}50%{background-position:0 0}}
+.wedding-date{font-family:'Cinzel',Georgia,serif;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:#e9c98f;margin:14px 0 4px;line-height:1.8}
+.wedding-date b{display:block;font-weight:600;font-size:20px;color:#fff3d6}
+.wedding-countdown{display:flex;justify-content:center;gap:10px;margin:16px 0 4px;color:#fff3d6}
+.wedding-countdown span{min-width:58px;padding:8px 4px;border:1px solid #d4a24c99;border-radius:10px;background:#2c061088}
+.wedding-countdown b{display:block;font-family:'Cinzel',Georgia,serif;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.wedding-countdown small{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#e9c98f}
+
+/* every function, one card at a time */
+.wedding-events{display:flex;gap:16px;width:min(100vw - 34px,640px);overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 24px 18px;scrollbar-width:none}
+.wedding-event{position:relative;flex:0 0 min(78vw,300px);scroll-snap-align:center;padding:62px 20px 22px;border-radius:150px 150px 14px 14px;background:linear-gradient(180deg,#fff8ec,#f8e7c8);color:#4a0d1b;text-align:center;box-shadow:0 0 0 2px #d4a24c,0 20px 40px -20px #000;animation:scene-in .8s var(--ease) both;animation-delay:calc(var(--i) * 90ms)}
+.wedding-event .wedding-toran{top:4px;height:52px}
+.wedding-event-no{font-family:'Cinzel',Georgia,serif;font-size:11px;letter-spacing:.2em;color:#a8741f;margin-top:8px}
+.wedding-event h2{font-family:'Great Vibes',Georgia,serif;font-size:46px;line-height:1.1;color:#8a1c33;margin:4px 0}
+.wedding-event-day{font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+.wedding-event-time{font-size:14px;margin-top:2px;color:#6b2a35}
+.wedding-event-venue{font-size:15px;font-weight:600;margin:10px 0 0;line-height:1.4}
+.wedding-event-dress{display:inline-block;margin-top:12px;padding:6px 12px;border-radius:999px;background:#fbe3b5;font-size:13px}
+.wedding-event-dress span{display:block;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#a8741f}
+.wedding-event-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.wedding-btn{min-height:42px;padding:9px 16px;font-size:13.5px;background:#8a1c33;color:#fff3d6;text-decoration:none}
+.wedding-btn.ghost{background:transparent;color:#8a1c33;border:1px solid #8a1c33}
+
+.wedding-finale-art{width:220px;height:190px;margin-bottom:4px}
+.wedding-finale-art svg{width:100%;height:100%}
+.wedding-rings{transform-origin:150px 150px;animation:rings-glow 3s ease-in-out infinite alternate}
+@keyframes rings-glow{from{filter:drop-shadow(0 0 2px #f6d27a)}to{filter:drop-shadow(0 0 10px #f6d27a)}}
+.wedding-card-btn{background:linear-gradient(135deg,#e9b950,#c98a2b)!important;color:#3d0a16!important}
+
+/* the maker */
+.wedding-basics{display:grid;gap:12px;margin-top:12px}
+.wedding-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wedding-quick{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.wedding-quick button{padding:8px 14px;border-radius:999px;border:1px solid #e3c1be;background:#fffaf6;font-size:14px}
+.wedding-quick button[aria-pressed=true]{background:#fdecc8;border-color:#d4a24c;color:#7a4a0c}
+.wedding-event-edit{display:grid;gap:12px;margin-bottom:12px}
+.wedding-event-row{display:grid;gap:8px;margin:0;padding:12px;border:1px solid #f0dcd1;border-radius:14px;background:#fffdf8}
+.wedding-event-row legend{display:flex;gap:8px;width:100%;padding:0}
+.wedding-event-row legend .text-input{flex:1;font-weight:600}
+.wedding-remove{width:40px;border-radius:10px;border:1px solid #f0dcd1;color:#a04050}
+
+@media (prefers-reduced-motion:reduce){.wedding-names,.wedding-curtain .curtain-side i,.wedding-rings{animation:none}}
+
+/* the room's warm cream wash would bleach the maroon: keep only a soft gold glow */
+.experience[data-occasion=wedding] .room-warmth{background:radial-gradient(at 50% 12%,#f6d27a2e,transparent 60%)!important}
+.experience[data-occasion=wedding] .room-wall{opacity:.25}
+
+/* the opening, before the curtain: gold on deep maroon */
+.experience[data-occasion=wedding]:not(.lit){background:radial-gradient(120% 80% at 50% 10%,#3d0a16 0%,#1c040a 100%)}
+.experience[data-occasion=wedding]:not(.lit) .opening-scene .story-title{color:#f6d27a}
+.experience[data-occasion=wedding]:not(.lit) .opening-scene .story-title em{color:#fff3c4}
+.experience[data-occasion=wedding]:not(.lit) .opening-scene .story-eyebrow,.experience[data-occasion=wedding]:not(.lit) .opening-scene .story-description{color:#e9c98f}
+
+/* personal invites on the share page */
+.guest-links{margin:22px 0;padding:18px;border:1px solid #f0dcd1;border-radius:18px;background:#fffdf8;text-align:left}
+.guest-links h3{font-family:var(--serif);font-size:22px;margin-bottom:4px}
+.guest-links p{font-size:14px;color:var(--muted);margin-bottom:10px}
+.guest-links textarea{width:100%;margin-bottom:10px}
+.guest-count{margin-top:14px}
+.guest-list{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:6px;max-height:340px;overflow:auto}
+.guest-list li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #f3e4dc;border-radius:12px;background:#fff}
+.guest-list span{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.guest-wa,.guest-copy{padding:7px 12px;border-radius:999px;font-size:13px;font-weight:600}
+.guest-wa{background:#1f9d55;color:#fff}
+.guest-copy{border:1px solid #e3c1be;background:#fffaf6}
+
+/* home: the "Big days" row under the gifts */
+.bigday-row{margin-top:30px}
+.bigday-row .eyebrow{margin-bottom:12px}
+.occasion-card.bigday-card{display:grid;grid-template-columns:170px 1fr;align-items:center;gap:22px;padding:22px 26px;background:radial-gradient(120% 120% at 0% 0%,#7a1428,#3d0a16);border:1px solid #d4a24c;color:#fbe9c8;text-decoration:none}
+.bigday-card .occasion-mini-art{width:170px;height:148px;margin:0}
+.bigday-card .occasion-mini-art svg{width:100%;height:100%}
+.bigday-card h3{font-family:'Great Vibes',var(--serif);font-size:40px;font-weight:400;color:#f6d27a;line-height:1.1}
+.bigday-card p{color:#e9c98f;margin:6px 0 12px}
+.bigday-card .occasion-card-cta{color:#fff3d6}
+.new-pill{display:inline-block;vertical-align:middle;margin-left:8px;padding:3px 9px;border-radius:999px;background:#f6d27a;color:#3d0a16;font-family:var(--sans);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:640px){.occasion-card.bigday-card{grid-template-columns:1fr;text-align:center}.bigday-card .occasion-mini-art{margin:0 auto}}
