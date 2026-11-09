@@ -482,7 +482,11 @@ try {
     assert.deepEqual(await w.locator('.wb-ev-text span').allInnerTexts(), ['Fri, 11 Dec · 10 am · Jai Mahal Palace, Jaipur', 'Sat, 12 Dec · 7 pm · Jai Mahal Palace, Jaipur'], 'Haldi the day before at 10 am, the wedding at 7 pm, same venue');
     await w.fill('#wbDate', '2026-12-20');
     assert.match((await w.locator('.wb-ev-text span').allInnerTexts())[0], /Sat, 19 Dec/, 'functions follow a new wedding date');
-    await w.fill('#wbFam1', 'Sharma'); await w.fill('#wbFam2', 'Verma family');
+    // typed a key at a time, like a person: the field must keep focus (a redraw per keystroke once threw the cursor out)
+    await w.locator('#wbFam1').click(); await w.keyboard.type('Sharma', { delay: 30 });
+    assert.equal(await w.inputValue('#wbFam1'), 'Sharma', 'typing keeps going in the same field');
+    assert.equal(await w.evaluate(() => document.activeElement?.id), 'wbFam1');
+    await w.fill('#wbFam2', 'Verma family');
     assert.match(await w.locator('#wbHosts').innerText(), /The Sharma & Verma families invite you/, 'the two family names become the envelope line');
     assert.equal(await w.locator('#wbMusic .wb-song.is-on').getAttribute('data-key'), 'shehnai', 'a new invite starts with the shehnai');
     await w.locator('[data-wb="song"][data-key="sitar"]').click();

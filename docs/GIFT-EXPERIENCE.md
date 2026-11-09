@@ -134,7 +134,11 @@ rebuilt from scratch around how Indian e-invites are actually shared: full-scree
 
 The pages play like stories: progress bars on top, about 4 to 7 seconds each, **tap** (right) for the next, tap the left
 third for the previous one, **hold** to pause, arrow keys too. Every page is a 9:16 poster with a double gold frame, made
-to be screenshotted. On a laptop the poster stays a centred 9:16 story on the velvet room instead of stretching.
+to be screenshotted. The craft: an ornate double gold frame with paisley corners, a lotus crest and a jewel; a fine
+paper grain and a silk sheen; the couple under a cusped Mughal arch above a palace skyline with two caparisoned
+elephants; swaying temple bells and tassels and a lotus band on each function; glowing diyas under the blessing and the
+date; ruffled marigolds; a gold buti print on the velvet room and a paisley lining inside the envelope. All of it is
+inline SVG in the page's own ink (`wpFrame`, `archSVG`, `palaceSVG`, `hangingsSVG`, `lotusBandSVG`, `diyasSVG`). On a laptop the poster stays a centred 9:16 story on the velvet room instead of stretching.
 The music starts on the tap that breaks the seal (phones only allow sound inside a tap). After the finale, **Send your
 blessings** has its own feelings (🙏 Blessings to you both · 🎉 We’ll be there · 💛 So happy for you · 🥹 So emotional)
 and three ready-made blessings. Fonts: Great Vibes (names, titles), Cinzel (capitals), Cormorant Garamond (words), self-hosted (OFL).
