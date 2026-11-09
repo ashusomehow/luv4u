@@ -99,6 +99,14 @@ describe('creating gifts', () => {
     expect(data.gift.events[1]).toMatchObject({ title: 'Sangeet', date: '', time: '', map: '' });
   });
 
+  it('keeps who is inviting and where the song starts', async () => {
+    const wedding = { occasion: 'wedding', name: 'Aanya', partner: 'Aditya', family1: ' Sharma ', family2: 'V'.repeat(60), music: 'shehnai', musicStart: 47.6 };
+    const data = await (await create({ gift: gift(wedding) })).json();
+    expect(data.gift).toMatchObject({ family1: 'Sharma', music: 'shehnai', musicStart: 48 });
+    expect(data.gift.family2).toHaveLength(40);
+    expect((await (await create({ id: 'b1b2c3d4e5f6a1b2c3d4e5f6', editKey: 'e'.repeat(64), gift: gift({ musicStart: -5 }) })).json()).gift.musicStart).toBe(0);
+  });
+
   it('is idempotent for the same key and refuses a different key', async () => {
     await create();
     const retry = await create();
@@ -253,6 +261,20 @@ describe('media uploads', () => {
     await create({ gift: gift({ sharePreview: false }) });
     await mediaPost(req('/x', 'POST', { dataUri: JPEG, kind: 'cover' }, KEY), ctx());
     expect((fake.tables.gifts[0].gift as { coverUrl?: string }).coverUrl).toBe('');
+  });
+
+  it('hands out a signed upload URL for a whole song (up to 12 MB) in the gift’s own folder', async () => {
+    const res = await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 9 * 1024 * 1024 }, KEY), ctx());
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.url).toMatch(new RegExp(`/gift-media/gifts/${ID}/song-[a-f0-9]{24}\\.mp3$`));
+    expect(data.uploadUrl).toContain('/object/upload/sign/');
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/x-m4a', size: 1000 }, KEY), ctx())).status).toBe(200);
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 13 * 1024 * 1024 }, KEY), ctx())).status).toBe(413);
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'video/mp4', size: 1000 }, KEY), ctx())).status).toBe(415);
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 1000 }, 'short'), ctx())).status).toBe(401);
+    await create();
+    expect((await mediaPost(req('/x', 'POST', { kind: 'song', type: 'audio/mpeg', size: 1000 }, 'a'.repeat(64)), ctx())).status).toBe(403);
   });
 
   it('caps the number of files per gift', async () => {

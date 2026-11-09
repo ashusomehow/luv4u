@@ -110,6 +110,8 @@ export class FakeSupabase {
     return { data: out.data ?? null, error: out.error ?? null };
   }
 
+  signed: string[] = [];
+
   storage = {
     from: (_bucket: string) => ({
       upload: async (path: string, bytes: Buffer, o: { contentType: string }) => {
@@ -127,6 +129,10 @@ export class FakeSupabase {
       remove: async (paths: string[]) => {
         paths.forEach((p) => this.files.delete(p));
         return { data: null, error: null };
+      },
+      createSignedUploadUrl: async (path: string) => {
+        this.signed.push(path);
+        return { data: { signedUrl: `https://fake.supabase.co/storage/v1/object/upload/sign/gift-media/${path}?token=t`, path, token: 't' }, error: null };
       },
       getPublicUrl: (path: string) => ({ data: { publicUrl: `https://fake.supabase.co/storage/v1/object/public/gift-media/${path}` } }),
     }),

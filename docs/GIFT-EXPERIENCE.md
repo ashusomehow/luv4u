@@ -124,9 +124,9 @@ rebuilt from scratch around how Indian e-invites are actually shared: full-scree
 
 | Page | What it is |
 |---|---|
-| Envelope | Velvet maroon. "AN INVITATION FOR · *Sharma family*" (from their personal link, `?to=`), an ivory envelope with a maroon wax seal of the couple's initials, gently floating. **One tap**: the seal breaks, the flap opens, the card rises, a flash of ivory, and the invitation begins. (No press-and-hold, no light switch.) |
-| Blessing | Ivory, a slowly turning mandala, a brass kalash with mango leaves, ॥ शुभ विवाह ॥ (or ॥ श्री गणेशाय नमः ॥, or none), "*Dear Sharma family,* with joy in our hearts, we invite you to celebrate the wedding of" |
-| The couple | Maroon under a marigold toran and an arch: the invitation line, **Aanya · weds · Aditya** in shining gold script, the hashtag. A shehnai phrase and falling petals. |
+| Envelope | Velvet maroon. Who is inviting, and whom: "THE SHARMA & VERMA FAMILIES · *invite* · **Mehta family** · *to the wedding of Aanya & Aditya*" (the guest from their personal link, `?to=`; "you" without one; the couple invite when no family names are given), an ivory envelope with a maroon wax seal of the couple's initials, gently floating. **One tap**: the seal breaks, the flap opens, the card rises, a flash of ivory, and the invitation begins. (No press-and-hold, no light switch.) |
+| Blessing | Ivory, a slowly turning mandala, a brass kalash with mango leaves, ॥ शुभ विवाह ॥ (or ॥ श्री गणेशाय नमः ॥, or none), "*Dear Mehta family,* with joy in their hearts, THE SHARMA & VERMA FAMILIES invite you to celebrate the wedding of" |
+| The couple | Maroon under a marigold toran and an arch: the invitation line, **Aanya · weds · Aditya** in shining gold script, the hashtag. Falling petals. |
 | Save the date | Blush: "*Save the date*", SATURDAY · **19** · DECEMBER, 2026 · Jaipur, and a live countdown (40 days 4 hrs 32 min 47 sec to go). |
 | One poster per function | Each in its own palette with its own motif: Haldi turmeric (a brass bowl, marigolds), Mehendi henna green (a mandala), Sangeet magenta (a dholak, notes), Wedding crimson (a marigold mandap with the sacred fire), Reception midnight (a chandelier), Engagement blush (rings). "THE *Haldi*", the day, the time, the venue, the dress code, **📍 Directions** and **📅 Save the date** (a calendar file on iPhones, Google Calendar elsewhere). |
 | Photos, a note | If added: polaroids taped to ivory; a short letter signed by the couple. |
@@ -134,26 +134,40 @@ rebuilt from scratch around how Indian e-invites are actually shared: full-scree
 
 The pages play like stories: progress bars on top, about 4 to 7 seconds each, **tap** (right) for the next, tap the left
 third for the previous one, **hold** to pause, arrow keys too. Every page is a 9:16 poster with a double gold frame, made
-to be screenshotted. Fonts: Great Vibes (names, titles), Cinzel (capitals), Cormorant Garamond (words), self-hosted (OFL).
+to be screenshotted. On a laptop the poster stays a centred 9:16 story on the velvet room instead of stretching.
+The music starts on the tap that breaks the seal (phones only allow sound inside a tap). After the finale, **Send your
+blessings** has its own feelings (🙏 Blessings to you both · 🎉 We’ll be there · 💛 So happy for you · 🥹 So emotional)
+and three ready-made blessings. Fonts: Great Vibes (names, titles), Cinzel (capitals), Cormorant Garamond (words), self-hosted (OFL).
 
 ### What the couple does (about a minute)
 
-One screen, in four short cards, with a live poster of the names beside it:
+One screen, in six short cards, with a live poster of the names beside it:
 
-1. **The couple**: Bride, Groom (⇄ swaps the order). "Guests see *Aanya weds Aditya*".
+1. **The couple**: Bride, Groom (⇄ swaps the order). "Guests see *Aanya weds Aditya*". Optional: each side's family
+   name ("Sharma", "Verma family" and "The Verma Parivar" all work), shown live as "The envelope reads *The Sharma &
+   Verma families invite you*". The same line opens the WhatsApp message and the link preview.
 2. **The wedding** (always included): date, muhurat time (7 pm unless changed), venue, an optional Google Maps link.
 3. **Functions**: one tap each, **already filled in** from the wedding: Engagement 2 days before at 6 pm, Haldi the day
    before at 10 am, Mehendi at 3 pm, Sangeet at 7:30 pm, Reception the day after at 7:30 pm; same venue and map; a dress
    code (shades of yellow, shades of green, glam & sparkle…). Change the wedding date and every function moves with it;
    change the venue and every function at that venue follows. "Edit" opens a function; "+ Other" adds any ceremony.
 4. **The words**: the invitation line, the blessing, a hashtag (three suggestions from the names, like #AanyaWedsAditya
-   and #AdityaKiAanya), and an optional note, each with ready-made choices. Then optional photos.
+   and #AdityaKiAanya), and an optional note, each with ready-made choices.
+5. **Music**, tap to listen: **Shehnai** (Raag Yaman over a tanpura drone with a soft dholak), **Baraat band** (brass
+   and dhol), **Sitar evening**, or none. All three are original and made live in the browser (no files, no rights
+   to clear); new invites start with the shehnai. Or **upload your own song** (MP3/M4A/AAC/OGG/WAV, up to 12 MB) and
+   drag **Start from** to the hook; it loops from there. Licensed tracks can be offered too: put the files in
+   `public/music/wedding/` and list them in `WEDDING_TRACKS` in `public/legacy/app.js`.
+6. Optional photos.
 
-Only the two names and the date are needed; a missing one is pointed out where it goes. The price is stated before
+Only the two names and the date are needed (and a song still uploading waits); a missing one is pointed out where it goes. The price is stated before
 creating. After unlocking: **Personal invites 💌** (paste the guest list, one WhatsApp message and link per guest).
 
-Data (validated on the server, `normalizeWedding`): `name`, `partner`, `groomFirst`, `weddingDate`, `city`, `families`,
+Data (validated on the server, `normalizeWedding`): `name`, `partner`, `groomFirst`, `family1`, `family2` (≤ 40 each), `weddingDate`, `city`, `families`,
 `hashtag`, `blessing` (`shubh` · `ganesh` · `none`), `events[]` (≤ 8: title, date, time, venue, https Maps link, dress),
-`message`, `photos`. `GET /api/gifts/:id/calendar[?e=n]` serves the functions as a calendar file (unlocked invites only,
+`message`, `photos`, `music` (`shehnai` · `baraat` · `sitar` · `custom` · `none`), `musicSrc`, `musicName`, `musicStart` (seconds, 0 to 900).
+A song is too big for the API's 4.5 MB body, so `POST /api/gifts/:id/media` with `{kind:'song', type, size}` returns a
+one-time signed Storage URL; the browser PUTs the file straight to it (with a progress bar) and keeps the public URL.
+Needs migration `0011_song_uploads.sql` (bucket limit 12 MB, M4A types). `GET /api/gifts/:id/calendar[?e=n]` serves the functions as a calendar file (unlocked invites only,
 India time). Styles: `app/wedding.css`. Funnel: `guest_links_made`, `story_card_saved`. Next: RSVP per function, more
 palettes, Hindi wording.

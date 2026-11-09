@@ -9,7 +9,7 @@
 
 /* the room behind everything: velvet maroon, no gift decor */
 .experience[data-occasion=wedding]{--scene:radial-gradient(120% 90% at 50% 20%,#6b1024 0%,#3d0a16 55%,#1f0409 100%);background:var(--scene);color:#fbe9c8}
-.experience[data-occasion=wedding] .vibe-room-doodles,.experience[data-occasion=wedding] .room-warmth,.experience[data-occasion=wedding] .room-wall,.experience[data-occasion=wedding] .room-lights,.experience[data-occasion=wedding] .experience-brand,.experience[data-occasion=wedding] #storyProgress{display:none!important}
+.experience[data-occasion=wedding] .vibe-room-doodles,.experience[data-occasion=wedding] .room-warmth,.experience[data-occasion=wedding] .room-wall,.experience[data-occasion=wedding] .room-lights,.experience[data-occasion=wedding] .room-decor,.experience[data-occasion=wedding] .room-vignette,.experience[data-occasion=wedding] .experience-brand,.experience[data-occasion=wedding] #storyProgress{display:none!important}
 .experience[data-occasion=wedding] .story-title em{color:#f6d27a}
 .experience[data-occasion=wedding].lit .story-title,.experience[data-occasion=wedding].lit .story-eyebrow,.experience[data-occasion=wedding].lit .story-description,.experience[data-occasion=wedding].lit .reply-hint,.experience[data-occasion=wedding].lit .story-soft-skip{color:#fbe9c8}
 .experience[data-occasion=wedding] .story-btn{background:linear-gradient(135deg,#f6d27a,#c98a2b);color:#3d0a16;font-weight:700}
@@ -33,6 +33,11 @@
 .we-seal i{font-style:normal;font-size:10px;opacity:.85}
 .we-seal::before{content:'';position:absolute;inset:-6px;border-radius:46% 54% 50% 50%/55% 45% 55% 45%;background:radial-gradient(circle at 40% 35%,#b0223a,#6b1024);z-index:-1}
 .we-hint{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:20px;color:#f3d9a4;margin-top:22px;animation:we-rise .8s .5s var(--ease) both,we-blink 2.2s 1.4s ease-in-out infinite}
+.we-invite{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:19px;color:#f3d9a4;margin:4px 0 -4px;animation:we-rise .8s .05s var(--ease) both}
+.we-to{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:19px;line-height:1.3;color:#f3d9a4;margin:-14px 0 22px;max-width:30ch;animation:we-rise .8s .15s var(--ease) both}
+.wp-hosts{font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:.82em;letter-spacing:.08em;color:#8a1c33}
+.wp-sign small{display:block;font-size:.72em;opacity:.8;margin-top:2px}
+.wb-sub{margin:14px 0 6px;font-size:13px;font-weight:600}.wb-sub i{font-weight:400;opacity:.6}
 .we-from{font-family:'Cinzel',Georgia,serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#c9a46c;margin-top:28px}
 .we-envelope.is-open{animation:none}
 .we-envelope.is-open .we-seal{transform:scale(1.35) rotate(-18deg);opacity:0}
@@ -49,6 +54,8 @@
 .wp-player{position:absolute;inset:0;z-index:8;background:#1f0409;animation:wp-in .5s ease both}
 .wp-player.is-final{z-index:8}
 @keyframes wp-in{from{opacity:0}to{opacity:1}}
+/* laptops and tablets: the poster stays a 9:16 story, centred on the velvet room, never stretched */
+@media (min-aspect-ratio:3/4){.wp-player{left:50%;right:auto;width:min(100%,calc(100dvh*9/16));margin-left:calc(min(100%,calc(100dvh*9/16))/-2);box-shadow:0 0 0 1px #d4a24c55,0 30px 90px #000c}}
 .wp-bars{position:absolute;z-index:3;top:max(10px,env(safe-area-inset-top));left:12px;right:70px;display:flex;gap:4px}
 .wp-bars i{flex:1;height:3px;border-radius:3px;background:#ffffff45;overflow:hidden}
 .wp-bars b{display:block;height:100%;width:0;background:#fff;border-radius:inherit}
@@ -190,6 +197,14 @@
 .wb-ev-text{flex:1;min-width:0;display:grid}
 .wb-ev-text b{font-size:15px;color:#3a1f2b}
 .wb-ev-text span{font-size:13px;color:#7a6168;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wb-songs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wb-song,.wb-card .wb-upload{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1px solid #e3c1be;background:#fff;text-align:left;color:#4a2f37;cursor:pointer;min-width:0}
+.wb-song.is-on,.wb-upload.is-on{border-color:#a3253f;background:#fff4ef;box-shadow:0 0 0 1px #a3253f}
+.wb-song-ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#7a1428;color:#f6d27a;font-size:11px}
+.wb-song-txt{display:grid;min-width:0}.wb-card .wb-song-txt small{font-size:12px;color:#8a7077}.wb-song-txt b{font-size:14px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wb-song-txt small{font-size:12px;color:#8a7077}
+.wb-upload{border-style:dashed}.wb-upload .wb-song-ico{background:linear-gradient(135deg,#f6d27a,#c98a2b);color:#3d0a16;font-size:15px}
+.wb-trim{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}.wb-trim input[type=range]{width:100%;accent-color:#a3253f}.wb-trim output{font-weight:700;color:#7a1428;font-variant-numeric:tabular-nums}
+@media (max-width:380px){.wb-songs{grid-template-columns:1fr}.wb-trim{grid-template-columns:1fr auto}.wb-trim label{grid-column:1/-1}}
 .wb-mini{padding:7px 12px;border-radius:999px;border:1px solid #e3c1be;background:#fffaf6;font-size:13px;font-weight:600;color:#6b2a35}
 .wb-x{padding:7px 10px}
 .wb-ev-edit{display:grid;gap:10px;padding:0 12px 12px}

@@ -356,7 +356,10 @@ try {
       const pg = await ctx.newPage(); pg.setDefaultTimeout(20000); watch(pg, 'journey-' + key);
       await pg.goto(`${APP}/#demo=${key}`, { waitUntil: 'load' });
       if (key === 'wedding') {                                    // the wedding's own envelope: one tap on the wax seal, then the pages play by themselves
-        await pg.waitForSelector('.we-envelope'); await pg.locator('.we-envelope').click();
+        await pg.waitForSelector('.we-envelope');
+        assert.equal(await pg.locator('.we-kicker').innerText(), 'THE SHARMA & VERMA FAMILIES', 'the envelope says who is inviting');
+        assert.match(await pg.locator('.we-to').innerText(), /to the wedding of Aanya & Aditya/);
+        await pg.locator('.we-envelope').click();
       } else {
         await pg.waitForSelector('#sealBtn');
         const box = await pg.locator('#sealBtn').boundingBox();
@@ -479,12 +482,18 @@ try {
     assert.deepEqual(await w.locator('.wb-ev-text span').allInnerTexts(), ['Fri, 11 Dec · 10 am · Jai Mahal Palace, Jaipur', 'Sat, 12 Dec · 7 pm · Jai Mahal Palace, Jaipur'], 'Haldi the day before at 10 am, the wedding at 7 pm, same venue');
     await w.fill('#wbDate', '2026-12-20');
     assert.match((await w.locator('.wb-ev-text span').allInnerTexts())[0], /Sat, 19 Dec/, 'functions follow a new wedding date');
+    await w.fill('#wbFam1', 'Sharma'); await w.fill('#wbFam2', 'Verma family');
+    assert.match(await w.locator('#wbHosts').innerText(), /The Sharma & Verma families invite you/, 'the two family names become the envelope line');
+    assert.equal(await w.locator('#wbMusic .wb-song.is-on').getAttribute('data-key'), 'shehnai', 'a new invite starts with the shehnai');
+    await w.locator('[data-wb="song"][data-key="sitar"]').click();
+    assert.equal(await w.locator('#wbMusic .wb-song.is-on').getAttribute('data-key'), 'sitar');
     assert.match(await w.locator('#wbPrice').innerText(), /₹499/, 'the wedding price is stated before creating');
     await w.click('#createGiftBtn'); await w.waitForSelector('#shareView:not([hidden])', { timeout: 25000 });
     assert.match(await w.locator('#unlockPanel').innerText(), /Your wedding invite is ready/);
     assert.match(await w.locator('[data-v3="unlock"]').innerText(), /Unlock & get link · ₹499/);
     assert.equal(await w.locator('#guestLinks').isVisible().catch(() => false), false, 'personal links wait until it is unlocked');
     const made = await w.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
+    assert.deepEqual(await (await fetch(`${LOCKED_APP}/api/gifts/${made.id}/owner`, { headers: { authorization: `Bearer ${made.key}` } })).json().then(r => [r.gift.family1, r.gift.family2, r.gift.music]), ['Sharma', 'Verma family', 'sitar'], 'the families and the music are saved');
     assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${made.id}`, { method: 'DELETE', headers: { authorization: `Bearer ${made.key}` } })).status, 200);
     await wctx.close();
   }

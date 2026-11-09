@@ -110,8 +110,8 @@ export const OCCASIONS: Record<OccasionKey, Occasion> = {
     symbol: '❀',
     vibe: 'Elegant',
     title: 'Your wedding invite',
-    description: 'A royal digital wedding invite: your names in gold under marigolds, every function with a map, and a personal link for each guest.',
-    seo: 'Create a digital wedding invitation website: your names in gold under marigolds, a countdown, Haldi, Mehendi, Sangeet and wedding cards with Google Maps and calendar, and a personal link for every guest.',
+    description: 'A wedding invite your guests open like a wax-sealed envelope: story pages for every function, maps, calendar, your song, and a personal link for each guest.',
+    seo: 'Create a digital wedding invitation: a wax-sealed envelope from your families, story pages for Haldi, Mehendi, Sangeet and the wedding with Google Maps and calendar, Hindi wedding music, and a personal link for every guest.',
   },
 };
 

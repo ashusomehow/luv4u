@@ -137,7 +137,7 @@ const OCCASIONS = {
  },
  wedding: {
   slug:'wedding-invite',label:'Wedding invite',short:'Wedding',symbol:'❀',art:'marigold',vibe:'Elegant',group:'bigday',
-  description:'A royal digital wedding invite: your names in gold under marigolds, every function with a map, and a personal link for each guest.',
+  description:'A wedding invite your guests open like a wax-sealed envelope: story pages for every function, maps, calendar, your song, and a personal link for each guest.',
   whisper:'For the guest list, not just one person.',
   title:'Your wedding<br><em>invite. 💛</em>',intro:'About a minute. Dates, times and words are filled in for you, and each guest gets their own link.',
   greeting:'The wedding of',eyebrow:'You’re invited',portrait:'THE WEDDING OF',
@@ -147,7 +147,7 @@ const OCCASIONS = {
   finish:'Your presence is the only gift we need.',
   finalTitle:'We can’t wait to<br><em>celebrate with you.</em>',noteLabel:'A note from the families',extras:'The envelope, marigold curtains, your names in gold, a countdown, every function with maps and a story card are already included.',
   detailTitle:'Functions & families',share:'our wedding invite',cta:'Make our wedding invite',
-  seo:'Create a digital wedding invitation website: your names in gold under marigolds, a countdown, Haldi, Mehendi, Sangeet and wedding cards with Google Maps and calendar, and a personal link for every guest.'
+  seo:'Create a digital wedding invitation: a wax-sealed envelope from your families, story pages for Haldi, Mehendi, Sangeet and the wedding with Google Maps and calendar, Hindi wedding music, and a personal link for every guest.'
  }
 };
 const occasionOf = value => OCCASIONS[occasionKey(value)];
@@ -163,6 +163,7 @@ const PROPOSAL_QUESTIONS={relationship:'Will you be my person?',date:'Would you 
 const proposalQuestion = g => g.proposalQuestion?.trim() || PROPOSAL_QUESTIONS[g.proposalKind] || PROPOSAL_QUESTIONS.relationship;
 const GENERIC_REACTIONS=[['🥹','Moved'],['😂','Made me smile'],['❤️','Sending love'],['🎉','Celebrating']];
 const SORRY_REACTIONS=[['💗','Forgiven'],['🤗','Come here'],['🙄','Lucky you’re cute'],['🥺','Still a tiny bit mad']];
+const WEDDING_REACTIONS=[['🙏','Blessings to you both'],['🎉','We’ll be there'],['💛','So happy for you'],['🥹','So emotional']];
 /* The sorry gift: who says sorry for you, and the one question it asks. */
 const SORRY_CHARACTERS={teddy:'🧸 Teddy',cat:'🐱 Kitty',stickers:'🥺 Just stickers'};
 const sorryCharacter=g=>Object.hasOwn(SORRY_CHARACTERS,g?.character)?g.character:'teddy';
@@ -182,10 +183,11 @@ let homeOccasion='love',journeyReply='',proposalAnswer='',forgiven=false,noDodge
 let backendOccasions=['birthday'];
 const occasionDrafts=new Map();
 
-const emptyDraft = () => ({occasion:'birthday',proposalKind:'relationship',proposalQuestion:'',reasons:[],character:'teddy',coupons:[],forgiveQuestion:'',partner:'',families:'',city:'',weddingDate:'',events:[],hashtag:'',blessing:'shubh',groomFirst:false,birthDate:'',ageCandles:false,topTrait:'',mostPlayed:'',togetherSince:'',milestone:'',reunionMessage:'',name:'',vibe:'Cute',message:'',sender:'',photos:[],memories:[],voice:'',voiceName:'',music:'none',musicSrc:'',musicName:'',volume:.24,branch:false,motion:true,sharePreview:true,replyPhone:'',quizQuestion:'',quizAnswer:'',quizOptions:[],fun:'none',funMessage:'',finalMessage:'',finalUrl:''});
+const emptyDraft = () => ({occasion:'birthday',proposalKind:'relationship',proposalQuestion:'',reasons:[],character:'teddy',coupons:[],forgiveQuestion:'',partner:'',family1:'',family2:'',families:'',city:'',weddingDate:'',events:[],hashtag:'',blessing:'shubh',groomFirst:false,birthDate:'',ageCandles:false,topTrait:'',mostPlayed:'',togetherSince:'',milestone:'',reunionMessage:'',name:'',vibe:'Cute',message:'',sender:'',photos:[],memories:[],voice:'',voiceName:'',music:'none',musicSrc:'',musicName:'',volume:.24,branch:false,motion:true,sharePreview:true,replyPhone:'',quizQuestion:'',quizAnswer:'',quizOptions:[],fun:'none',funMessage:'',finalMessage:'',finalUrl:''});
 let draft=emptyDraft(), currentView='home', publishedGift=null, publishedURL='', previewReturn='creator', gift=null, scenes=[], sceneIndex=0, transitionBusy=false, experienceToken=0, saveTimer, toastTimer, localStorageOkay=true, photoBusy=false;
 let micStream=null, micFrame=null, micTimeout=null, mediaRecorder=null, recordedChunks=[], recordInterval=null, recordingSeconds=0, recordingGeneration=0;
 let musicAudio=null, audioContext=null, masterGain=null, melodyTimer=null, melodyVoices=[], soundMuted=false, musicDucked=false, scratchCleanup=null, confettiFrame=null, voiceWasMusicPlaying=false, activeAudioNodes=new Set();
+const RAGAS=['shehnai','baraat','sitar'];
 let reaction='', replySharedText='', scratchDone=false, popCount=0;
 
 function safeWebURL(value) {
@@ -202,7 +204,7 @@ function sanitizeGiftV1(d, needName=true) {
  x.photos=(Array.isArray(d.photos)?d.photos:[]).slice(0,4).map(p=>({src:safeMedia(p?.src,'image'),caption:cleanText(p?.caption,70)})).filter(p=>p.src);
  x.memories=(Array.isArray(d.memories)?d.memories:[]).slice(0,3).map(m=>({when:cleanText(m?.when,40),text:cleanText(m?.text,200)}));
  x.voice=safeMedia(d.voice,'audio');x.voiceName=cleanText(d.voiceName,100);
- x.music=['none','musicbox','dreamy','custom'].includes(d.music)?d.music:'none';x.musicSrc=safeMedia(d.musicSrc,'audio');x.musicName=cleanText(d.musicName,100);
+ x.music=['none','musicbox','dreamy','custom',...RAGAS].includes(d.music)?d.music:'none';x.musicStart=Math.min(900,Math.max(0,Math.round(Number(d.musicStart))||0));x.musicSrc=safeMedia(d.musicSrc,'audio');x.musicName=cleanText(d.musicName,100);
  if(x.music==='custom'&&!x.musicSrc)x.music='none';
  x.fun=['none','balloons','scratch','quiz'].includes(d.fun)?d.fun:'none';x.finalUrl=safeWebURL(d.finalUrl);
  x.id=cleanText(d.id,40).replace(/[^a-zA-Z0-9_-]/g,'');x.version=1;
@@ -432,15 +434,71 @@ function autoAdvance(ms,scene){
  autoTimer=setTimeout(()=>{if(token!==experienceToken||scenes[sceneIndex]!==scene||transitionBusy)return;chime('soft');goToScene(sceneIndex+1);},ms);
 }
 const softNext=text=>`<button class="story-soft-skip is-ready" data-story="next">${e(text)} ${icon('arrow')}</button>`;
+/* ---- Wedding music made in the browser, original and royalty-free: a shehnai over a tanpura drone, a baraat brass
+   band with dhol, and an evening sitar. Notes are scheduled a moment ahead on the audio clock so they stay in time. ---- */
+let ragaBus=null;
+const RAGA={
+ shehnai:{sa:293.66,beat:.42,drone:true,drum:'soft',voice:'reed',tune:[[-1,1],[2,1],[4,2],[2,.5],[4,.5],[6,1],[7,2],[6,.5],[4,.5],[2,1],[0,2],[null,1],[4,1],[6,1],[7,1],[9,1],[11,1],[12,2],[11,.5],[9,.5],[7,1],[6,.5],[4,.5],[2,1],[4,2],[null,1],[7,1],[9,.5],[7,.5],[6,1],[4,1],[2,1],[-1,1],[0,3],[null,1]]},
+ baraat:{sa:349.23,beat:.27,drone:false,drum:'dhol',voice:'brass',tune:[[0,1],[2,1],[4,1],[7,1],[9,2],[7,1],[4,1],[7,2],[4,1],[2,1],[0,2],[null,2],[4,1],[7,1],[9,1],[12,1],[14,2],[12,1],[9,1],[12,2],[9,1],[7,1],[4,2],[null,2],[9,1],[9,1],[7,1],[4,1],[7,1],[7,1],[4,1],[2,1],[4,1],[2,1],[0,1],[-3,1],[0,4]]},
+ sitar:{sa:220,beat:.5,drone:true,drum:'tabla',voice:'pluck',tune:[[0,1],[2,.5],[3,.5],[5,1],[7,2],[9,.5],[7,.5],[5,1],[3,1],[2,1],[0,2],[null,1],[7,1],[10,1],[12,2],[10,.5],[9,.5],[7,1],[5,.5],[3,.5],[2,2],[null,1],[3,1],[5,1],[7,1],[5,.5],[3,.5],[2,1],[0,3],[null,1]]},
+};
+function ragaNote(kind,f,t,len,vol){
+ const ac=audioContext,g=ac.createGain(),o=ac.createOscillator(),end=t+len;
+ if(kind==='pluck'){
+  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(4200,t);lp.frequency.exponentialRampToValueAtTime(700,t+.6);
+  o.type='sawtooth';o.frequency.setValueAtTime(f*.985,t);o.frequency.exponentialRampToValueAtTime(f,t+.07);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol*1.4,t+.006);g.gain.exponentialRampToValueAtTime(.0008,t+Math.max(1.2,len*1.6));
+  o.connect(lp);lp.connect(g);o.start(t);o.stop(t+Math.max(1.3,len*1.7));
+ }else{
+  const bp=ac.createBiquadFilter(),lfo=ac.createOscillator(),depth=ac.createGain(),o2=ac.createOscillator();
+  bp.type='bandpass';bp.frequency.value=kind==='brass'?1500:1250;bp.Q.value=kind==='brass'?.7:1.1;
+  o.type='sawtooth';o2.type='square';o2.detune.value=7;
+  [o,o2].forEach(x=>{x.frequency.setValueAtTime(f*(kind==='reed'?.944:.99),t);x.frequency.exponentialRampToValueAtTime(f,t+(kind==='reed'?.09:.03));});
+  lfo.frequency.value=kind==='reed'?5.4:6;depth.gain.setValueAtTime(0,t);depth.gain.linearRampToValueAtTime(f*(kind==='reed'?.012:.005),t+Math.min(.4,len*.6));
+  lfo.connect(depth);depth.connect(o.frequency);depth.connect(o2.frequency);
+  const mix=ac.createGain();mix.gain.value=.5;o2.connect(mix);mix.connect(bp);o.connect(bp);bp.connect(g);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+(kind==='brass'?.02:.06));g.gain.setValueAtTime(vol,Math.max(t+.07,end-.1));g.gain.linearRampToValueAtTime(0,end+.06);
+  [o,o2,lfo].forEach(x=>{x.start(t);x.stop(end+.1);});
+ }
+ g.connect(ragaBus);
+}
+function ragaDrum(type,t,vol){
+ const ac=audioContext,g=ac.createGain();g.connect(ragaBus);
+ if(type==='thump'){const o=ac.createOscillator();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(52,t+.18);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+.32);o.connect(g);o.start(t);o.stop(t+.35);return;}
+ const n=Math.floor(ac.sampleRate*.12),buf=ac.createBuffer(1,n,ac.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
+ const src=ac.createBufferSource(),f=ac.createBiquadFilter();src.buffer=buf;f.type='bandpass';f.frequency.value=type==='slap'?900:2600;f.Q.value=1.4;g.gain.value=vol;src.connect(f);f.connect(g);src.start(t);
+}
+function startRaga(kind){
+ const r=RAGA[kind];if(!r||soundMuted||!ensureAudio())return;
+ ragaBus=audioContext.createGain();ragaBus.gain.value=musicDucked?.25:1;ragaBus.connect(masterGain);
+ const hz=st=>r.sa*Math.pow(2,st/12);let at=audioContext.currentTime+.08,step=0,beat=0;
+ const drums={soft:[[0,'thump',.35],[3,'tap',.10],[4,'thump',.22],[6,'tap',.10]],dhol:[[0,'thump',.6],[1,'slap',.18],[2,'thump',.38],[3,'thump',.5],[4,'slap',.2],[5,'thump',.38],[6,'thump',.55],[7,'tap',.14]],tabla:[[0,'thump',.25],[2,'tap',.08],[3,'tap',.06],[4,'thump',.16],[6,'tap',.08]]}[r.drum];
+ const vol=r.voice==='brass'?.075:r.voice==='pluck'?.09:.085;
+ const tick=()=>{
+  if(!ragaBus)return;const ahead=audioContext.currentTime+.35;
+  while(at<ahead){
+   const [st,len]=r.tune[step++%r.tune.length],dur=len*r.beat;
+   if(st!==null)ragaNote(r.voice,hz(st),at,dur*.94,vol);
+   for(let b=0;b<len*2;b++){const k=beat%8,at2=at+b*r.beat/2;
+    if(r.drone&&beat%16===0)[[-12,.05],[-5,.035],[0,.03],[-12,.04]].forEach(([s2,v],i)=>ragaNote('pluck',hz(s2),at2+i*r.beat*2,r.beat*3,v));
+    const hit=drums.find(h=>h[0]===k);if(hit)ragaDrum(hit[1],at2,hit[2]);beat++;}
+   at+=dur;
+  }
+ };
+ tick();melodyTimer=setInterval(tick,90);
+}
+const musicBase=()=>gift?.volume??(gift?.occasion==='wedding'?.6:.24);
 function startMusicV1(){
  stopMusic();if(!gift||soundMuted||gift.music==='none')return;
- if(gift.music==='custom'&&gift.musicSrc){musicAudio=new Audio(gift.musicSrc);musicAudio.loop=true;musicAudio.volume=musicDucked?.07:.24;musicAudio.preload='none';musicAudio.addEventListener('error',()=>{if(currentView==='experience')toast("The soundtrack couldn't load. The little magic is still here.");},{once:true});musicAudio.play().catch(()=>{if(currentView==='experience')toast('Tap the sound button to try the soundtrack.');});return;}
+ if(RAGAS.includes(gift.music)){startRaga(gift.music);return;}
+ if(gift.music==='custom'&&gift.musicSrc){musicAudio=new Audio(gift.musicSrc);const from=Number(gift.musicStart)||0,a=musicAudio;
+  if(from){a.preload='auto';a.addEventListener('loadedmetadata',()=>{if(a.duration>from+5)a.currentTime=from;},{once:true});a.addEventListener('ended',()=>{if(musicAudio!==a)return;a.currentTime=a.duration>from+5?from:0;a.play().catch(()=>{});});}else a.loop=true;musicAudio.volume=musicDucked?.07:.24;musicAudio.preload='none';musicAudio.addEventListener('error',()=>{if(currentView==='experience')toast("The soundtrack couldn't load. The little magic is still here.");},{once:true});musicAudio.play().catch(()=>{if(currentView==='experience')toast('Tap the sound button to try the soundtrack.');});return;}
  if(!ensureAudio())return;
  const melody=gift.music==='dreamy'?[523.25,0,783.99,659.25,0,587.33,440,0,523.25,659.25,0,783.99,698.46,0,587.33,0]:[659.25,783.99,1046.5,0,987.77,783.99,659.25,0,587.33,659.25,783.99,0,659.25,523.25,587.33,0];
  let note=0;const play=()=>{if(soundMuted||document.hidden)return;const frequency=melody[note++%melody.length];if(frequency){const vol=(gift.volume??.24)/.24*(musicDucked?.016:.065);tone(frequency*THEMES[gift.vibe].transpose,0,2.1,vol,'sine',true);tone(frequency*2*THEMES[gift.vibe].transpose,.012,1.05,vol*.13,'sine',true);if(note%4===1)tone(frequency/2*THEMES[gift.vibe].transpose,0,2.6,vol*.65,'sine',true);}};
  play();melodyTimer=setInterval(play,(gift.music==='dreamy'?1000:720)*THEMES[gift.vibe].speed);
 }
-function stopMusic(){clearInterval(melodyTimer);melodyTimer=null;if(musicAudio){musicAudio.pause();musicAudio.removeAttribute('src');musicAudio.load();musicAudio=null;}for(const {osc} of melodyVoices){try{osc.stop();}catch{}}melodyVoices=[];}
+function stopMusic(){clearInterval(melodyTimer);melodyTimer=null;if(ragaBus){const b=ragaBus;ragaBus=null;try{b.gain.setTargetAtTime(0,audioContext.currentTime,.05);setTimeout(()=>{try{b.disconnect();}catch{}},400);}catch{}}if(musicAudio){musicAudio.pause();musicAudio.removeAttribute('src');musicAudio.load();musicAudio=null;}for(const {osc} of melodyVoices){try{osc.stop();}catch{}}melodyVoices=[];}
 function updateSoundControl(){const b=$('#soundToggle');if(!b)return;b.innerHTML=icon(soundMuted?'muted':'volume');b.setAttribute('aria-label',soundMuted?'Turn sound on':'Turn sound off');b.setAttribute('aria-pressed',String(!soundMuted));b.title=soundMuted?'A little sound?':'Keep it quiet';}
 function toggleSound(){
  soundMuted=!soundMuted;ensureAudio();if(masterGain)masterGain.gain.setValueAtTime(soundMuted?0:.28,audioContext.currentTime);if(soundMuted)stopMusic();else{if($('#experience').classList.contains('lit'))startMusic();chime();}updateSoundControl();try{localStorage.setItem('luv4u.muted',String(soundMuted));}catch{}
@@ -537,7 +595,7 @@ function initScratch(){
 }
 function revealScratch(){if(scratchDone)return;scratchDone=true;$('#scratchCanvas')?.classList.add('revealed');$('#scratchRevealButton').hidden=true;$('#scratchHelp').textContent='Not so secret anymore. But always, always true. ♡';$('#funAfter').innerHTML=storyButton('Keeping that one close');chime();}
 function answerQuiz(button){if($('.quiz-option.chosen'))return;button.classList.add('chosen');button.setAttribute('aria-pressed','true');$$('.quiz-option').forEach(b=>b.disabled=true);$('#funAfter').innerHTML=`<p class="quiz-answer">Correct. It was always you. ♡</p>${gift.funMessage?`<p class="story-description">${e(gift.funMessage)}</p>`:''}${storyButton('Excellent. Where’s my cake?')}`;chime('wish');}
-function selectReaction(value,play=true){if(![...GENERIC_REACTIONS,...SORRY_REACTIONS].some(r=>r[0]===value))return;reaction=value;replySharedText='';if($('#replyResult'))$('#replyResult').innerHTML='';$$('.reaction-btn').forEach(b=>{const selected=b.dataset.reaction===value;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});if(play)chime('pop');}
+function selectReaction(value,play=true){if(![...GENERIC_REACTIONS,...SORRY_REACTIONS,...WEDDING_REACTIONS].some(r=>r[0]===value))return;reaction=value;replySharedText='';if($('#replyResult'))$('#replyResult').innerHTML='';$$('.reaction-btn').forEach(b=>{const selected=b.dataset.reaction===value;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});if(play)chime('pop');}
 function prepareReplyV1(){
  const text=$('#recipientReply').value.trim();if(!reaction&&!text){toast('Pick a little feeling, or write a few words. Either one is lovely.');return;}
  let saved=false;try{localStorage.setItem('luv4u.reply.'+gift.id,JSON.stringify({reaction,text,at:new Date().toISOString()}));saved=true;}catch{}
@@ -582,7 +640,7 @@ function sanitizeGift(d,needName=true){const x=sanitizeGiftV1(d,needName);x.vers
  if(x.occasion==='missyou')x.reunionMessage=cleanText(d.reunionMessage,200);
  if(x.occasion==='birthday'){x.birthDate=validBirthDate(d.birthDate);x.ageCandles=d.ageCandles===true&&!!x.birthDate;x.topTrait=cleanText(d.topTrait,40);x.mostPlayed=cleanText(d.mostPlayed,40);}
  if(x.occasion==='wedding'){
-  x.partner=cleanText(d.partner,40);x.families=cleanText(d.families,160);x.city=cleanText(d.city,60);x.weddingDate=validStoryDateAny(d.weddingDate);
+  x.partner=cleanText(d.partner,40);x.family1=cleanText(d.family1,40);x.family2=cleanText(d.family2,40);x.families=cleanText(d.families,160);x.city=cleanText(d.city,60);x.weddingDate=validStoryDateAny(d.weddingDate);
   x.events=(Array.isArray(d.events)?d.events:[]).slice(0,8).map(ev=>({title:cleanText(ev?.title,40),date:validStoryDateAny(ev?.date),time:/^\d{2}:\d{2}$/.test(ev?.time||'')?ev.time:'',venue:cleanText(ev?.venue,140),map:/^https:\/\//.test(String(ev?.map||'').trim())?cleanText(ev.map,400).trim():'',dress:cleanText(ev?.dress,60)}));
   x.hashtag=cleanText(d.hashtag,40).replace(/\s+/g,'');if(x.hashtag&&!x.hashtag.startsWith('#'))x.hashtag='#'+x.hashtag;
   x.blessing=Object.hasOwn(W_BLESSINGS,d.blessing)?d.blessing:'shubh';x.groomFirst=d.groomFirst===true;
@@ -789,7 +847,7 @@ function openCrop(index){const p=draft.photos[index];if(!p)return;cropContext={i
 function updateCrop(){if(!cropContext)return;cropContext.x=+$('#cropX').value;cropContext.y=+$('#cropY').value;cropContext.zoom=+$('#cropZoom').value;$('#cropImage').style.cssText=cropStyle(cropContext);}
 function closeCrop(save){if(save&&cropContext&&draft.photos[cropContext.index]){Object.assign(draft.photos[cropContext.index],{x:cropContext.x,y:cropContext.y,zoom:cropContext.zoom});renderPhotoList();saveDraft();}$('#cropDialog').close();cropContext=null;}
 function renderAudioChip(kind){const src=kind==='voice'?draft.voice:draft.musicSrc,name=kind==='voice'?draft.voiceName:draft.musicName;$('#'+kind+'FileChip').innerHTML=src?`<div class="audio-chip">${icon(kind==='voice'?'mic':'music')}<span>${e(name||'Your linked '+(kind==='voice'?'voice note':'soundtrack'))}</span><button type="button" data-remove-audio="${kind}" aria-label="Remove ${kind}">${icon('x')}</button></div>${kind==='voice'?`<div class="audio-preview"><audio controls preload="none" src="${e(src)}" aria-label="Listen to your voice note"></audio></div>`:''}`:'';const audio=$('#voiceFileChip audio');if(audio){audio.addEventListener('play',stopPreviewAudio);audio.addEventListener('error',()=>toast('This audio could not play here. Try another recording format.'),{once:true});}}
-function stopPreviewAudio(){if(previewAudio){previewAudio.pause();previewAudio.src='';previewAudio=null;}if(previewMelody){clearInterval(previewMelody);previewMelody=null;}if(previewGain){try{previewGain.disconnect();}catch{}previewGain=null;}if($('#previewMusic'))$('#previewMusic').innerHTML=icon('music')+' Listen a little';}
+function stopPreviewAudio(){if(wbListen)wbStopListen();if(previewAudio){previewAudio.pause();previewAudio.src='';previewAudio=null;}if(previewMelody){clearInterval(previewMelody);previewMelody=null;}if(previewGain){try{previewGain.disconnect();}catch{}previewGain=null;}if($('#previewMusic'))$('#previewMusic').innerHTML=icon('music')+' Listen a little';}
 function previewMusic(){if(previewAudio||previewMelody){stopPreviewAudio();return;}if(draft.music==='none'){toast('Choose a little soundtrack first.');return;}$('#voiceFileChip audio')?.pause();ensureAudio();if(audioContext?.state==='suspended')audioContext.resume().catch(()=>{});if(draft.music==='custom'){previewAudio=new Audio(draft.musicSrc);previewAudio.volume=draft.volume??.24;previewAudio.addEventListener('ended',stopPreviewAudio,{once:true});previewAudio.addEventListener('error',()=>{stopPreviewAudio();toast('That soundtrack could not load. Check the direct audio link.');},{once:true});previewAudio.play().catch(()=>{stopPreviewAudio();toast('Tap Listen again, or check the audio file.');});}else if(audioContext){previewGain=audioContext.createGain();previewGain.gain.value=(draft.volume??.24)*.2;previewGain.connect(audioContext.destination);let n=0;const notes=draft.music==='dreamy'?[523.25,783.99,659.25,587.33,440,523.25]:[659.25,783.99,1046.5,987.77,783.99,659.25];const play=()=>{if(!previewGain||document.hidden)return;const osc=audioContext.createOscillator(),gain=audioContext.createGain(),t=audioContext.currentTime;osc.frequency.value=notes[n++%notes.length]*THEMES[draft.vibe].transpose;gain.gain.setValueAtTime(.8,t);gain.gain.exponentialRampToValueAtTime(.001,t+1.7);osc.connect(gain);gain.connect(previewGain);osc.start();osc.stop(t+1.8);osc.onended=()=>{osc.disconnect();gain.disconnect();};};play();previewMelody=setInterval(play,draft.music==='dreamy'?1000:720);}
  $('#previewMusic').innerHTML=icon('music')+' That’s lovely. Stop';}
 /* Single source of truth for the optional story beats. */
@@ -864,7 +922,7 @@ function renderSceneCore(){
  mountMessageTemplates($('#recipientReply'),'reply');
  if(gift.server&&!isPreview){
   const b=$('[data-story=prepare-reply]',s);b.dataset.v2='send-reply';delete b.dataset.story;b.innerHTML='Send my reply '+icon('heart');
-  $('.reply-hint',s).id='deliveryFeedback';$('.reply-hint',s).setAttribute('role','status');$('.reply-hint',s).innerHTML='It goes straight to '+e(gift.sender||'the person who made this')+', privately.<br>Nothing is sent until you choose to.';
+  $('.reply-hint',s).id='deliveryFeedback';$('.reply-hint',s).setAttribute('role','status');$('.reply-hint',s).innerHTML='It goes straight to '+e(gift.occasion==='wedding'?(coupleOf(gift)||gift.name):gift.sender||'the person who made this')+', privately.<br>Nothing is sent until you choose to.';
  }
  }
  if(type==='reply'&&reportLink())s.insertAdjacentHTML('beforeend','<p class="report-line">'+reportLink()+'</p>');
@@ -929,8 +987,8 @@ function startReel(token){
  reelTimer=setInterval(()=>{if(token!==experienceToken||document.hidden)return;items[at].classList.remove('on');at=(at+1)%items.length;items[at].classList.add('on');},3400);
 }
 function swellMusic(){if(soundMuted||gift.music==='none')return;const token=experienceToken,base=gift.volume??.24;if(musicAudio){musicAudio.volume=Math.min(.65,base*1.25);setTimeout(()=>{if(token===experienceToken&&musicAudio)musicAudio.volume=base;},2000);}if(gift.music!=='custom'){[261.63,329.63,392,523.25].forEach((f,i)=>tone(f*THEMES[gift.vibe].transpose,i*.12,2.5,base*.24,'sine',true));}}
-function startMusic(){startMusicV1();if(musicAudio)musicAudio.volume=musicDucked?(gift.volume??.24)*.23:(gift.volume??.24);}
-function duckMusic(duck){musicDucked=duck;if(musicAudio)musicAudio.volume=(gift.volume??.24)*(duck?.23:1);}
+function startMusic(){startMusicV1();if(musicAudio)musicAudio.volume=musicDucked?musicBase()*.23:musicBase();}
+function duckMusic(duck){musicDucked=duck;if(musicAudio)musicAudio.volume=musicBase()*(duck?.23:1);if(ragaBus&&audioContext)ragaBus.gain.setTargetAtTime(duck?.25:1,audioContext.currentTime,.2);}
 function stopTilt(){if(tiltHandler)window.removeEventListener('deviceorientation',tiltHandler);tiltHandler=null;tiltEnabled=false;$('[data-v2=tilt]')?.setAttribute('aria-pressed','false');$('#experience')?.style.removeProperty('--mx');$('#experience')?.style.removeProperty('--my');}
 async function enableTilt(silent=false){if(reducedMotion||!gift?.motion)return;tiltEnabled=true;$('[data-v2=tilt]')?.setAttribute('aria-pressed','true');if(!silent)toast('Tilt active. A tiny room, following you.');if(tiltHandler)return;try{if(typeof DeviceOrientationEvent==='undefined')return;if(typeof DeviceOrientationEvent.requestPermission==='function'&&await DeviceOrientationEvent.requestPermission()!=='granted')return;tiltHandler=ev=>{if(currentView!=='experience'||document.hidden||!tiltEnabled)return;$('#experience')?.style.setProperty('--mx',clamp((ev.gamma||0)/5,-8,8,0)+'px');$('#experience')?.style.setProperty('--my',clamp(((ev.beta||35)-35)/7,-7,7,0)+'px');};window.addEventListener('deviceorientation',tiltHandler,{passive:true});}catch{}}
 function toggleTilt(){if(tiltEnabled){stopTilt();toast('Tilt paused.');}else{enableTilt(false);}}
@@ -1004,7 +1062,7 @@ async function publishGift(){
  const media=await offloadMedia(editing.id,editing.key,g);
  const data=await api('/api/gifts/'+editing.id,{method:'PATCH',key:editing.key,body:{gift:media.gift,revision:editing.revision,...($('#expiryDays').dataset.changed==='true'?{expiresDays:+$('#expiryDays').value}:{}),...opensAtBody(false)}});
  publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';publishedExpiresAt=data.expiresAt||'';setOpensAt(data.opensAt);editing.revision=data.revision;
- rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});uploadCoverLater(editing.id,editing.key,publishedGift);
+ rememberGift({...editing,name:g.name,partner:g.partner||'',vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});uploadCoverLater(editing.id,editing.key,publishedGift);
  }else{
  // Keep these values after a network failure, so retrying does not duplicate gifts.
  if(!publishAttempt)publishAttempt={id:hexToken(12),key:hexToken(32)};
@@ -1012,18 +1070,19 @@ async function publishGift(){
  const media=await offloadMedia(publishAttempt.id,publishAttempt.key,g);
  const data=await api('/api/gifts',{method:'POST',body:{id:publishAttempt.id,editKey:publishAttempt.key,gift:media.gift,expiresDays:+$('#expiryDays').value,...opensAtBody(true)}});
  publishedGift=sanitizeGift(data.gift);publishedURL=data.url;publishedStatus=data.status||'paid';publishedExpiresAt=data.expiresAt||'';setOpensAt(data.opensAt);editing={id:publishedGift.id,key:publishAttempt.key,revision:data.revision,mode:'hosted'};
- rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});uploadCoverLater(editing.id,editing.key,publishedGift);publishAttempt=null;await removeStored('pending-create').catch(()=>{});
+ rememberGift({...editing,name:g.name,partner:g.partner||'',vibe:g.vibe,occasion:g.occasion,url:data.url,expiresAt:data.expiresAt,waiting:publishedStatus==='preview'});uploadCoverLater(editing.id,editing.key,publishedGift);publishAttempt=null;await removeStored('pending-create').catch(()=>{});
  }
  }else{
  publishedStatus='paid';publishedGift={...g,id:hexToken(12),server:false};const encoded=await encodeGift(publishedGift);const candidate=buildGiftURL(encoded);publishedURL=candidate.length<=8000?candidate:'';
- await store('gift:'+publishedGift.id,publishedGift).catch(()=>{toast('This browser cannot keep this gift. Download its HTML before closing.');});editing={mode:'portable',id:publishedGift.id};rememberGift({id:publishedGift.id,name:g.name,vibe:g.vibe,occasion:g.occasion,mode:'portable',url:publishedURL});
+ await store('gift:'+publishedGift.id,publishedGift).catch(()=>{toast('This browser cannot keep this gift. Download its HTML before closing.');});editing={mode:'portable',id:publishedGift.id};rememberGift({id:publishedGift.id,name:g.name,partner:g.partner||'',vibe:g.vibe,occasion:g.occasion,mode:'portable',url:publishedURL});
  }
  await store('lastGift',publishedGift).catch(()=>{});try{if(g.sender)localStorage.setItem('kholona.sender',g.sender);}catch{}showShare();saveDraft();
  }catch(err){toast(err.message||'The ribbon got tangled. Your draft is still here.');}finally{publishing=false;btn.disabled=false;btn.innerHTML=createLabel();}
 }
 function showShare(){
  if(!publishedGift)return;showShareV1();const isHosted=publishedGift.server,tooLarge=!publishedURL;
- $('.share-view h2').innerHTML=publishedGift.occasion==='wedding'?`Your invite is<br><em>ready.</em>`:`It’s ready for<br><em>${e(publishedGift.name)}.</em>`;
+ const wedShare=publishedGift.occasion==='wedding';$('.share-view h2').innerHTML=wedShare?`Your invite is<br><em>ready.</em>`:`It’s ready for<br><em>${e(publishedGift.name)}.</em>`;
+ $('.share-view>.eyebrow').textContent=wedShare?'Ready for your guests':'Sealed with a little love';$('.link-label>span').textContent=wedShare?'One link for every guest':'One link. A whole little world.';
  $('#shareLead').textContent=occasionOf(publishedGift).whisper;$('#shareArt').innerHTML=occasionArt(occasionArtFor(publishedGift),'share-occasion');$('#shareCover').alt=occasionOf(publishedGift).label+' share artwork';
  $('#giftLink').value=publishedURL||'Your media-rich gift is ready as an HTML file.';$('#giftLink').disabled=tooLarge;$('#copyGiftLink').disabled=tooLarge;$('#whatsappGift').disabled=tooLarge||!publicHosting();
  $('#linkSize').textContent=isHosted?'A small link. Every lovely detail included.':tooLarge?'Wrapped as a gift file · all uploaded media included':'Standalone gift · carried inside the link';
@@ -1141,7 +1200,7 @@ function applyShareLock(){
 <figure class="phone" id="phoneWrap" aria-label="Live preview of the gift">
 <div class="phone-body"><span class="phone-key phone-key-a"></span><span class="phone-key phone-key-b"></span><span class="phone-key phone-key-c"></span>
 <div class="phone-screen"><iframe class="phone-frame" id="phoneFrame" title="Live preview of ${name}’s gift" src="/preview-frame" loading="lazy" tabindex="0"></iframe><span class="phone-island" aria-hidden="true"></span><div class="phone-loading" id="phoneLoading" aria-hidden="true"><span>Unwrapping…</span></div>
-<button type="button" class="phone-play" id="phonePlay" aria-label="Play ${name}’s gift"><span class="phone-play-icon" aria-hidden="true">▶</span><span class="phone-play-text">Tap to open ${name}’s gift</span><span class="phone-play-sub">Turn your sound on</span></button></div></div>
+<button type="button" class="phone-play" id="phonePlay" aria-label="${publishedGift.occasion==='wedding'?'Play your invite':`Play ${name}’s gift`}"><span class="phone-play-icon" aria-hidden="true">▶</span><span class="phone-play-text">${publishedGift.occasion==='wedding'?'Tap to play your invite':`Tap to open ${name}’s gift`}</span><span class="phone-play-sub">Turn your sound on</span></button></div></div>
 <figcaption>The real thing, not a screenshot.</figcaption>
 <div class="phone-tools"><button type="button" id="phoneRestart">↺ Start over</button><button type="button" id="phoneFull">⤢ Full screen</button><button type="button" data-action="edit">✎ Edit</button></div>
 </figure>
@@ -1149,7 +1208,7 @@ function applyShareLock(){
 <div class="unlock-card">
 <div class="unlock-price"><strong id="unlockPriceVal">${e(price||'Free')}</strong><span>one-time · no subscription</span></div>
 <div class="ref-box" id="refBox"></div>
-<ul class="unlock-list"><li>A private link only ${name} gets, ready the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li></ul>
+<ul class="unlock-list">${publishedGift.occasion==='wedding'?`<li>One link for every guest, plus a personal link with each guest’s name</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Guests’ blessings come back to you, privately</li><li>Change timings or venues any time, on the same link</li>`:`<li>A private link only ${name} gets, ready the moment you pay</li><li>Stays live for ${lifeText(payLinkDays)}</li><li>Their reply comes back to you, privately</li><li>Edit it any time, on the same link</li>`}</ul>
 ${savedLossLine()?`<p class="unlock-loss"><span aria-hidden="true">⏳</span> ${e(savedLossLine())}</p>`:''}
 ${paySimulated?'<p class="unlock-trust"><strong>Test mode.</strong> Nothing is charged. This only shows how paying will work.</p>':payTestMode?'<p class="unlock-trust"><strong>Test mode.</strong> Pay with Razorpay’s test card or test UPI. No real money moves.</p>':''}
 </div>
@@ -1244,7 +1303,7 @@ async function copyQuiet(text){
 function unlockDone(name){
  const panel=$('#unlockPanel');if(!panel)return;
  panel.dataset.frame='';clearPayStarted(editing.id);{const en=libraryCache.find(v=>v.id===editing.id);if(en&&en.waiting)rememberGift({...en,waiting:false});}
- panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">Unlocked. ${name} can open it now.</h2><p id="paidNote" role="status">Getting your private link…</p><input class="link-input paid-link" id="paidLink" readonly spellcheck="false" aria-label="Your private gift link" hidden><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone" disabled>One moment…</button></div>`;
+ panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">${publishedGift.occasion==='wedding'?'Unlocked. Send it to your guests 💛':`Unlocked. ${name} can open it now.`}</h2><p id="paidNote" role="status">Getting your private link…</p><input class="link-input paid-link" id="paidLink" readonly spellcheck="false" aria-label="Your private gift link" hidden><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone" disabled>One moment…</button></div>`;
  confetti(140);
  const btn=$('#payDone'),note=$('#paidNote'),box=$('#paidLink');let copied=false;
  const load=async()=>{
@@ -1375,8 +1434,8 @@ async function downloadGiftHTML(){
 }
 async function nativeShare(){if(!publishedURL||!publicHosting())return;const data={title:occasionOf(publishedGift).label+(publishedGift.sharePreview===false?' for you':' for '+publishedGift.name),text:'Psst… I made you a little Kholona. Kholo na, when you have a quiet moment. ♡',url:publishedURL};try{if(navigator.share)await navigator.share(data);else await copyText(publishedURL);}catch(err){if(err.name!=='AbortError')toast('Sharing is unavailable here. Copy the little link instead.');}}
 async function shareCover(){if(!coverData)return;const blob=await (await fetch(coverData)).blob();const file=new File([blob],'a-little-gift.jpg',{type:blob.type||'image/jpeg'});try{if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:occasionOf(publishedGift).label,text:publishedURL||'A little world, made just for you.'});else{downloadBlob(blob,'a-little-gift.jpg');toast('Artwork saved. Attach it with the gift link in your message.');}}catch(err){if(err.name!=='AbortError')toast('This browser cannot share artwork directly. Use Save the little artwork.');}}
-async function showLibrary(){clearGiftHash();showView('library');$('#savedGiftList').innerHTML=libraryCache.length?libraryCache.map(entry=>`<article class="saved-gift"><span aria-hidden="true">${THEMES[entry.vibe]?.symbol||'♡'}</span><div><h2>For ${e(entry.name||'your person')}.</h2><p>${e(occasionOf(entry).short)} · ${e(entry.vibe||'A little')} · ${entry.mode==='hosted'?'A live little world':'A standalone keepsake'}${entry.at?' · '+e(new Date(entry.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</p><div class="saved-actions"><button data-v2="edit-saved" data-id="${e(entry.id)}">Open & edit</button><button data-v2="copy-saved" data-id="${e(entry.id)}">${entry.url?'Copy gift link':'Open gift file options'}</button>${entry.mode==='hosted'?`<button data-v2="stats" data-id="${e(entry.id)}">Little replies</button><button data-v2="copy-recovery" data-id="${e(entry.id)}">Private recovery link</button>`:''}<button class="danger" data-v2="delete-saved" data-id="${e(entry.id)}">${entry.mode==='hosted'?'Remove gift':'Forget here'}</button></div><div class="saved-stats" id="stats-${e(entry.id)}" hidden></div></div></article>`).join(''):'<p class="empty-shelf">No ribbons tied just yet.<br>Your first little gift belongs right here.</p>';}
-async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);publishedStatus=result.status||'paid';publishedExpiresAt=result.expiresAt||'';setOpensAt(result.opensAt);editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt,waiting:publishedStatus==='preview'});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
+async function showLibrary(){clearGiftHash();showView('library');$('#savedGiftList').innerHTML=libraryCache.length?libraryCache.map(entry=>`<article class="saved-gift"><span aria-hidden="true">${THEMES[entry.vibe]?.symbol||'♡'}</span><div><h2>${entry.occasion==='wedding'?e([entry.name,entry.partner].filter(Boolean).join(' & ')||'Our wedding')+'.':`For ${e(entry.name||'your person')}.`}</h2><p>${entry.occasion==='wedding'?'Wedding invite · '+(entry.mode==='hosted'?'Live link':'Keepsake'):`${e(occasionOf(entry).short)} · ${e(entry.vibe||'A little')} · ${entry.mode==='hosted'?'A live little world':'A standalone keepsake'}`}${entry.at?' · '+e(new Date(entry.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</p><div class="saved-actions"><button data-v2="edit-saved" data-id="${e(entry.id)}">Open & edit</button><button data-v2="copy-saved" data-id="${e(entry.id)}">${entry.url?'Copy gift link':'Open gift file options'}</button>${entry.mode==='hosted'?`<button data-v2="stats" data-id="${e(entry.id)}">Little replies</button><button data-v2="copy-recovery" data-id="${e(entry.id)}">Private recovery link</button>`:''}<button class="danger" data-v2="delete-saved" data-id="${e(entry.id)}">${entry.mode==='hosted'?'Remove gift':'Forget here'}</button></div><div class="saved-stats" id="stats-${e(entry.id)}" hidden></div></div></article>`).join(''):'<p class="empty-shelf">No ribbons tied just yet.<br>Your first little gift belongs right here.</p>';}
+async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);publishedStatus=result.status||'paid';publishedExpiresAt=result.expiresAt||'';setOpensAt(result.opensAt);editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,partner:g.partner||'',vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt,waiting:publishedStatus==='preview'});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
 async function showStats(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const root=$('#stats-'+id);root.hidden=false;root.textContent='Opening the little postbox…';try{const stats=await api('/api/gifts/'+id+'/stats',{key:entry.key});const counts=stats.reactions.map(r=>`${e(r.reaction)} ${r.count}`).join(' · ')||'No emoji replies yet';root.innerHTML=`${stats.status==='preview'?`<p><strong>Waiting to be unlocked.</strong> Only you can see this gift until then. <button type="button" data-v3="unlock-saved" data-id="${e(id)}">Unlock & get link</button></p>`:''}<p>${stats.opens} ${stats.opens===1?'opening':'openings'} · ${counts}</p><p class="privacy-small">Approximate openings, deduplicated per browser session. Replies are anonymous; we don’t verify who sends them.</p>${stats.replies.length?stats.replies.map(r=>`<blockquote>${e(r.reaction)} ${e(r.message||'A little feeling, sent back with love.')}</blockquote>`).join(''):'<p>Nothing here yet. Give them a little room to smile.</p>'}${stats.expiresAt?'<p>Expires '+e(new Date(stats.expiresAt).toLocaleString())+'</p>':''}`;}catch(err){root.textContent=err.message;}}
 async function deleteSaved(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const message=entry.mode==='hosted'?'Remove this gift? Its live link, uploaded media and replies will stop being available. Downloaded copies cannot be recalled.':'Forget this gift in this browser? Links and already-downloaded copies will still work.';if(!window.confirm(message))return;try{if(entry.mode==='hosted')await api('/api/gifts/'+id,{method:'DELETE',key:entry.key});await removeStored('gift:'+id).catch(()=>{});libraryCache=libraryCache.filter(v=>v.id!==id);saveLibrary();if(editing?.id===id)editing=null;showLibrary();toast('A little space on the shelf.');}catch(err){toast(err.message);}}
 function visitorToken(){const k='luv4u.visitor.'+gift.id;try{let value=sessionStorage.getItem(k);if(!/^[a-f0-9]{32}$/.test(value||'')){value=hexToken(16);sessionStorage.setItem(k,value);}return value;}catch{if(!window.__luvVisitor)window.__luvVisitor=hexToken(16);return window.__luvVisitor;}}
@@ -1742,6 +1801,7 @@ function occasionArt(kind,id='little-art'){
 function occasionArtFor(g){const o=occasionOf(g);if(g.occasion==='apology')return sorryCharacter(g);return g.occasion==='proposal'&&g.proposalKind==='marriage'?'ring':o.art;}
 
 /* Every suggestion is written locally, selectable, editable, and never sent for you. */
+const W_NOTES=['Come for the functions, stay for the food, and dance with us. Your presence is the only gift we need.','We would love to have you with us as we begin this new chapter. It won’t feel complete without you.','Two families, one big celebration. Bring your dancing shoes and your blessings.'];
 const OCCASION_MESSAGES={
  proposal:{
   note:[['A brave little hello','{name}, I like the way life feels when you’re in it. I’d love to find out what more of us could look like. So, with a few butterflies and a lot of honesty, I have a little question for you.'],['The ordinary moments','It’s the little things, {name}. The conversations I don’t want to end. The way I look forward to seeing you. I’d like to make a little more room for us, if that feels right to you too.'],['No perfect speech','I don’t have a perfect speech, {name}. Just a very real feeling, and a question I wanted to ask with care. Whatever your answer, I want it to be yours. ♡']],
@@ -1790,6 +1850,14 @@ const OCCASION_MESSAGES={
   captions:[['The moment','A moment worth celebrating.'],['Little steps','The little steps that led here.'],['Look at you','Look at you. Look how far you’ve come.']],
   memory:['A little reminder of the effort that came before this moment.','This is one of those steps worth looking back on with pride.','It wasn’t just one big moment. The little things mattered too.'],
   replies:[['Thank you for cheering','Thank you for cheering me on. This made my moment feel even more special. 🎉'],['Feeling proud','This was such a lovely reminder to pause and enjoy it. Thank you. 🥹'],['Best little surprise','A whole little celebration! Thank you for thinking of me and making this. ♡']]
+ },
+ wedding:{
+  note:W_NOTES.map((t,i)=>[['Come celebrate','A new chapter','Two families'][i],t]),
+  finale:[['Your presence','Your presence is the only gift we need. 💛']],
+  secret:['Come for the functions, stay for the food.'],
+  captions:[['Us','Our story so far.']],
+  memory:['The day it all began.'],
+  replies:[['Blessings','Congratulations to you both! Wishing you a lifetime of love, laughter and adventures together. 🙏'],['We’ll be there','We wouldn’t miss it for the world! Can’t wait to dance at your sangeet. 🎉'],['So happy for you','So, so happy for you two. Sending all our love and blessings from the whole family. 💛']]
  },
  missyou:{
   note:[['Across the distance','{name}, I wish I could fold the distance into something small. Until then, here’s a little bit of me in your day. I miss you, and I’m glad you’re in my world. ♡'],['The ordinary things','It’s the ordinary things I miss, {name}. Little conversations. Having you nearby. The moments that don’t need a plan. Here’s a small hello from over here.'],['Same little sky','Different places, {name}. The same little sky. I hope this makes the distance feel smaller, even just for a moment. I’m thinking of you.']],
@@ -1876,7 +1944,7 @@ function browseGifts(){
 function previewOccasion(key=homeOccasion){
  const o=OCCASIONS[key]||OCCASIONS.love;previewScrollY=window.scrollY;
  const g={...emptyDraft(),occasion:key,name:'you',vibe:o.vibe,branch:false};
- if(key==='wedding'){const day=new Date(Date.now()+40*864e5).toISOString().slice(0,10),venue='Jai Mahal Palace, Jaipur';Object.assign(g,{name:'Aanya',partner:'Aditya',weddingDate:day,city:'Jaipur',families:W_LINES[0],hashtag:'#AanyaWedsAditya',blessing:'shubh',events:['Haldi','Sangeet','Wedding'].map(t=>({...defaultEvent(t,{weddingDate:day,events:[]}),venue}))});}
+ if(key==='wedding'){const day=new Date(Date.now()+40*864e5).toISOString().slice(0,10),venue='Jai Mahal Palace, Jaipur';Object.assign(g,{name:'Aanya',partner:'Aditya',family1:'Sharma',family2:'Verma',music:'shehnai',weddingDate:day,city:'Jaipur',families:W_LINES[0],hashtag:'#AanyaWedsAditya',blessing:'shubh',events:['Haldi','Sangeet','Wedding'].map(t=>({...defaultEvent(t,{weddingDate:day,events:[]}),venue}))});}
  if(key==='birthday'){const t=new Date();g.birthDate=`${t.getFullYear()-21}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;}
  startExperience(g,{preview:true,returnView:'home'});
 }
@@ -2256,15 +2324,15 @@ function adaptOccasionScene(type,s){
   const eyebrow=$('.story-eyebrow',s);if(eyebrow)eyebrow.textContent=eyebrow.textContent.replace(/birthday/gi,'little');
  }
  if(type==='reply'){
-  $('.story-eyebrow',s).textContent=gift.occasion==='apology'?'Say something back':'A little feeling, in your own words';
+  $('.story-eyebrow',s).textContent=gift.occasion==='apology'?'Say something back':gift.occasion==='wedding'?'For '+(coupleOf(gift)||gift.name):'A little feeling, in your own words';
   $('.story-title',s).innerHTML=gift.occasion==='wedding'?'Send your<br><em>blessings.</em>':gift.occasion==='apology'?'Okay, fine.<br><em>You’re forgiven.</em>':gift.occasion==='proposal'?'Your answer.<br><em>In your own words.</em>':'A little feeling,<br><em>sent back with care.</em>';
-  $('.story-description',s).textContent=gift.occasion==='apology'?'An emoji, a few words, or a demand for snacks. They’re waiting by their phone. 🥺':'An emoji, a few words, or simply keeping this moment. It’s up to you.';
-  const sorry=gift.occasion==='apology',reactions=sorry?SORRY_REACTIONS:GENERIC_REACTIONS;
+  $('.story-description',s).textContent=gift.occasion==='wedding'?'Tap a feeling, add a few words if you like. Only the couple will see it.':gift.occasion==='apology'?'An emoji, a few words, or a demand for snacks. They’re waiting by their phone. 🥺':'An emoji, a few words, or simply keeping this moment. It’s up to you.';
+  const sorry=gift.occasion==='apology',wed=gift.occasion==='wedding',reactions=sorry?SORRY_REACTIONS:wed?WEDDING_REACTIONS:GENERIC_REACTIONS;
   $('.reactions',s).setAttribute('aria-label','Choose a feeling, optionally');$('.reactions',s).innerHTML=reactions.map(([emoji,label])=>`<button class="reaction-btn" data-reaction="${emoji}" aria-label="${label}" aria-pressed="false">${emoji}</button>`).join('');
-  reaction='';$('#recipientReply').placeholder=sorry?'You’re forgiven, but… (optional)':gift.occasion==='proposal'?'Your answer, in your own words…':'A little feeling, in your own words… (optional)';
+  reaction='';$('label[for=recipientReply]',s)&&($('label[for=recipientReply]',s).textContent=wed?'Your blessings for the couple':'Your reply to the person who made this gift');$('#recipientReply').placeholder=wed?'Your blessings for the couple… (optional)':sorry?'You’re forgiven, but… (optional)':gift.occasion==='proposal'?'Your answer, in your own words…':'A little feeling, in your own words… (optional)';
   if((gift.occasion==='proposal'||sorry)&&journeyReply){$('#recipientReply').value=journeyReply;}
   else{try{const old=JSON.parse(localStorage.getItem('luv4u.reply.'+gift.id)||'null');if(old){$('#recipientReply').value=cleanText(old.text,500);if(reactions.some(v=>v[0]===old.reaction))selectReaction(old.reaction,false);}}catch{}}
-  $('.reply-form [data-story=prepare-reply]',s).innerHTML='Prepare my reply '+icon('heart');
+  const prep=$('.reply-form [data-story=prepare-reply]',s);if(prep)prep.innerHTML='Prepare my reply '+icon('heart');/* hosted gifts already turned it into "Send my reply" */
   if(gift.occasion==='proposal')$('.reply-form',s).insertAdjacentHTML('beforeend','<p class="reply-template-boundary">Choosing words doesn’t send them. Your reply stays here until you use a sharing or send button.</p><button class="story-soft-skip" data-v3="finish-reading">Finish without replying</button>');
   refreshMessageTemplates();
  }
@@ -2454,8 +2522,14 @@ const W_FUNCS={
 const W_CHIPS=['Engagement','Haldi','Mehendi','Sangeet','Reception'];
 const W_BLESSINGS={shubh:'॥ शुभ विवाह ॥',ganesh:'॥ श्री गणेशाय नमः ॥',none:''};
 const W_LINES=['With the blessings of our families','Together with their families','Along with our parents','With joy in our hearts'];
-const W_NOTES=['Come for the functions, stay for the food, and dance with us. Your presence is the only gift we need.','We would love to have you with us as we begin this new chapter. It won’t feel complete without you.','Two families, one big celebration. Bring your dancing shoes and your blessings.'];
 const coupleOf=g=>[g.name,g.partner].map(v=>String(v||'').trim()).filter(Boolean).join(' & ');
+/* The hosts: each side's family name ("Sharma", "Verma family", "The Verma Parivar" all work). */
+const famWord=v=>String(v||'').trim().replace(/^the\s+/i,'').replace(/\s+(family|families|parivar|pariwar|parivaar)$/i,'').trim();
+function hostsOf(g){
+ const f=[famWord(g.family1),famWord(g.family2)].filter(Boolean),u=f.filter((v,i)=>f.findIndex(x=>x.toLowerCase()===v.toLowerCase())===i);
+ if(!u.length)return '';
+ return 'The '+u.join(' & ')+(u.length>1?' families':' family');
+}
 const initialsOf=g=>[g.name,g.partner].map(v=>String(v||'').trim().charAt(0).toUpperCase()).filter(Boolean);
 /* The guest a personal link was made for (?to=Sharma%20family). Shown on the envelope; never stored. */
 const guestName=()=>{try{return cleanText(new URLSearchParams(location.search).get('to')||'',60).trim();}catch{return '';}};
@@ -2528,13 +2602,14 @@ const W_MOTIF={
 
 /* ---- the envelope (the opening scene): one tap on the seal ---- */
 function renderWeddingEnvelope(s){
- const guest=guestName(),[a,b]=initialsOf(gift),couple=e(coupleOf(gift)||gift.name);
+ const guest=guestName(),[a,b]=initialsOf(gift),couple=coupleOf(gift)||gift.name,hosts=hostsOf(gift),one=/ family$/.test(hosts);
+ const from=hosts||couple,line=hosts?'to the wedding of '+couple:'to celebrate their wedding';
  s.className='story-scene opening-scene wedding-envelope-scene';
- s.innerHTML=`<p class="we-kicker">${guest?'An invitation for':'You’re invited'}</p><h1 class="we-guest" tabindex="-1">${guest?e(guest):'to a wedding'}</h1><button type="button" class="we-envelope" data-story="light" id="lightTrigger" aria-label="Break the seal and open the invitation"><span class="we-back"></span><span class="we-card"><span class="we-card-inner">${kalashSVG()}<b>${e(W_BLESSINGS[gift.blessing]??W_BLESSINGS.shubh)||'❀'}</b></span></span><span class="we-pocket"></span><span class="we-flap"></span><span class="we-seal" aria-hidden="true"><b>${e(a||'❀')}</b>${b?`<i>✦</i><b>${e(b)}</b>`:''}</span></button><p class="we-hint">Tap the seal to open</p><p class="we-from">with love, ${couple}</p>`;
- $('#storyProgress').innerHTML='';$('#storyAnnouncement').textContent=(guest?'An invitation for '+guest:'You’re invited to a wedding')+'. Tap the seal to open.';
+ s.innerHTML=`<p class="we-kicker">${e(from)}</p><p class="we-invite">${one?'invites':'invite'}</p><h1 class="we-guest" tabindex="-1">${guest?e(guest):'you'}</h1><p class="we-to">${e(line)}</p><button type="button" class="we-envelope" data-story="light" id="lightTrigger" aria-label="Break the seal and open the invitation"><span class="we-back"></span><span class="we-card"><span class="we-card-inner">${kalashSVG()}<b>${e(W_BLESSINGS[gift.blessing]??W_BLESSINGS.shubh)||'❀'}</b></span></span><span class="we-pocket"></span><span class="we-flap"></span><span class="we-seal" aria-hidden="true"><b>${e(a||'❀')}</b>${b?`<i>✦</i><b>${e(b)}</b>`:''}</span></button><p class="we-hint">Tap the seal to open</p>`;
+ $('#storyProgress').innerHTML='';$('#storyAnnouncement').textContent=`${from} ${one?'invites':'invite'} ${guest||'you'} ${line}. Tap the seal to open.`;
 }
 async function openWeddingEnvelope(quick){
- const token=experienceToken,exp=$('#experience');transitionBusy=true;ensureAudio();
+ const token=experienceToken,exp=$('#experience');transitionBusy=true;ensureAudio();startMusic();
  const env=$('.we-envelope');if(env)env.disabled=true;
  if(!quick&&env&&!reducedMotion&&gift.motion!==false){
   env.classList.add('is-open');sfx('pop');buzz([18,40,12]);
@@ -2543,7 +2618,7 @@ async function openWeddingEnvelope(quick){
   exp.insertAdjacentHTML('beforeend','<div class="we-flash" aria-hidden="true"></div>');
   await sleep(380);if(token!==experienceToken)return;
  }
- exp.classList.add('lit');startMusic();$('meta[name="theme-color"]').content='#3d0a16';
+ exp.classList.add('lit');$('meta[name="theme-color"]').content='#3d0a16';
  sceneIndex=1;renderScene();transitionBusy=false;
  setTimeout(()=>$('.we-flash')?.remove(),900);
 }
@@ -2555,12 +2630,12 @@ function weddingPages(g){
 }
 function weddingPageHTML(p,g,i,total){
  const guest=guestName(),[a,b]=[g.name,g.partner].map(v=>e(String(v||'').trim())),bless=W_BLESSINGS[g.blessing]??W_BLESSINGS.shubh,tag=String(g.hashtag||'').trim(),day=weddingDay(g);
- if(p.k==='hello')return `<section class="wp-page wp-ivory wp-hello"><div class="wp-frame"></div>${mandalaSVG('wp-bg-mandala','#e2c27e')}<div class="wp-body"><div class="wp-in" style="--d:0">${kalashSVG()}</div>${bless?`<p class="wp-bless wp-in" style="--d:1">${e(bless)}</p>`:''}<p class="wp-dear wp-in" style="--d:2">Dear ${e(guest||'family & friends')},</p><p class="wp-lead wp-in" style="--d:3">with joy in our hearts,<br>we invite you to celebrate<br>the wedding of</p></div></section>`;
+ if(p.k==='hello')return `<section class="wp-page wp-ivory wp-hello"><div class="wp-frame"></div>${mandalaSVG('wp-bg-mandala','#e2c27e')}<div class="wp-body"><div class="wp-in" style="--d:0">${kalashSVG()}</div>${bless?`<p class="wp-bless wp-in" style="--d:1">${e(bless)}</p>`:''}<p class="wp-dear wp-in" style="--d:2">Dear ${e(guest||'family & friends')},</p><p class="wp-lead wp-in" style="--d:3">${hostsOf(g)?`with joy in their hearts,<br><b class="wp-hosts">${e(hostsOf(g).replace(/^The/,'the'))}</b><br>${/ family$/.test(hostsOf(g))?'invites':'invite'} you to celebrate<br>the wedding of`:'with joy in our hearts,<br>we invite you to celebrate<br>the wedding of'}</p></div></section>`;
  if(p.k==='names')return `<section class="wp-page wp-maroon wp-names">${toranSVG('np'+i,390)}<div class="wp-arch"></div><div class="wp-body"><p class="wp-caps wp-in" style="--d:0">${e(String(g.families||'').trim()||W_LINES[0])}</p><h2 class="wp-script wp-foil wp-in" style="--d:1">${a||'&nbsp;'}</h2><p class="wp-weds wp-in" style="--d:2">weds</p><h2 class="wp-script wp-foil wp-in" style="--d:3">${b||'&nbsp;'}</h2>${tag?`<p class="wp-tag wp-in" style="--d:4">${e(tag)}</p>`:''}</div></section>`;
  if(p.k==='date'){const [wd,dd,mm,yy]=[fmtDay(day,{weekday:'long'}),fmtDay(day,{day:'numeric'}),fmtDay(day,{month:'long'}),fmtDay(day,{year:'numeric'})];return `<section class="wp-page wp-blush wp-date"><div class="wp-frame"></div>${mandalaSVG('wp-bg-mandala','#d9a3a0')}<div class="wp-body"><p class="wp-script wp-in" style="--d:0">Save the date</p><div class="wp-cal wp-in" style="--d:1"><span>${e(wd)}</span><b>${e(dd)}</b><span>${e(mm)}</span></div><p class="wp-caps wp-in" style="--d:2">${e(yy)}${weddingPlace(g)?' · '+e(weddingPlace(g)):''}</p><p class="wp-countdown wp-in" style="--d:3" data-countdown></p></div></section>`;}
  if(p.k==='event'){const ev=p.ev,pal=palOf(ev.title),map=mapsLink(ev),cal=calendarLink(ev,g),title=e(String(ev.title||'').trim()||'Celebration');return `<section class="wp-page wp-${pal} wp-event"><div class="wp-frame"></div><div class="wp-body"><div class="wp-motif wp-in" style="--d:0">${(W_MOTIF[pal]||W_MOTIF.other)()}</div><p class="wp-caps wp-in" style="--d:1">The</p><h2 class="wp-script wp-in" style="--d:1">${title}</h2>${ev.date?`<p class="wp-when wp-in" style="--d:2">${e(fmtDay(ev.date,{weekday:'long',day:'numeric',month:'long'}))}</p>`:''}${ev.time?`<p class="wp-time wp-in" style="--d:2">${e(fmtTime(ev.time))} onwards</p>`:''}<p class="wp-orn wp-in" style="--d:3" aria-hidden="true">✦ ✦ ✦</p>${ev.venue?`<p class="wp-venue wp-in" style="--d:3">${e(ev.venue)}</p>`:''}${ev.dress?`<p class="wp-dress wp-in" style="--d:4"><span>Dress code</span>${e(ev.dress)}</p>`:''}<div class="wp-actions wp-in" style="--d:5">${map?`<a class="wp-btn" href="${e(map)}" target="_blank" rel="noopener noreferrer">📍 Directions</a>`:''}${cal?`<a class="wp-btn ghost" href="${e(cal)}" target="_blank" rel="noopener noreferrer">📅 Save the date</a>`:''}</div></div></section>`;}
  if(p.k==='photos'){const ph=g.photos.slice(0,4);return `<section class="wp-page wp-ivory wp-photos"><div class="wp-frame"></div><div class="wp-body"><p class="wp-script wp-in" style="--d:0">Our story so far</p><div class="wp-polaroids n${ph.length}">${ph.map((x,k)=>`<figure class="wp-polaroid wp-in" style="--d:${k+1};--r:${[-6,5,-3,7][k]}deg"><div><img src="${e(x.src)}" alt="${e(x.caption||'A photo of the couple')}" style="${cropStyle(x)}" referrerpolicy="no-referrer"></div>${x.caption?`<figcaption>${e(x.caption)}</figcaption>`:''}</figure>`).join('')}</div></div></section>`;}
- if(p.k==='note')return `<section class="wp-page wp-ivory wp-note"><div class="wp-frame"></div><div class="wp-body"><p class="wp-script wp-in" style="--d:0">Dear ${e(guest||'family & friends')},</p><p class="wp-letter wp-in" style="--d:1">${e(String(g.message||'').trim()).replace(/\n/g,'<br>')}</p><p class="wp-sign wp-in" style="--d:2">With love,<br>${e(coupleOf(g)||g.name)}</p></div></section>`;
+ if(p.k==='note')return `<section class="wp-page wp-ivory wp-note"><div class="wp-frame"></div><div class="wp-body"><p class="wp-script wp-in" style="--d:0">Dear ${e(guest||'family & friends')},</p><p class="wp-letter wp-in" style="--d:1">${e(String(g.message||'').trim()).replace(/\n/g,'<br>')}</p><p class="wp-sign wp-in" style="--d:2">With love,<br>${e(coupleOf(g)||g.name)}${hostsOf(g)?`<small>and ${e(hostsOf(g).replace(/^The/,'the'))}</small>`:''}</p></div></section>`;
  return '';
 }
 let wpState=null;
@@ -2679,8 +2754,9 @@ function weddingCover(g){
  x.strokeStyle='#d4a24c';x.lineWidth=3;x.strokeRect(26,26,1148,578);x.lineWidth=1;x.strokeRect(40,40,1120,550);
  for(let i=0;i<=40;i++){const px=40+i*28;for(let k=0;k<(i%2?4:3);k++){const cx=px,cy=52+k*14,r=7;x.fillStyle=['#e67e22','#f7a21b','#ffc23a'][(i+k)%3];x.beginPath();x.arc(cx,cy,r,0,7);x.fill();x.fillStyle='#ffd85c';x.beginPath();x.arc(cx,cy,r*.4,0,7);x.fill();}}
  const gold=x.createLinearGradient(0,220,0,420);gold.addColorStop(0,'#f6d27a');gold.addColorStop(1,'#b8862b');x.textAlign='center';
- x.fillStyle='#f3d9a4';x.font='600 26px Cinzel, Georgia, serif';x.fillText('YOU’RE INVITED TO THE WEDDING OF',600,190);
- const show=g.sharePreview!==false,names=show?[g.name,g.partner].map(v=>String(v||'').trim()).filter(Boolean).join(' weds ')||g.name:'Our wedding';let size=104;const font=s=>`${s}px "Great Vibes", Georgia, serif`;x.font=font(size);while(x.measureText(names).width>1040&&size>44){size-=4;x.font=font(size);}
+ const show=g.sharePreview!==false,hosts=show?hostsOf(g):'',top=(hosts?hosts+(/ family$/.test(hosts)?' invites':' invite')+' you to the wedding of':'You’re invited to the wedding of').toUpperCase();
+ x.fillStyle='#f3d9a4';let ts=26;x.font=`600 ${ts}px Cinzel, Georgia, serif`;while(x.measureText(top).width>1060&&ts>16){ts-=1;x.font=`600 ${ts}px Cinzel, Georgia, serif`;}x.fillText(top,600,190);
+ const names=show?[g.name,g.partner].map(v=>String(v||'').trim()).filter(Boolean).join(' weds ')||g.name:'Our wedding';let size=104;const font=s=>`${s}px "Great Vibes", Georgia, serif`;x.font=font(size);while(x.measureText(names).width>1040&&size>44){size-=4;x.font=font(size);}
  x.fillStyle=gold;x.fillText(names,600,330);
  const day=weddingDay(g);x.fillStyle='#fbe9c8';x.font='600 30px Cinzel, Georgia, serif';x.fillText([day?fmtDay(day,{day:'numeric',month:'long',year:'numeric'}).toUpperCase():'',show?weddingPlace(g).toUpperCase():''].filter(Boolean).join('  ·  '),600,420);
  x.font='italic 28px Georgia';x.fillStyle='#e9c98f';x.fillText('Tap to open your invitation',600,480);
@@ -2688,8 +2764,8 @@ function weddingCover(g){
  return c.toDataURL('image/jpeg',.86);
 }
 function weddingInviteText(g,url,guest=''){
- const day=weddingDay(g),couple=[g.name,g.partner].map(v=>String(v||'').trim()).filter(Boolean).join(' & ')||g.name,place=weddingPlace(g);
- return `${guest?'Dear '+guest+', ':''}you’re invited! 💛\n${couple} are getting married${day?' on '+fmtDay(day,{weekday:'long',day:'numeric',month:'long'}):''}${place?' in '+place:''}.\n\nOpen your invitation: ${url}`;
+ const day=weddingDay(g),couple=coupleOf(g)||g.name,place=weddingPlace(g),hosts=hostsOf(g),when=(day?' on '+fmtDay(day,{weekday:'long',day:'numeric',month:'long'}):'')+(place?' in '+place:'');
+ return `${guest?'Dear '+guest+',\n':''}${hosts?`${hosts} joyfully ${/ family$/.test(hosts)?'invites':'invite'} you to the wedding of ${couple}${when}. 💛`:`You’re invited! 💛\n${couple} are getting married${when}.`}\n\nOpen your invitation: ${url}`;
 }
 
 /* ---- The wedding invite maker: one screen, filled in for you. Two names, the date and the venue; the wedding itself is
@@ -2699,7 +2775,7 @@ const wedOn=()=>occasionKey(draft)==='wedding';
 let wbOpen=new Set(),wbPhotos=null,wbPhotosHome=null,wbPreviewTimer=0;
 function ensureWeddingEvent(d=draft){
  d.events=Array.isArray(d.events)?d.events:[];let w=weddingEventOf(d);
- if(!w){w={title:'Wedding',date:validStoryDateAny(d.weddingDate),time:W_FUNCS.Wedding.time,venue:'',map:'',dress:W_FUNCS.Wedding.dress};d.events.push(w);}
+ if(!w){w={title:'Wedding',date:validStoryDateAny(d.weddingDate),time:W_FUNCS.Wedding.time,venue:'',map:'',dress:W_FUNCS.Wedding.dress};d.events.push(w);if(!d.music||d.music==='none')d.music='shehnai';}
  return w;
 }
 function defaultEvent(title,d=draft){
@@ -2719,7 +2795,10 @@ function weddingBuilderHTML(){
  const has=t=>d.events.some(ev=>String(ev.title||'').trim().toLowerCase()===t.toLowerCase());
  return `<div class="wb-card"><h3 class="wb-step"><span>1</span>The couple</h3>
   <div class="wb-names"><label><small>${labels[0]}</small><input class="text-input" id="wbName1" maxlength="40" autocomplete="off" autocapitalize="words" placeholder="${labels[0]==='Bride'?'Aanya':'Aditya'}" value="${e(d.name||'')}"></label><button type="button" class="wb-swap" data-wb="swap" aria-label="Swap the order of the names" title="Swap the order">⇄</button><label><small>${labels[1]}</small><input class="text-input" id="wbName2" maxlength="40" autocomplete="off" autocapitalize="words" placeholder="${labels[1]==='Bride'?'Aanya':'Aditya'}" value="${e(d.partner||'')}"></label></div>
-  <p class="wb-help">Guests see <b id="wbShown">${e(String(d.name||'').trim()||labels[0])} weds ${e(String(d.partner||'').trim()||labels[1])}</b></p></div>
+  <p class="wb-help">Guests see <b id="wbShown">${e(String(d.name||'').trim()||labels[0])} weds ${e(String(d.partner||'').trim()||labels[1])}</b></p>
+  <p class="wb-sub">Inviting on behalf of <i>optional</i></p>
+  <div class="wb-row2"><label><small>${labels[0]}’s family</small><input class="text-input" id="wbFam1" maxlength="40" autocomplete="off" autocapitalize="words" placeholder="${labels[0]==='Bride'?'Sharma':'Verma'}" value="${e(d.family1||'')}"></label><label><small>${labels[1]}’s family</small><input class="text-input" id="wbFam2" maxlength="40" autocomplete="off" autocapitalize="words" placeholder="${labels[1]==='Bride'?'Sharma':'Verma'}" value="${e(d.family2||'')}"></label></div>
+  <p class="wb-help" id="wbHosts">${hostsOf(d)?`The envelope reads <b>${e(hostsOf(d))} ${/ family$/.test(hostsOf(d))?'invites':'invite'} you</b>`:'Add surnames and the envelope reads <b>The Sharma &amp; Verma families invite you</b>'}</p></div>
  <div class="wb-card"><h3 class="wb-step"><span>2</span>The wedding <small>Always included</small></h3>
   <div class="wb-row2"><label><small>Date</small><input class="text-input" type="date" id="wbDate" value="${e(d.weddingDate||'')}"></label><label><small>Muhurat time</small><input class="text-input" type="time" id="wbTime" value="${e(w.time||'')}"></label></div>
   <label><small>Venue</small><input class="text-input" id="wbVenue" maxlength="140" placeholder="Jai Mahal Palace, Jaipur" value="${e(w.venue||'')}"></label>
@@ -2735,8 +2814,60 @@ function weddingBuilderHTML(){
   <div class="wb-chips small" id="wbTagIdeas">${hashtagIdeas().map(t=>chip(e(t),`data-wb="tag" data-text="${e(t)}"`,d.hashtag===t)).join('')}</div>
   <label><small>A few words <i>optional</i></small><textarea class="text-area" id="wbNote" maxlength="600" rows="3" placeholder="${e(W_NOTES[0])}">${e(d.message||'')}</textarea></label>
   <div class="wb-chips small">${W_NOTES.map((t,k)=>chip(['Come celebrate','A new chapter','Two families'][k],`data-wb="note" data-text="${e(t)}"`,d.message===t)).join('')}</div></div>
- <div class="wb-card" id="wbPhotosSlot"><h3 class="wb-step"><span>5</span>Your photos <small>Optional · pre-wedding shoot, or any favourites</small></h3></div>
+ ${wbMusicHTML(d)}
+ <div class="wb-card" id="wbPhotosSlot"><h3 class="wb-step"><span>6</span>Your photos <small>Optional · pre-wedding shoot, or any favourites</small></h3></div>
  <p class="wb-error" id="wbError" role="alert" hidden></p><p class="wb-price" id="wbPrice" hidden></p>`;
+}
+/* ---- Music: three original tunes made in the browser, any licensed tracks listed in WEDDING_TRACKS, or the couple's own
+   song (up to 12 MB, uploaded straight to storage) starting at the moment they pick. ---- */
+const WEDDING_TRACKS=[]; /* licensed files in public/music/wedding, e.g. {id:'mehendi',name:'Mehendi Laga Ke',by:'Licensed',src:'/music/wedding/mehendi.mp3'} */
+let wbSong={busy:false,pct:0,local:'',dur:0,probed:''},wbListen='',wbAudio=null,wbListenTimer=0;
+const fmtSec=v=>{const n=Math.max(0,Math.round(Number(v)||0));return Math.floor(n/60)+':'+String(n%60).padStart(2,'0');};
+function wbSongKey(d=draft){if(d.music!=='custom')return d.music||'none';const t=WEDDING_TRACKS.find(x=>d.musicSrc===location.origin+x.src);return t?'t:'+t.id:'own';}
+function wbMusicHTML(d=draft){
+ const cur=wbSongKey(d),own=cur==='own';
+ if(own&&!wbSong.dur&&d.musicSrc&&wbSong.probed!==d.musicSrc){wbSong.probed=d.musicSrc;const a=new Audio();a.preload='metadata';a.addEventListener('loadedmetadata',()=>{wbSong.dur=a.duration||0;renderMusicCard();},{once:true});a.src=d.musicSrc;}
+ const opt=(key,title,sub)=>`<button type="button" class="wb-song${cur===key?' is-on':''}" data-wb="song" data-key="${key}" aria-pressed="${cur===key}"><span class="wb-song-ico" aria-hidden="true">${key==='none'?'✕':wbListen===key?'❚❚':'▶'}</span><span class="wb-song-txt"><b>${title}</b><small>${sub}</small></span></button>`;
+ return `<div class="wb-card" id="wbMusic"><h3 class="wb-step"><span>5</span>Music <small>Starts when a guest breaks the seal. Tap to listen.</small></h3>
+  <div class="wb-songs">${opt('shehnai','Shehnai','Raag Yaman · traditional')}${opt('baraat','Baraat band','Brass & dhol · festive')}${opt('sitar','Sitar evening','Soft · elegant')}${WEDDING_TRACKS.map(t=>opt('t:'+e(t.id),e(t.name),e(t.by||'Licensed track'))).join('')}${opt('none','No music','A silent invite')}</div>
+  <label class="wb-upload${own?' is-on':''}"><input type="file" id="wbSongFile" accept="audio/*,.mp3,.m4a,.aac,.ogg,.wav" hidden><span class="wb-song-ico" aria-hidden="true">♫</span><span class="wb-song-txt"><b>${own?e(d.musicName||'Your song'):'Upload your own song'}</b><small>${wbSong.busy?`Uploading… ${wbSong.pct}%`:own?'Tap to change · MP3 or M4A, up to 12 MB':'Your favourite Hindi wedding song · MP3 or M4A, up to 12 MB'}</small></span></label>
+  ${own?`<div class="wb-trim"><label for="wbSongStart"><small>Start from <output id="wbStartOut">${fmtSec(d.musicStart)}</output></small></label><input type="range" id="wbSongStart" min="0" max="${Math.max(30,Math.floor((wbSong.dur||600)-10))}" step="1" value="${Math.round(Number(d.musicStart)||0)}"><button type="button" class="wb-mini" data-wb="listen" ${wbSong.busy&&!wbSong.local?'disabled':''}>${wbListen==='own'?'❚❚ Stop':'▶ Listen'}</button></div><p class="wb-help">Skip the slow intro and start at the part everyone sings along to. Use a song you have the right to share.</p>`:''}</div>`;
+}
+function renderMusicCard(){const c=$('#wbMusic');if(c)c.outerHTML=wbMusicHTML();}
+function wbStopListen(){clearTimeout(wbListenTimer);if(wbAudio){wbAudio.pause();wbAudio.removeAttribute('src');wbAudio=null;}if(RAGAS.includes(wbListen))stopMusic();wbListen='';}
+function wbPlay(key){
+ const was=wbListen;wbStopListen();if(was===key||key==='none')return;
+ if(RAGAS.includes(key)){if(soundMuted){toast('Sound is off. Turn it on to listen.');return;}stopMusic();startRaga(key);}
+ else{const t=WEDDING_TRACKS.find(x=>'t:'+x.id===key),src=key==='own'?(wbSong.local||draft.musicSrc):t?location.origin+t.src:'';if(!src)return;
+  const a=new Audio(src),from=key==='own'?Number(draft.musicStart)||0:0;wbAudio=a;a.volume=.7;
+  a.addEventListener('loadedmetadata',()=>{if(key==='own'&&a.duration)wbSong.dur=a.duration;if(from&&a.duration>from)a.currentTime=from;},{once:true});
+  a.play().catch(()=>{if(wbAudio===a){toast('This song could not play in this browser.');wbStopListen();renderMusicCard();}});}
+ wbListen=key;wbListenTimer=setTimeout(()=>{wbStopListen();renderMusicCard();},20000);
+}
+const SONG_TYPES={mp3:'audio/mpeg',m4a:'audio/mp4',aac:'audio/aac',ogg:'audio/ogg',wav:'audio/wav'};
+async function uploadWeddingSong(file){
+ if(!file||wbSong.busy)return;
+ const type=String(file.type||SONG_TYPES[(file.name.split('.').pop()||'').toLowerCase()]||'').toLowerCase();
+ if(!type.startsWith('audio/')){toast('Choose a song file, like an MP3 or M4A.');return;}
+ if(file.size>12*1024*1024){toast('That song is over 12 MB. An MP3 of it will fit.');return;}
+ wbStopListen();const d=draft,prev={music:d.music,musicSrc:d.musicSrc,musicName:d.musicName,musicStart:d.musicStart};
+ if(wbSong.local)URL.revokeObjectURL(wbSong.local);
+ wbSong={busy:true,pct:0,local:URL.createObjectURL(file),dur:0,probed:''};
+ const probe=new Audio();probe.preload='metadata';probe.addEventListener('loadedmetadata',()=>{wbSong.dur=probe.duration||0;renderMusicCard();},{once:true});probe.src=wbSong.local;
+ Object.assign(d,{music:'custom',musicSrc:'',musicName:cleanText(file.name.replace(/\.[a-z0-9]+$/i,''),100),musicStart:0});renderMusicCard();
+ try{
+  const owner=pendingOwner();
+  if(owner){
+   const r=await api('/api/gifts/'+owner.id+'/media',{method:'POST',key:owner.key,body:{kind:'song',type,size:file.size}});
+   await new Promise((ok,fail)=>{const x=new XMLHttpRequest();x.open('PUT',r.uploadUrl);x.setRequestHeader('content-type',type);x.setRequestHeader('x-upsert','false');
+    x.upload.onprogress=ev=>{if(!ev.lengthComputable)return;wbSong.pct=Math.round(ev.loaded/ev.total*100);const el=$('#wbMusic .wb-upload small');if(el)el.textContent=`Uploading… ${wbSong.pct}%`;};
+    x.onload=()=>x.status<300?ok():fail(new Error('upload'));x.onerror=()=>fail(new Error('upload'));x.send(file);});
+   d.musicSrc=r.url;
+  }else if(file.size<=3*1024*1024)d.musicSrc=await readDataURL(file);
+  else throw new Error('big');
+  toast('Your song is in. Now pick where it starts. 🎶');
+ }catch(err){Object.assign(d,prev);toast(err.message==='big'?'That song is too big to keep on this device. Try one under 3 MB.':'That song could not upload. Check your connection and try again.');}
+ finally{wbSong.busy=false;wbSong.pct=0;saveDraft();renderMusicCard();scheduleWeddingPreview();const f=$('#wbSongFile');if(f)f.value='';}
 }
 function renderWeddingBuilder(){
  const box=$('#weddingBuilder');if(!box)return;
@@ -2775,6 +2906,7 @@ function updateWeddingDock(){
 }
 function wireWeddingBuilder(box){
  box.addEventListener('input',ev=>{
+  if(pickSong(ev))return;
   const t=ev.target,d=draft,w=ensureWeddingEvent(d);
   if(t.id==='wbName1'){d.name=t.value;const r=$('#recipientName');if(r)r.value=t.value;}
   else if(t.id==='wbName2')d.partner=t.value;
@@ -2791,18 +2923,29 @@ function wireWeddingBuilder(box){
   else if(t.id==='wbVenue'){const old=w.venue||'';for(const x of d.events)if(x===w||!x.venue||x.venue===old)x.venue=t.value;d.city=cityOf(t.value);refreshWeddingSummaries();}
   else if(t.id==='wbMap'){const old=w.map||'',v=t.value.trim();for(const x of d.events)if(x===w||!x.map||x.map===old)x.map=v;}
   else if(t.id==='wbFamilies')d.families=t.value;
+  else if(t.id==='wbFam1'||t.id==='wbFam2'){d[t.id==='wbFam1'?'family1':'family2']=t.value;const h=$('#wbHosts'),x=hostsOf(d);if(h)h.innerHTML=x?`The envelope reads <b>${e(x)} ${/ family$/.test(x)?'invites':'invite'} you</b>`:'Add surnames and the envelope reads <b>The Sharma &amp; Verma families invite you</b>';}
   else if(t.id==='wbTag'){const v=t.value.replace(/\s+/g,'');d.hashtag=v&&!v.startsWith('#')?'#'+v:v;}
   else if(t.id==='wbNote')d.message=t.value;
+  else if(t.id==='wbSongStart'){d.musicStart=Math.round(+t.value)||0;const o=$('#wbStartOut');if(o)o.textContent=fmtSec(d.musicStart);if(wbAudio&&wbListen==='own')wbAudio.currentTime=d.musicStart;}
   else if(t.dataset.wbe){const x=d.events[+t.dataset.i];if(!x)return;const k=t.dataset.wbe;x[k]=k==='date'?validStoryDateAny(t.value):k==='time'?(/^\d{2}:\d{2}$/.test(t.value)?t.value:''):t.value;refreshWeddingSummaries();
    if(k==='title'){const b=t.closest('.wb-ev')?.querySelector('.wb-ev-text b');if(b)b.textContent=t.value.trim()||'New function';}}
   else return;
   if(t.id==='wbName1'||t.id==='wbName2'){const ideas=$('#wbTagIdeas');if(ideas)ideas.innerHTML=hashtagIdeas().map(x=>`<button type="button" class="wb-chip${d.hashtag===x?' is-on':''}" data-wb="tag" data-text="${e(x)}">${e(x)}</button>`).join('');}
   $('#wbError').hidden=true;saveDraft();updateWeddingDock();scheduleWeddingPreview();
  });
+ /* a picked song arrives on input (before change), and stays inside the maker so nothing re-renders the picker under it */
+ const pickSong=ev=>{if(ev.target.id!=='wbSongFile')return false;ev.stopPropagation();const f=ev.target.files?.[0];if(f)uploadWeddingSong(f);return true;};
+ box.addEventListener('change',pickSong);
  box.addEventListener('click',ev=>{
   const b=ev.target.closest('[data-wb]');if(!b||b.disabled)return;ev.preventDefault();
   const d=draft,act=b.dataset.wb,i=+b.dataset.i;
-  if(act==='swap'){[d.name,d.partner]=[d.partner||'',d.name||''];d.groomFirst=!d.groomFirst;const r=$('#recipientName');if(r)r.value=d.name;}
+  if(act==='song'||act==='listen'){
+   const key=act==='listen'?'own':b.dataset.key;
+   if(act==='song'&&wbSong.busy)return;
+   if(act==='song'){const t=WEDDING_TRACKS.find(x=>'t:'+x.id===key);Object.assign(d,t?{music:'custom',musicSrc:location.origin+t.src,musicName:t.name,musicStart:0}:{music:key,musicSrc:'',musicName:'',musicStart:0});}
+   wbPlay(key);saveDraft();renderMusicCard();return;
+  }
+  if(act==='swap'){[d.name,d.partner]=[d.partner||'',d.name||''];[d.family1,d.family2]=[d.family2||'',d.family1||''];d.groomFirst=!d.groomFirst;const r=$('#recipientName');if(r)r.value=d.name;}
   else if(act==='add'){const title=b.dataset.title;const at=title?d.events.findIndex(x=>String(x.title||'').trim().toLowerCase()===title.toLowerCase()):-1;
    if(at>=0){wbOpen.has(at)?wbOpen.delete(at):wbOpen.add(at);}
    else{if(d.events.length>=8){toast('Up to eight functions.');return;}d.events.push(title?defaultEvent(title):{...defaultEvent('Other'),title:'',dress:''});if(!title)wbOpen.add(d.events.length-1);buzz(8);}}
@@ -2822,7 +2965,7 @@ function wireWeddingBuilder(box){
 function refreshWeddingSummaries(){$$('[data-sum]').forEach(el=>{const x=draft.events[+el.dataset.sum];if(x)el.textContent=wbSummary(x);});}
 /* Names and the date are all an invite needs; say which is missing, right where it goes. */
 function weddingReady(){
- const d=draft,miss=!String(d.name||'').trim()?['wbName1','Add the first name.']:!String(d.partner||'').trim()?['wbName2','Add the second name.']:!validStoryDateAny(d.weddingDate)?['wbDate','Pick the wedding date.']:null;
+ const d=draft,miss=wbSong.busy?['wbMusic','Your song is still uploading. One moment.']:!String(d.name||'').trim()?['wbName1','Add the first name.']:!String(d.partner||'').trim()?['wbName2','Add the second name.']:!validStoryDateAny(d.weddingDate)?['wbDate','Pick the wedding date.']:null;
  const err=$('#wbError');if(!miss){if(err)err.hidden=true;return true;}
  if(err){err.textContent=miss[1];err.hidden=false;}
  const f=$('#'+miss[0]);if(f){f.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});f.focus({preventScroll:true});f.classList.remove('wb-shake');void f.offsetWidth;f.classList.add('wb-shake');}
