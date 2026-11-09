@@ -2869,8 +2869,9 @@ async function uploadWeddingSong(file){
  }catch(err){Object.assign(d,prev);toast(err.message==='big'?'That song is too big to keep on this device. Try one under 3 MB.':'That song could not upload. Check your connection and try again.');}
  finally{wbSong.busy=false;wbSong.pct=0;saveDraft();renderMusicCard();scheduleWeddingPreview();const f=$('#wbSongFile');if(f)f.value='';}
 }
+let wbDrawnFor=null;
 function renderWeddingBuilder(){
- const box=$('#weddingBuilder');if(!box)return;
+ const box=$('#weddingBuilder');if(!box)return;wbDrawnFor=draft;
  const det=wbPhotos||$('#photosDetail');if(det&&box.contains(det))det.remove();
  box.innerHTML=weddingBuilderHTML();
  const slot=$('#wbPhotosSlot');if(det&&slot){wbPhotos=det;slot.append(det);det.open=true;}
@@ -2887,10 +2888,14 @@ function mountWeddingBuilder(){
  }
  if(!wbPhotosHome){const det=$('#photosDetail');if(det)wbPhotosHome={parent:det.parentElement,next:det.nextSibling};}
  if(!box){form.insertAdjacentHTML('afterbegin','<section class="wb" id="weddingBuilder" aria-label="Your wedding invite"></section>');box=$('#weddingBuilder');wireWeddingBuilder(box);}
+ /* Draw the maker when it appears or the draft is swapped (new invite, edit, resume), never per keystroke: the form's
+    own input listener lands here on every key, and redrawing would pull the field out from under the typing. */
+ const fresh=box.hidden||wbDrawnFor!==draft||!box.firstElementChild;
  box.hidden=false;
  let pv=$('#wbPreview');const aside=$('.preview-aside');
  if(!pv&&aside){aside.insertAdjacentHTML('afterbegin','<div class="wb-preview" id="wbPreview"><p class="eyebrow">What your guests see</p><div class="wb-phone"><div class="wb-screen" id="wbScreen"></div></div><button type="button" class="btn btn-secondary wb-play" data-wb="play">▶ Play the whole invite</button></div>');pv=$('#wbPreview');pv.addEventListener('click',ev=>{if(ev.target.closest('[data-wb=play]'))previewGift();});}
  pv?.removeAttribute('hidden');
+ if(!fresh)return;
  renderWeddingBuilder();
  document.fonts?.load('40px "Great Vibes"').then(()=>scheduleWeddingPreview(0)).catch(()=>{});
 }
