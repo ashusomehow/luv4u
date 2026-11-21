@@ -315,11 +315,11 @@ async function compressPhoto(file){
 async function uploadPhotos(files){
  if(photoBusy)return;if(draft.photos.length>=4){toast('Four little photos is the perfect little album. Remove one to add another.');return;}
  photoBusy=true;const list=[...files].slice(0,4-draft.photos.length);let added=0;
- try{for(const file of list){try{const src=await compressPhoto(file);draft.photos.push({src,caption:''});added++;renderPhotoList();preupload(src,'image');}catch(err){toast(err.message);}}}finally{photoBusy=false;$('#photoUpload').value='';saveDraft();if(added)toast(`${added===1?'A lovely photo':'Your lovely photos'}, tucked inside. You can frame and reorder them below.`);}
+ try{for(const file of list){try{const src=await compressPhoto(file);draft.photos.push({src,caption:''});added++;renderPhotoList();preupload(src,'image');}catch(err){toast(err.message);}}}finally{photoBusy=false;$('#photoUpload').value='';saveDraft();if(added)makerStep('photo');if(added)toast(`${added===1?'A lovely photo':'Your lovely photos'}, tucked inside. You can frame and reorder them below.`);}
 }
 async function uploadAudio(file,kind){
  if(!file)return;if(!file.type.startsWith('audio/')){toast('Choose an audio file, like MP3, M4A or OGG.');return;}if(file.size>3*1024*1024){toast('That audio is a little big. Use a file under 3 MB, or add a public audio link.');return;}
- try{const src=await readDataURL(file);if(!safeMedia(src,'audio'))throw new Error('This audio format cannot be embedded. Try an MP3 or OGG file.');if(kind==='voice'){draft.voice=src;draft.voiceName=file.name;$('#voiceUrl').value='';}else{draft.music='custom';draft.musicSrc=src;draft.musicName=file.name;$('#musicUrl').value='';}renderAudioChip(kind);updatePreview();saveDraft();toast('A little soundtrack for their heart. Added.');}catch(err){toast(err.message);}finally{$('#'+kind+'Upload').value='';}
+ try{const src=await readDataURL(file);if(!safeMedia(src,'audio'))throw new Error('This audio format cannot be embedded. Try an MP3 or OGG file.');if(kind==='voice'){draft.voice=src;draft.voiceName=file.name;$('#voiceUrl').value='';}else{draft.music='custom';draft.musicSrc=src;draft.musicName=file.name;$('#musicUrl').value='';}renderAudioChip(kind);updatePreview();saveDraft();makerStep(kind==='voice'?'voice':'music');toast('A little soundtrack for their heart. Added.');}catch(err){toast(err.message);}finally{$('#'+kind+'Upload').value='';}
 }
 async function toggleRecording(){
  if(mediaRecorder){stopRecording(true);return;}
@@ -1053,7 +1053,7 @@ function uploadCoverLater(id,key,g){
  setTimeout(()=>{try{const cover=coverFor(g);if(cover)uploadMedia(id,key,cover,'cover').catch(()=>{});}catch{}},400);
 }
 async function publishGift(){
- if(publishing||!validateForm())return;publishing=true;stopPreviewAudio();const btn=$('#createGiftBtn');btn.disabled=true;btn.textContent='Tying the little ribbon…';
+ if(publishing)return;if(!validateForm()){makerStep('blocked',blockReason());return;}publishing=true;stopPreviewAudio();const btn=$('#createGiftBtn');btn.disabled=true;btn.textContent='Tying the little ribbon…';
  try{
  const g=collectGift();g.version=3;const mode=editing?.mode==='hosted'?'hosted':paymentsRequired?'hosted':delivery;btn.textContent='Making '+g.name+'’s gift…';
  if(mode==='hosted'){
@@ -1077,7 +1077,7 @@ async function publishGift(){
  await store('gift:'+publishedGift.id,publishedGift).catch(()=>{toast('This browser cannot keep this gift. Download its HTML before closing.');});editing={mode:'portable',id:publishedGift.id};rememberGift({id:publishedGift.id,name:g.name,partner:g.partner||'',vibe:g.vibe,occasion:g.occasion,mode:'portable',url:publishedURL});
  }
  await store('lastGift',publishedGift).catch(()=>{});try{if(g.sender)localStorage.setItem('kholona.sender',g.sender);}catch{}showShare();saveDraft();
- }catch(err){toast(err.message||'The ribbon got tangled. Your draft is still here.');}finally{publishing=false;btn.disabled=false;btn.innerHTML=createLabel();}
+ }catch(err){makerStep('failed',err.status?String(err.status):/taking too long/.test(err.message||'')?'timeout':'network');toast(err.message||'The ribbon got tangled. Your draft is still here.');}finally{publishing=false;btn.disabled=false;btn.innerHTML=createLabel();}
 }
 function showShare(){
  if(!publishedGift)return;showShareV1();const isHosted=publishedGift.server,tooLarge=!publishedURL;
@@ -1169,8 +1169,15 @@ function savedDaysLeft(){if(!publishedExpiresAt)return null;return Math.max(0,Ma
 function savedLossLine(){const n=savedDaysLeft();if(n===null)return '';return n<=1?'Your saved gift is deleted within a day unless you unlock it.':`Your saved gift is kept for ${n} more days. After that it is deleted.`;}
 const lifeText=days=>days>=365?'a full year':days+' days';
 /* Funnel events for the payment steps (anonymous; see lib/events.ts). */
-const track=(name,props)=>{try{if(window.kholonaTrack)window.kholonaTrack(name,props);}catch{}};
+const track=(name,props,giftType)=>{try{if(window.kholonaTrack)window.kholonaTrack(name,props,giftType);}catch{}};
+/* The maker, milestone by milestone (#4 in the funnel plan): each is sent once per gift type, so the "Maker steps" tab can
+   show where people stop between opening the maker and creating. Only a step name and a short reason, never typed text. */
+const makerSteps=new Set();
+function makerStep(step,label=''){const kind=occasionKey(draft),k=kind+'|'+step+'|'+label;if(makerSteps.has(k))return;makerSteps.add(k);track('creator_step',label?{step,label}:{step},kind);}
+function blockReason(){if(wedOn()){const d=draft;return !String(d.name||'').trim()?'first_name':!String(d.partner||'').trim()?'second_name':!validStoryDateAny(d.weddingDate)?'date':wbSong.busy?'song_uploading':'other';}return !draft.name.trim()?'name':photoBusy?'photos_busy':mediaRecorder?'recording':'link';}
 const inAppBrowser=/FBAN|FBAV|FB_IAB|Instagram|;\s*wv\)/i.test(navigator.userAgent||'');
+const isAndroid=/Android/i.test(navigator.userAgent||''),isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
+const realBrowserName=isIOS?'Safari':'Chrome';
 /* Real, consented reviews beside the price (they come from /api/config; nothing is invented here). */
 function proofHtml(){
  const r=payReviews;if(!r)return '';
@@ -1217,6 +1224,7 @@ ${paySimulated?'<p class="unlock-trust"><strong>Test mode.</strong> Nothing is c
 <p class="pay-status" id="payStatus" role="status" hidden></p>
 <button type="button" class="btn btn-primary pulse-cta pay-btn" id="payGo" data-v3="unlock" data-label="Unlock & get link${price?' · '+e(price):''}">Unlock & get link${price?' · '+e(price):''}</button>
 ${paySimulated||payTestMode?'':'<p class="pay-methods"><span aria-hidden="true">🔒</span> Secure payment · UPI, cards, netbanking</p>'}
+${inAppBrowser&&publishedGift.server?`<div class="pay-alt" id="payAlt"><p class="pay-alt-q">UPI app not opening here?</p><button type="button" class="btn btn-secondary pay-alt-btn" data-v3="pay-in-browser">Pay in ${realBrowserName} instead</button><p class="pay-alt-help" id="payAltHelp" role="status" hidden></p></div>`:''}
 </div>
 ${proofHtml()}
 <details class="unlock-faq"><summary>What happens after I pay?</summary><p>Your private link appears right away. Send it on WhatsApp or anywhere. ${name} opens it with no account and no app.</p></details>
@@ -1265,7 +1273,10 @@ function loadRazorpay(){
 function runRazorpay(r){
  return loadRazorpay().then(()=>new Promise((ok,no)=>{
   let settled=false,failure=null;const done=(fn,v)=>{if(settled)return;settled=true;fn(v);};
-  const rz=new window.Razorpay({key:r.keyId,order_id:r.order.id,amount:r.order.amount,currency:r.order.currency,name:'Kholona',description:'A Kholona gift',theme:{color:'#d6265d'},retry:{enabled:true},modal:{confirm_close:true,ondismiss:()=>done(no,{cancelled:true,failure})},handler:resp=>done(ok,resp)});
+  /* UPI first: almost every buyer pays by UPI, so it leads and the other methods follow. webview_intent asks Razorpay to
+     open UPI apps from in-app browsers (Instagram, Facebook) too; Razorpay ignores options it does not know. */
+  const rz=new window.Razorpay({key:r.keyId,order_id:r.order.id,amount:r.order.amount,currency:r.order.currency,name:'Kholona',description:'A Kholona gift',theme:{color:'#d6265d'},retry:{enabled:true},webview_intent:true,
+   config:{display:{blocks:{upi:{name:'Pay with any UPI app',instruments:[{method:'upi'}]}},sequence:['block.upi'],preferences:{show_default_blocks:true}}},modal:{confirm_close:true,ondismiss:()=>done(no,{cancelled:true,failure})},handler:resp=>done(ok,resp)});
   rz.on('payment.failed',resp=>{failure=resp&&resp.error||{};});
   rz.open();
  }));
@@ -1353,6 +1364,7 @@ async function startPayment(){
     if(again&&again.status==='paid'){unlockDone(name);return;}
     if(ex.failure){err.textContent=failureText(ex.failure);err.hidden=false;}
     else{status('No problem. Nothing was charged and '+publishedGift.name+'’s gift is still saved.'+keptLine()+' Press the button whenever you are ready.');}
+    const alt=$('#payAlt');if(alt){alt.classList.add('is-hot');$('.pay-alt-q',alt).textContent=ex.failure?'Payments often fail inside the Instagram or Facebook browser.':'Did your UPI app not open?';}
     idle();return;
    }
    busy('Confirming…');
@@ -1366,6 +1378,26 @@ async function startPayment(){
   status('');idle();
   err.textContent=(ex&&ex.message)||'We could not take the payment. Your gift is still saved.';err.hidden=false;
  }
+}
+/* Pay in the real browser: Instagram's and Facebook's in-app browsers often cannot open UPI apps. The order is opened
+   here first (so the ad click stays with it and the sale is still credited), then the server seals this gift's edit key
+   into a short-lived token (/api/gifts/:id/handoff), and Chrome (Android) or Safari (iPhone) opens the same unlock
+   page with it. If the phone will not switch, the link is copied with two steps to paste it. */
+async function payInBrowser(btn){
+ if(!editing?.key||!publishedGift?.server||btn.disabled)return;
+ const help=$('#payAltHelp'),label=btn.textContent,say=html=>{if(help){help.innerHTML=html;help.hidden=false;}};
+ btn.disabled=true;btn.textContent='Opening '+realBrowserName+'…';track('pay_in_browser',{kind:'tapped'});
+ try{
+  if(payProvider==='razorpay'&&!paySimulated){const r=await api('/api/gifts/'+editing.id+'/checkout',{method:'POST',key:editing.key,body:refBody(),credentials:true}).catch(()=>null);if(r&&r.status==='paid'){unlockDone(e(publishedGift.name));return;}}
+  const h=await api('/api/gifts/'+editing.id+'/handoff',{method:'POST',key:editing.key});
+  const path='/?handoff='+editing.id+'.'+h.token,url=location.origin+path;
+  const fallback=async()=>{const copied=await navigator.clipboard?.writeText(url).then(()=>true,()=>false);say(`${copied?'<strong>Link copied.</strong> ':''}Open <strong>${realBrowserName}</strong>, ${copied?'paste it in the address bar':'and open this link: <span class="pay-alt-link">'+e(url)+'</span>'}, then pay there. Or tap <strong>⋯</strong> at the top and choose <strong>Open in ${isIOS?'external browser':'Chrome'}</strong>. The link works for 30 minutes.`);};
+  if(isAndroid)location.href='intent://'+location.host+path+'#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(url)+';end';
+  else if(isIOS)location.href='x-safari-'+url;
+  /* Still here after a moment: the switch did not happen (or this is not a phone), so hand over the link instead. */
+  setTimeout(()=>{if(document.visibilityState==='visible')fallback();},isAndroid||isIOS?1600:0);
+ }catch(err){track('pay_in_browser',{kind:'failed'});say(e(err.message||'That did not work. Try the pay button above.'));}
+ finally{btn.disabled=false;btn.textContent=label;}
 }
 /* Someone who opened the payment window and left (closed it, switched to their UPI app, lost the tab) gets a calm nudge when they come back. */
 const payFlagKey=id=>'kholona.paystart.'+id;
@@ -1498,7 +1530,34 @@ function bindV2(){
  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPreviewAudio();});
  $('#clearDraft').addEventListener('click',()=>{setTimeout(()=>{const b=$('#confirmReset');if(b)b.addEventListener('click',()=>{editing=null;publishAttempt=null;clearTimeout(saveTimer);saveGeneration++;removeStored('draft').catch(()=>{});removeStored('pending-create').catch(()=>{});setStep(0);saveDraft();});},0);});
 }
-async function routeV2(){const occasionRoute=/^#occasion=(birthday|proposal|love|apology|anniversary|thanks|congratulations|missyou|wedding)$/.exec(location.hash);if(occasionRoute){applyCampaign(occasionRoute[1]);return true;}
+/* Removes one query parameter from the address bar without reloading, keeping the rest (utm tags stay for tracking). */
+function dropParam(name){const u=new URL(location.href);if(!u.searchParams.has(name))return;u.searchParams.delete(name);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}
+async function arriveFromElsewhere(){
+ const sp=new URLSearchParams(location.search);
+ const hand=/^([a-f0-9]{24})\.([A-Za-z0-9_-]{40,400})$/.exec(sp.get('handoff')||'');
+ if(sp.has('handoff')){
+  dropParam('handoff');
+  if(!hand){showView('error');$('#errorMessage').textContent='That payment link is incomplete. Go back to the app and tap the button again.';return true;}
+  try{
+   const r=await api('/api/gifts/'+hand[1]+'/handoff',{method:'POST',body:{token:hand[2]}});
+   rememberGift({id:hand[1],key:r.key,mode:'hosted',waiting:true});
+   await openSavedShare(hand[1]);
+   if(publishedGift)rememberGift({id:hand[1],key:r.key,mode:'hosted',name:publishedGift.name,partner:publishedGift.partner||'',vibe:publishedGift.vibe,occasion:publishedGift.occasion,url:publishedURL,expiresAt:publishedExpiresAt,waiting:publishedStatus==='preview'});
+   track('pay_in_browser',{kind:'arrived'},publishedGift?.occasion);
+   if(publishedStatus==='preview')setTimeout(()=>{const s=$('#payStatus');if(s){s.textContent='You’re in '+(isIOS?'Safari':isAndroid?'Chrome':'your browser')+' now. Tap the button to pay; your UPI app opens from here.';s.hidden=false;}$('#payGo')?.scrollIntoView({block:'center'});},250);
+  }catch(err){showView('error');$('#errorMessage').textContent=err.message;}
+  return true;
+ }
+ /* A retargeting ad links to /?back=1: open the gift this browser left waiting, or the unfinished draft. */
+ if(sp.get('back')==='1'){
+  dropParam('back');
+  const waiting=libraryCache.find(v=>v.mode==='hosted'&&v.waiting===true&&v.key&&(!v.expiresAt||new Date(v.expiresAt).getTime()>Date.now()));
+  if(waiting&&backendReady){track('resume_clicked',{kind:'ad'},waiting.occasion);await openSavedShare(waiting.id);return true;}
+  if(draft.name.trim()){track('resume_clicked',{kind:'ad_draft'},occasionKey(draft));await openCreator(occasionKey(draft));return true;}
+ }
+ return false;
+}
+async function routeV2(){if(await arriveFromElsewhere())return true;const occasionRoute=/^#occasion=(birthday|proposal|love|apology|anniversary|thanks|congratulations|missyou|wedding)$/.exec(location.hash);if(occasionRoute){applyCampaign(occasionRoute[1]);return true;}
  const demo=/^#demo=([a-z]+)$/.exec(location.hash);if(demo&&Object.hasOwn(OCCASIONS,demo[1])){previewOccasion(demo[1]);return true;}
  const make=/^#make=([a-z]+)$/.exec(location.hash);if(make&&Object.hasOwn(OCCASIONS,make[1])){await openCreator(make[1]);return true;}
  if(location.hash.startsWith('#make=')){browseGifts();toast('Choose one of the little gifts below.');return true;}
@@ -1666,6 +1725,7 @@ function hasCustomMessage(input,option){return templateValues(input,option).some
  });}
 function pickMessageTemplate(input,index){
  const state=getTemplateState(input),option=state.options[index];if(!option)return;
+ if(!wedOn())makerStep('words','ready_made');
  if(selectedTemplate(input,option))return;
  if(hasCustomMessage(input,option)){state.pending={option,index};syncMessageTemplates(input);const box=document.getElementById('templates-'+input.id);$('[data-template-confirm]',box).focus({preventScroll:true});$('.template-confirm',box).scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'nearest'});return;}
  applyMessageTemplate(input,option,index);
@@ -1725,6 +1785,7 @@ document.addEventListener('click',event=>{
 $('#giftForm').addEventListener('submit',event=>{event.preventDefault();publishGift();});
 $('#giftForm').addEventListener('input',event=>{
  const el=event.target,map={recipientName:'name',personalMessage:'message',senderName:'sender',funMessage:'funMessage',finalMessage:'finalMessage',finalUrl:'finalUrl'};
+ if(!wedOn()&&el.value&&String(el.value).trim()){if(el.id==='recipientName')makerStep('name');else if(el.matches('textarea,input[type=text],input:not([type])')&&!el.closest('#weddingBuilder'))makerStep('words');}
  if(map[el.id])draft[map[el.id]]=el.value;
  if(el.id==='recipientName'&&draft.name.trim()){$('#nameError').hidden=true;el.setAttribute('aria-invalid','false');}
  if(el.id==='voiceUrl'){draft.voice=safeWebURL(el.value);draft.voiceName='';renderAudioChip('voice');}
@@ -2028,6 +2089,7 @@ function installOccasions(){
    case'unlock':startPayment();break;
    case'resume-dismiss':try{sessionStorage.setItem('luv4u.resume.dismissed','1');}catch{}updateResumeBanner();break;
    case'unlock-saved':openSavedShare(b.dataset.id);break;
+   case'pay-in-browser':payInBrowser(b);break;
    case'home-demo':previewOccasion();break;
    case'open-note':openOccasionNote(b);break;
    case'heart-note':openHeartNote(b);break;
@@ -2899,7 +2961,7 @@ function wbPlay(key){
 }
 const SONG_TYPES={mp3:'audio/mpeg',m4a:'audio/mp4',aac:'audio/aac',ogg:'audio/ogg',wav:'audio/wav'};
 async function uploadWeddingSong(file){
- if(!file||wbSong.busy)return;
+ if(!file||wbSong.busy)return;makerStep('w_song');
  const type=String(file.type||SONG_TYPES[(file.name.split('.').pop()||'').toLowerCase()]||'').toLowerCase();
  if(!type.startsWith('audio/')){toast('Choose a song file, like an MP3 or M4A.');return;}
  if(file.size>12*1024*1024){toast('That song is over 12 MB. An MP3 of it will fit.');return;}
@@ -2965,6 +3027,7 @@ function updateWeddingDock(){
 function wireWeddingBuilder(box){
  box.addEventListener('input',ev=>{
   if(pickSong(ev))return;
+  {const id=ev.target.id||'',w=ev.target.dataset.wbe;makerStep(/^wbName/.test(id)?'w_names':/^wbFam\d/.test(id)?'w_families':id==='wbDate'?'w_date':/^wb(Venue|Time|Map)$/.test(id)?'w_venue':/^wb(Families|Tag|Note)$/.test(id)?'w_words':w?'w_function':'w_other');}
   const t=ev.target,d=draft,w=ensureWeddingEvent(d);
   if(t.id==='wbName1'){d.name=t.value;const r=$('#recipientName');if(r)r.value=t.value;}
   else if(t.id==='wbName2')d.partner=t.value;
@@ -2997,6 +3060,7 @@ function wireWeddingBuilder(box){
  box.addEventListener('click',ev=>{
   const b=ev.target.closest('[data-wb]');if(!b||b.disabled)return;ev.preventDefault();
   const d=draft,act=b.dataset.wb,i=+b.dataset.i;
+  makerStep(act==='add'||act==='edit'||act==='remove'||act==='dress'?'w_function':act==='song'||act==='listen'?'w_music':act==='line'||act==='bless'||act==='tag'||act==='note'?'w_words':act==='swap'?'w_names':'w_other');
   if(act==='song'||act==='listen'){
    const key=act==='listen'?'own':b.dataset.key;
    if(act==='song'&&wbSong.busy)return;

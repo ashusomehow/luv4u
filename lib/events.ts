@@ -42,6 +42,10 @@ export const EVENT_NAMES = [
   'free_code_used',
   // the wedding invite: the couple made personal links for their guest list
   'guest_links_made',
+  // the maker, milestone by milestone (props.step), to see where people stop before creating
+  'creator_step',
+  // leaving Instagram's or Facebook's in-app browser to pay in Chrome or Safari (kind: tapped, arrived, failed)
+  'pay_in_browser',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];
@@ -61,7 +65,7 @@ export interface CleanEvent {
 const SESSION_PATTERN = /^[a-f0-9]{16,32}$/;
 const BOT_PATTERN = /bot|crawl|spider|slurp|headless|lighthouse|preview|monitor|curl|wget/i;
 // Only these prop keys are kept, so free text (names, messages) can never be stored.
-const PROP_KEYS = ['label', 'step', 'delivery', 'kind', 'env'] as const;
+const PROP_KEYS = ['label', 'step', 'delivery', 'kind', 'env', 'os', 'app'] as const;
 
 function text(value: unknown, max: number): string | null {
   return typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;

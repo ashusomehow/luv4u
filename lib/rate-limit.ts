@@ -67,4 +67,5 @@ export const LIMITS = {
   reply: { max: 20, window: 3600 },
   report: { max: 8, window: 3600 },
   checkout: { max: 40, window: 3600 },
+  handoff: { max: 30, window: 3600 },
 } as const;

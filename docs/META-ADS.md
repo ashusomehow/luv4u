@@ -42,6 +42,26 @@ Gift ids (only a hash, as `external_id`), names, messages, photos, gift links, o
   `utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`
 - Send traffic to `/` or an occasion page such as `/for/birthday-wish` or `/for/sorry-gift` (the sorry gift, built for "sorry" ads: the runaway No button and the "Forgiven" card are the moments to screen-record).
 
+## Retargeting people who made a gift but did not pay
+
+About 500 people a week make a gift and stop at the price. Their gift is kept for 7 days (`PREVIEW_TTL_DAYS`), and the
+Pixel already marks them: **Lead** fires when a gift is created, **Purchase** when it is paid.
+
+1. Ads Manager → Audiences → Create audience → Custom audience → Website → your Pixel.
+   Include: **Lead**, in the last **7 days**. Exclude: **Purchase**, in the last **7 days**. Name it "Made a gift, not paid".
+2. New campaign (Sales, conversion event Purchase) with one ad set targeting that audience. Small budget to start
+   (₹150–200 a day); it is a small, warm audience.
+3. Ad copy that speaks to someone who already made one: "Your gift is still saved. Send it before it’s gone." Reuse the
+   best-performing sorry and birthday creatives.
+4. Website URL: `https://kholona.in/?back=1` plus the usual parameters, with `utm_campaign=retarget`:
+   `https://kholona.in/?back=1&utm_source=meta&utm_medium=paid&utm_campaign=retarget&utm_content={{ad.name}}`
+   `?back=1` opens the gift this phone left waiting straight on its unlock page (or the unfinished gift in the maker);
+   anyone else sees the normal home page. The ad tags stay, so the sale is credited.
+5. Judge it on its own cost per sale (Ads Manager, and the Daily tab's sales on days it runs). Keep it if it stays well
+   under the main campaign's cost per sale (₹135 over the last 30 days to 20 Nov); pause it if it does not after 7 days.
+
+Exclude the same "Made a gift, not paid" audience from the main campaign if Meta starts spending it there twice.
+
 ## Our own numbers
 
 `supabase/queries/ads.sql` lists paid orders and revenue per campaign and ad, and how many started checkouts finish paying. Divide by spend from Ads Manager for cost per purchase.

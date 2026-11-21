@@ -18,6 +18,8 @@ import { POST as mediaPost } from '@/app/api/gifts/[id]/media/route';
 import { GET as cleanup } from '@/app/api/cron/cleanup/route';
 import { markPaid } from '@/lib/gifts';
 import { GET as calendarGet } from '@/app/api/gifts/[id]/calendar/route';
+import { POST as handoffPost } from '@/app/api/gifts/[id]/handoff/route';
+import { HANDOFF_TTL_SECONDS, openHandoff, sealHandoff } from '@/lib/handoff';
 
 const ID = 'a1b2c3d4e5f6a1b2c3d4e5f6';
 const KEY = 'f'.repeat(64);
@@ -346,3 +348,27 @@ describe('wedding invite calendar file', () => {
   });
 });
 
+
+describe('pay in the real browser (handoff)', () => {
+  it('seals the edit key for the owner and trades it back in another browser', async () => {
+    await create();
+    expect((await handoffPost(req('/x', 'POST', undefined, 'a'.repeat(64)), ctx())).status).toBe(403);
+    const sealed = await (await handoffPost(req('/x', 'POST', undefined, KEY), ctx())).json();
+    expect(sealed.token).toMatch(/^[A-Za-z0-9_-]{40,}$/);
+    expect(sealed.token).not.toContain(KEY);
+    const back = await (await handoffPost(req('/x', 'POST', { token: sealed.token }), ctx())).json();
+    expect(back).toEqual({ ok: true, key: KEY });
+  });
+
+  it('refuses a token for another gift, a forged or expired one, and a deleted gift', async () => {
+    await create();
+    const { token } = sealHandoff(ID, KEY);
+    expect(openHandoff('b'.repeat(24), token)).toBeNull();
+    expect(openHandoff(ID, token.slice(0, -2) + (token.endsWith('A') ? 'BB' : 'AA'))).toBeNull();
+    expect(openHandoff(ID, token, Date.now() + (HANDOFF_TTL_SECONDS + 5) * 1000)).toBeNull();
+    expect(openHandoff(ID, 'not a token')).toBeNull();
+    expect((await handoffPost(req('/x', 'POST', { token: 'x'.repeat(50) }), ctx())).status).toBe(410);
+    fake.tables.gifts = [];
+    expect((await handoffPost(req('/x', 'POST', { token }), ctx())).status).toBe(403);
+  });
+});
