@@ -501,6 +501,40 @@ try {
     assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${made.id}`, { method: 'DELETE', headers: { authorization: `Bearer ${made.key}` } })).status, 200);
     await wctx.close();
   }
+  { // Instagram's browser: the unlock page offers "Pay in Chrome"; the real browser opens the same unlock page from a sealed link,
+    // a retargeting ad (?back=1) brings the waiting gift straight back, and the maker reports its milestones
+    const IG_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36 Instagram 300.0.0.0';
+    const own = { 'x-forwarded-for': '203.0.113.77' }; // its own address, so the shared per-address limits of the later checks are untouched
+    const ictx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: IG_UA, extraHTTPHeaders: own }); const ig = await ictx.newPage(); ig.setDefaultTimeout(15000); watch(ig, 'in-app');
+    await ig.goto(LOCKED_APP + '/#make=apology', { waitUntil: 'load' }); await ig.waitForSelector('#recipientName');
+    await ig.click('#createGiftBtn');                                // stopped: no name yet
+    await ig.locator('#recipientName').click(); await ig.keyboard.type('Riya', { delay: 20 });
+    await ig.click('#createGiftBtn'); await ig.waitForSelector('#shareView:not([hidden]) #payGo', { timeout: 25000 });
+    assert.equal(await ig.locator('#payAlt').isVisible(), true, 'in the Instagram browser the unlock page offers to pay in Chrome');
+    assert.match(await ig.locator('[data-v3="pay-in-browser"]').innerText(), /Pay in Chrome instead/);
+    await ig.click('[data-v3="pay-in-browser"]'); await ig.waitForSelector('#payAltHelp:not([hidden])');
+    const handoff = (await ig.locator('#payAltHelp').innerText()).match(/https?:\/\/\S+\?handoff=[a-f0-9]{24}\.[A-Za-z0-9_-]+/)?.[0];
+    assert.ok(handoff, 'a computer has no Chrome to switch to, so the link is shown to open by hand');
+    const made = await ig.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);
+    assert.ok(!handoff.includes(made.key), 'the edit key itself is never in the link');
+    await ictx.close();
+
+    const cctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, extraHTTPHeaders: own }); const ch = await cctx.newPage(); ch.setDefaultTimeout(15000); watch(ch, 'real-browser');
+    await ch.goto(handoff, { waitUntil: 'load' }); await ch.waitForSelector('#shareView:not([hidden]) #payGo');
+    await ch.waitForFunction(() => /in Safari now/.test(document.querySelector('#payStatus')?.textContent || ''));
+    assert.equal(new URL(ch.url()).search, '', 'the sealed token leaves the address bar');
+    assert.equal(await ch.locator('#payAlt').count(), 0, 'no "Pay in Chrome" offer in a real browser');
+    assert.equal((await ch.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0])).waiting, true, 'the gift is now saved in this browser too');
+    await ch.goto(LOCKED_APP + '/?back=1&utm_source=meta&utm_campaign=retarget', { waitUntil: 'load' }); await ch.waitForSelector('#shareView:not([hidden]) #payGo');
+    assert.match(ch.url(), /utm_campaign=retarget/); assert.doesNotMatch(ch.url(), /back=1/, 'a retargeting ad opens the waiting gift, keeping the ad tags');
+    const expired = await (await fetch(`${LOCKED_APP}/api/gifts/${made.id}/handoff`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: 'x'.repeat(60) }) })).json();
+    assert.match(expired.error, /expired/);
+    assert.equal((await fetch(`${LOCKED_APP}/api/gifts/${made.id}`, { method: 'DELETE', headers: { authorization: `Bearer ${made.key}` } })).status, 200);
+    await cctx.close();
+    await new Promise((r) => setTimeout(r, 600));
+    const names = (await state()).events;
+    for (const n of ['creator_step', 'pay_in_browser']) assert.ok(names.includes(n), `${n} events are recorded`);
+  }
   const octx = await browser.newContext({ viewport: { width: 1280, height: 900 }, userAgent: NORMAL_UA });
   const owner = await octx.newPage(); owner.setDefaultTimeout(15000);
   await owner.goto(LOCKED_APP + '/#make=love', { waitUntil: 'load' }); await owner.waitForSelector('#recipientName');

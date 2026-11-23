@@ -56,6 +56,13 @@ describe('cleanEvent', () => {
     }
   });
 
+  it('accepts the maker milestones and the pay-in-browser steps, with the phone and app words only', () => {
+    expect(cleanEvent({ name: 'creator_step', session: SESSION, occasion: 'apology', props: { step: 'blocked', label: 'name', os: 'android', app: 'instagram', ua: 'Mozilla/5.0 secret' } })).toMatchObject({
+      name: 'creator_step', occasion: 'apology', props: { step: 'blocked', label: 'name', os: 'android', app: 'instagram' },
+    });
+    expect(cleanEvent({ name: 'pay_in_browser', session: SESSION, props: { kind: 'arrived', env: 'browser', os: 'ios' } })?.props).toEqual({ kind: 'arrived', env: 'browser', os: 'ios' });
+  });
+
   it('rejects unknown events and malformed sessions', () => {
     expect(cleanEvent({ name: 'drop_table', session: SESSION })).toBeNull();
     expect(cleanEvent({ name: 'page_view', session: 'short' })).toBeNull();

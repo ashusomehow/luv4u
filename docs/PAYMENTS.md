@@ -69,6 +69,28 @@ Every failure ends in a plain message that says what happened to the money. All 
 | Still unconfirmed after that | "Please do not pay again… unlocks on its own… Reference: pay_…" and the button becomes *Check payment status* | The webhook or the next check unlocks it |
 | Payments not set up (no keys) | "Payments are not set up yet…" | Fails closed: nothing unlocks |
 
+### Paying from Instagram's or Facebook's browser
+
+Most buyers arrive from an ad and pay inside the app's own browser, where UPI apps often fail to open. So:
+
+- Razorpay opens with **UPI first** ("Pay with any UPI app", then everything else) and `webview_intent: true`, which asks
+  Razorpay to open UPI apps from in-app browsers. Check both once in test mode on an Android phone from an Instagram link:
+  Razorpay ignores options it does not know, so nothing breaks if a name changes, it just has no effect.
+- The unlock page shows **"UPI app not opening here? Pay in Chrome instead"** (Safari on iPhone), only in in-app
+  browsers. It turns red after the buyer closes or fails a payment there. Tapping it:
+  1. opens the order first (so the ad click stays with the order and the sale is still credited to the ad);
+  2. asks the server for a sealed, 30-minute token for this gift (`POST /api/gifts/:id/handoff`, lib/handoff.ts). The
+     edit key itself never goes into a URL;
+  3. opens `/?handoff=…` in Chrome (an Android intent link) or Safari (an `x-safari-https` link, where the iPhone
+     and the app allow it);
+  4. if the phone does not switch, copies the link and says how to open it.
+  The real browser trades the token back for the key, saves the gift in its own "My little gifts", removes the token from
+  the address bar and shows the unlock page: "You’re in Chrome now. Tap the button to pay."
+- Events `pay_in_browser` (tapped, arrived, failed) and the Checkout tab show whether it helps.
+
+Worth setting in the Razorpay Dashboard (Settings → Checkout): ask for as little as possible before payment (make email
+optional if your account allows it), and keep UPI Intent on.
+
 If a buyer writes in with a reference and the gift is still locked, look the payment id up in Razorpay. If it was captured, either wait for the webhook or open the gift's edit link and press Unlock: that reconciles the gift against Razorpay. If it was not captured there is nothing to refund.
 
 ## Local development and preview deployments

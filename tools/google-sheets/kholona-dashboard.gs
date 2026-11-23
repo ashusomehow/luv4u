@@ -15,7 +15,7 @@
 
 const TZ = 'Asia/Kolkata';
 const KEY_PROP = 'KHOLONA_REPORT_KEY';
-const TAB = { settings: 'Settings', spend: 'Ad spend', daily: 'Daily', dash: 'Dashboard', chart: 'Chart data' };
+const TAB = { settings: 'Settings', spend: 'Ad spend', daily: 'Daily', dash: 'Dashboard', chart: 'Chart data', checkout: 'Checkout', steps: 'Maker steps' };
 const INK = '#3a1f2b', PINK = '#e0457b', SOFT = '#fdf0f4', LINE = '#f1d6df', GOOD_BG = '#e3f5e9', GOOD = '#1e7b45', BAD_BG = '#fde2e1', BAD = '#b3261e', MEH_BG = '#fff4d6';
 const MONEY = '"\u20b9"#,##0', MONEY2 = '"\u20b9"#,##0.00', X = '0.00"x"', PCT = '0%', INT = '#,##0', DATE = 'ddd d mmm yyyy';
 
@@ -50,6 +50,8 @@ function setup() {
   buildDaily_(ss);
   buildChartData_(ss);
   buildDashboard_(ss);
+  tab_(ss, TAB.checkout, 3);
+  tab_(ss, TAB.steps, 4);
   const blank = ss.getSheetByName('Sheet1');
   if (blank && blank.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(blank);
   ScriptApp.getProjectTriggers().filter((t) => t.getHandlerFunction() === 'refresh').forEach((t) => ScriptApp.deleteTrigger(t));
@@ -82,8 +84,9 @@ function refresh() {
   if (res.getResponseCode() !== 200) { status_(ss, explain_(res)); return; }
   const rows = JSON.parse(res.getContentText()).rows || [];
   writeDaily_(ss.getSheetByName(TAB.daily), rows);
+  const extra = refreshCheckout_(ss, base, key);
   settings.getRange('B10').setValue(new Date());
-  status_(ss, 'OK \u00b7 ' + rows.length + ' days loaded \u00b7 ad spend saved for ' + pushed.saved + ' day(s)' + (pushed.skipped ? ' \u00b7 ' + pushed.skipped + ' cell(s) in Ad spend are not numbers, so they were skipped' : ''));
+  status_(ss, 'OK \u00b7 ' + rows.length + ' days loaded \u00b7 ad spend saved for ' + pushed.saved + ' day(s)' + (pushed.skipped ? ' \u00b7 ' + pushed.skipped + ' cell(s) in Ad spend are not numbers, so they were skipped' : '') + (pushed.badDates ? ' \u00b7 ' + pushed.badDates + ' date(s) in Ad spend column A are not dates' : '') + extra);
 }
 
 function explain_(res) {
@@ -102,9 +105,10 @@ function pushSpend_(sheet, base, key) {
   const values = sheet.getRange(2, 1, last - 1, 4).getValues();
   const spend = [];
   let skipped = 0;
+  let badDates = 0;
   values.forEach((r) => {
-    if (!(r[0] instanceof Date)) return;
-    const date = Utilities.formatDate(r[0], TZ, 'yyyy-MM-dd');
+    const date = ymdOf_(r[0]);
+    if (!date) { if (r[0] !== '' || r[1] !== '') badDates++; return; }
     const amount = toNumber_(r[1]);
     if (amount === undefined) { skipped++; return; }
     const meta = toNumber_(r[2]);
@@ -119,7 +123,16 @@ function pushSpend_(sheet, base, key) {
     if (res.getResponseCode() !== 200) return { error: 'Saving ad spend failed. ' + explain_(res) };
     saved += JSON.parse(res.getContentText()).saved || 0;
   }
-  return { saved: saved, skipped: skipped };
+  return { saved: saved, skipped: skipped, badDates: badDates };
+}
+
+/** "yyyy-MM-dd" for a date cell, whether Sheets holds it as a date or as text; '' when it is not a date. */
+function ymdOf_(v) {
+  if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? '' : Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+  const text = String(v || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const parsed = text ? new Date(text) : null;
+  return parsed && !isNaN(parsed.getTime()) ? Utilities.formatDate(parsed, TZ, 'yyyy-MM-dd') : '';
 }
 
 /** A number, null for a blank cell, or undefined for something that is not a number ("Rs 1,200" counts as 1200). */
@@ -138,7 +151,7 @@ const addDays_ = (ymd, n) => Utilities.formatDate(new Date(dateOf_(ymd).getTime(
 function addMissingDates_(sheet) {
   const today = todayYmd_();
   const first = sheet.getLastRow() >= 2 ? sheet.getRange(2, 1).getValue() : '';
-  let newest = first instanceof Date ? Utilities.formatDate(first, TZ, 'yyyy-MM-dd') : addDays_(today, -61);
+  let newest = ymdOf_(first) || addDays_(today, -61);
   const missing = [];
   while (newest < today) { newest = addDays_(newest, 1); missing.unshift([dateOf_(newest)]); }
   if (!missing.length) return;
@@ -383,4 +396,141 @@ function buildDashboard_(ss) {
   chart(Charts.ChartType.BAR, ['J1:K6'], 42, 8, 'Funnel, last 7 days', { colors: [PINK], legend: { position: 'none' } });
   chart(Charts.ChartType.PIE, ['M1:N4'], 59, 1, 'Sales by gift, last 30 days', { colors: [PINK, '#a855f7', '#f3b6c8'], pieHole: 0.45 });
   chart(Charts.ChartType.COLUMN, ['A1:A32', 'D1:D32'], 59, 8, 'Profit by day, last 30 days', { colors: [GOOD], vAxis: { format: '\u20b9#,##0' } });
+}
+
+/* ------------------------------------------------ checkout and maker steps */
+
+/** Loads /api/admin/checkout (migration 0012) into "Checkout" and "Maker steps". Returns a note for the status line. */
+function refreshCheckout_(ss, base, key) {
+  const res = UrlFetchApp.fetch(base + '/api/admin/checkout?days=28', { headers: { Authorization: 'Bearer ' + key }, muteHttpExceptions: true });
+  const co = tab_(ss, TAB.checkout, 3), st = tab_(ss, TAB.steps, 4);
+  if (res.getResponseCode() !== 200) {
+    const note = explain_(res);
+    [co, st].forEach((t) => { t.clear(); t.getRange('A1').setValue(note).setFontColor(BAD); });
+    return ' \u00b7 Checkout tab: ' + note;
+  }
+  const data = JSON.parse(res.getContentText());
+  writeCheckout_(co, data.checkout || [], data.failures || []);
+  writeSteps_(st, data.steps || []);
+  return '';
+}
+
+const ENV_NAME = { inapp: 'Instagram / Facebook browser', browser: 'Chrome / Safari', unknown: 'Not known' };
+const OS_NAME = { android: 'Android', ios: 'iPhone', other: 'Computer / other', unknown: '' };
+const CO_COLS = ['pay_clicks', 'windows_opened', 'dismissed', 'failed', 'paid_events', 'browser_taps', 'browser_arrivals', 'checkouts', 'paid'];
+const CO_HEAD = ['Tapped pay', 'Payment window opened', 'Closed it', 'Payment failed', 'Paid (page saw)', 'Tapped "Pay in Chrome"', 'Arrived in Chrome / Safari', 'Orders opened', 'Orders paid', 'Order \u2192 paid'];
+
+/** Sums the rows from `since` (yyyy-MM-dd) by browser and phone, with a total line. */
+function checkoutGroups_(rows, since) {
+  const groups = {}, total = CO_COLS.map(() => 0);
+  rows.filter((r) => r.day >= since).forEach((r) => {
+    const k = r.env + '|' + r.os;
+    groups[k] = groups[k] || CO_COLS.map(() => 0);
+    CO_COLS.forEach((c, i) => { groups[k][i] += Number(r[c]) || 0; total[i] += Number(r[c]) || 0; });
+  });
+  const order = ['inapp', 'browser', 'unknown'];
+  const keys = Object.keys(groups).sort((a, b) => order.indexOf(a.split('|')[0]) - order.indexOf(b.split('|')[0]) || groups[b][7] - groups[a][7]);
+  const line = (label, v) => [label].concat(v, [v[7] > 0 ? v[8] / v[7] : '']);
+  // Each browser's phones, then the browser on all phones (older events carry no phone, orders always do).
+  const out = [];
+  order.concat(keys.map((k) => k.split('|')[0]).filter((e) => order.indexOf(e) < 0)).forEach((env) => {
+    const mine = keys.filter((k) => k.split('|')[0] === env);
+    if (!mine.length) return;
+    const name = ENV_NAME[env] || env, sum = CO_COLS.map((c, i) => mine.reduce((t, k) => t + groups[k][i], 0));
+    if (mine.length > 1) mine.forEach((k) => out.push(line(name + (OS_NAME[k.split('|')[1]] ? ' \u00b7 ' + OS_NAME[k.split('|')[1]] : ' \u00b7 phone not known'), groups[k])));
+    out.push(line(name + (mine.length > 1 ? ' \u00b7 all phones' : ''), sum));
+  });
+  return out.concat([line('All', total)]);
+}
+
+function writeCheckout_(sheet, rows, failures) {
+  sheet.clear();
+  sheet.setHiddenGridlines(true);
+  sheet.getRange('A1').setValue('Where buyers stop at payment').setFontSize(16).setFontWeight('bold').setFontColor(INK);
+  sheet.getRange('A2').setValue('Orders opened and paid are the truth (our payments table). The other columns are what the page saw, so they can be a little lower: a buyer who never comes back to the page is not counted as "Paid (page saw)". Compare "Order \u2192 paid" between the Instagram / Facebook browser and Chrome / Safari.').setFontColor('#8a6b78').setWrap(true);
+  sheet.getRange('A2:K2').merge();
+  sheet.setRowHeight(2, 48);
+  let r = 4;
+  const block = (title, since) => {
+    sheet.getRange(r, 1).setValue(title).setFontWeight('bold').setFontColor(INK);
+    r++;
+    sheet.getRange(r, 1, 1, 11).setValues([['Browser \u00b7 phone'].concat(CO_HEAD)]);
+    header_(sheet.getRange(r, 1, 1, 11));
+    const out = checkoutGroups_(rows, since);
+    r++;
+    if (out.length) {
+      sheet.getRange(r, 1, out.length, 11).setValues(out);
+      sheet.getRange(r, 2, out.length, 9).setNumberFormat(INT);
+      sheet.getRange(r, 11, out.length, 1).setNumberFormat(PCT).setFontWeight('bold');
+      sheet.getRange(r + out.length - 1, 1, 1, 11).setFontWeight('bold').setBackground(SOFT);
+      r += out.length;
+    }
+    r += 1;
+  };
+  block('Last 7 days', addDays_(todayYmd_(), -7));
+  block('Last 28 days', addDays_(todayYmd_(), -28));
+
+  sheet.getRange(r, 1).setValue('Why payments fail (last 28 days, Razorpay\u2019s reason)').setFontWeight('bold').setFontColor(INK);
+  r++;
+  sheet.getRange(r, 1, 1, 4).setValues([['Reason', 'Instagram / Facebook browser', 'Chrome / Safari', 'All']]);
+  header_(sheet.getRange(r, 1, 1, 4));
+  r++;
+  const byCode = {};
+  failures.forEach((f) => { const v = byCode[f.code] || (byCode[f.code] = [0, 0, 0]); const n = Number(f.failures) || 0; if (f.env === 'inapp') v[0] += n; else if (f.env === 'browser') v[1] += n; v[2] += n; });
+  const codes = Object.keys(byCode).sort((a, b) => byCode[b][2] - byCode[a][2]).map((c) => [c].concat(byCode[c]));
+  if (codes.length) { sheet.getRange(r, 1, codes.length, 4).setValues(codes); r += codes.length; }
+  else { sheet.getRange(r, 1).setValue('No failed payments recorded yet.').setFontColor('#8a6b78'); r++; }
+  r += 1;
+
+  sheet.getRange(r, 1).setValue('Every day (newest first)').setFontWeight('bold').setFontColor(INK);
+  r++;
+  sheet.getRange(r, 1, 1, 12).setValues([['Date', 'Browser', 'Phone'].concat(CO_HEAD.slice(0, 9))]);
+  header_(sheet.getRange(r, 1, 1, 12));
+  r++;
+  const daily = rows.map((x) => [dateOf_(x.day), ENV_NAME[x.env] || x.env, OS_NAME[x.os] || x.os].concat(CO_COLS.map((c) => Number(x[c]) || 0)));
+  if (daily.length) {
+    sheet.getRange(r, 1, daily.length, 12).setValues(daily);
+    sheet.getRange(r, 1, daily.length, 1).setNumberFormat('ddd d mmm');
+  }
+  sheet.setColumnWidth(1, 250);
+  for (let c = 2; c <= 12; c++) sheet.setColumnWidth(c, 118);
+  sheet.setFrozenRows(0);
+}
+
+const STEP_ORDER = ['opened', 'name', 'words', 'words:ready_made', 'photo', 'voice', 'music', 'w_names', 'w_families', 'w_date', 'w_venue', 'w_function', 'w_words', 'w_music', 'w_song', 'pressed_create', 'created'];
+const STEP_NAME = {
+  opened: 'Opened the maker', name: 'Typed a name', words: 'Wrote or changed words', 'words:ready_made': 'Picked ready-made words', photo: 'Added a photo',
+  voice: 'Added a voice note', music: 'Added music', w_names: 'Wedding: the couple', w_families: 'Wedding: family names', w_date: 'Wedding: the date',
+  w_venue: 'Wedding: venue or time', w_function: 'Wedding: functions', w_words: 'Wedding: the words', w_music: 'Wedding: music', w_song: 'Wedding: uploaded a song',
+  pressed_create: 'Pressed Create', created: 'Created (reached the price)',
+};
+const GIFT_NAME = { birthday: 'Birthday', apology: 'Sorry', love: 'Love', proposal: 'Proposal', anniversary: 'Anniversary', thanks: 'Thank you', congratulations: 'Congrats', missyou: 'Miss you', wedding: 'Wedding', unknown: 'Not known' };
+
+function writeSteps_(sheet, steps) {
+  sheet.clear();
+  sheet.setHiddenGridlines(true);
+  sheet.getRange('A1').setValue('Where people leave the maker (last 28 days)').setFontSize(16).setFontWeight('bold').setFontColor(INK);
+  sheet.getRange('A2').setValue('People (sessions) who reached each step, by gift type. The percentage is of those who opened the maker. "Stopped:" rows are people who pressed Create and were stopped (what was missing) or hit an error. Steps were added on 21 Nov 2026, so earlier days only show opened, pressed Create and created.').setFontColor('#8a6b78').setWrap(true);
+  sheet.getRange('A2:K2').merge();
+  sheet.setRowHeight(2, 48);
+  const by = {}, gifts = {};
+  steps.forEach((x) => { (by[x.step] = by[x.step] || {})[x.occasion] = Number(x.sessions) || 0; gifts[x.occasion] = true; });
+  const opened = by.opened || {};
+  const cols = Object.keys(gifts).sort((a, b) => (opened[b] || 0) - (opened[a] || 0));
+  const extra = Object.keys(by).filter((k) => STEP_ORDER.indexOf(k) < 0).sort();
+  const order = STEP_ORDER.filter((k) => by[k]).concat(extra);
+  if (!cols.length) { sheet.getRange('A4').setValue('No maker activity recorded yet.').setFontColor('#8a6b78'); return; }
+  const label = (k) => STEP_NAME[k] || ('Stopped: ' + k.replace(/^blocked:/, 'missing ').replace(/^failed:/, 'error ').replace(/_/g, ' '));
+  sheet.getRange(4, 1, 1, cols.length + 1).setValues([['Step'].concat(cols.map((c) => GIFT_NAME[c] || c))]);
+  header_(sheet.getRange(4, 1, 1, cols.length + 1));
+  const counts = order.map((k) => [label(k)].concat(cols.map((c) => (by[k] && by[k][c]) || 0)));
+  sheet.getRange(5, 1, counts.length, cols.length + 1).setValues(counts).setNumberFormat(INT);
+  const top = 5 + counts.length + 1;
+  sheet.getRange(top, 1, 1, cols.length + 1).setValues([['% of those who opened the maker'].concat(cols.map((c) => GIFT_NAME[c] || c))]);
+  header_(sheet.getRange(top, 1, 1, cols.length + 1));
+  const pct = order.map((k) => [label(k)].concat(cols.map((c) => (opened[c] ? ((by[k] && by[k][c]) || 0) / opened[c] : ''))));
+  sheet.getRange(top + 1, 1, pct.length, cols.length + 1).setValues(pct);
+  sheet.getRange(top + 1, 2, pct.length, cols.length).setNumberFormat(PCT);
+  sheet.setColumnWidth(1, 300);
+  for (let c = 2; c <= cols.length + 1; c++) sheet.setColumnWidth(c, 110);
 }

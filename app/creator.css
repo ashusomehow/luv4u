@@ -297,6 +297,14 @@ html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 .unlock-cta .pay-btn{min-height:62px;font-size:19px;font-weight:700;letter-spacing:.01em}
 .unlock-cta{padding-top:18px}
 .unlock-panel .pay-methods{margin:8px 0 0;text-align:center;font-size:15px;line-height:1.4;color:#4d3a3f}
+/* In Instagram's or Facebook's browser: the way out to Chrome or Safari, where UPI apps open */
+.unlock-panel .pay-alt{margin:14px 0 0;padding:12px 14px;border:1px dashed #e3c1be;border-radius:16px;text-align:center;background:#fffaf6}
+.unlock-panel .pay-alt-q{margin:0 0 8px;font-size:14px;color:#6f5b60}
+.unlock-panel .pay-alt-btn{width:100%;min-height:46px;font-weight:600}
+.unlock-panel .pay-alt-help{margin:10px 0 0;font-size:14px;line-height:1.5;color:#4d3a3f;text-align:left}
+.unlock-panel .pay-alt-link{display:block;margin-top:4px;word-break:break-all;font-size:12px;color:#8a6b78}
+.unlock-panel .pay-alt.is-hot{border-style:solid;border-color:#d6265d;background:#fff1f4;box-shadow:0 0 0 3px #d6265d1a}
+.unlock-panel .pay-alt.is-hot .pay-alt-q{color:#a3123f;font-weight:600}
 .pay-error,.pay-status{font-size:15px;padding:12px 14px}
 
 /* Proof from real senders */

@@ -21,7 +21,7 @@
   }
   let source = {}; try { source = JSON.parse(store('luv4u.src') || '{}'); } catch {}
 
-  const slugToKey = { 'birthday-wish': 'birthday', 'romantic-proposal': 'proposal', 'show-your-love': 'love', 'sorry-gift': 'apology', 'apology-card': 'apology', anniversary: 'anniversary', 'thank-you': 'thanks', congratulations: 'congratulations', 'miss-you': 'missyou' };
+  const slugToKey = { 'birthday-wish': 'birthday', 'romantic-proposal': 'proposal', 'show-your-love': 'love', 'sorry-gift': 'apology', 'apology-card': 'apology', anniversary: 'anniversary', 'thank-you': 'thanks', congratulations: 'congratulations', 'miss-you': 'missyou', 'wedding-invite': 'wedding' };
   let occasion = '';
   const inferOccasion = () => {
     const exp = document.getElementById('experience');
@@ -31,20 +31,26 @@
     return occasion;
   };
 
-  const env = /FBAN|FBAV|FB_IAB|Instagram|;\s*wv\)/i.test(navigator.userAgent) ? 'inapp' : 'browser';
+  // Which kind of browser and phone: ads opened inside Instagram or Facebook behave differently (UPI apps, storage),
+  // so the payment step can be split by it (migration 0012). Coarse words only, never the user agent itself.
+  const ua = navigator.userAgent || '';
+  const env = /FBAN|FBAV|FB_IAB|Instagram|;\s*wv\)/i.test(ua) ? 'inapp' : 'browser';
+  const os = /Android/i.test(ua) ? 'android' : /iPhone|iPad|iPod/i.test(ua) ? 'ios' : 'other';
+  const app = /Instagram/i.test(ua) ? 'instagram' : /FBAN|FBAV|FB_IAB/i.test(ua) ? 'facebook' : 'other';
   const seen = new Set();
+  let named = '';
   const send = (name, props = {}, once = false) => {
     if (once) { if (seen.has(name)) return; seen.add(name); }
-    occasion = inferOccasion() || occasion;
+    occasion = named || inferOccasion() || occasion;
     try { if (window.kholonaMeta) window.kholonaMeta.onEvent(name, props, occasion); } catch {}
-    props = { env, ...props };
+    props = { env, os, app, ...props };
     const body = JSON.stringify({ name, session, occasion, path: location.pathname, props, ...source });
     try { if (!(navigator.sendBeacon && navigator.sendBeacon('/api/events', new Blob([body], { type: 'application/json' })))) throw 0; }
     catch { fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {}); }
   };
 
-  // Which kind of browser: ads opened inside Instagram or Facebook behave differently (UPI apps, storage), so the funnel can be split by it.
-  window.kholonaTrack = (name, props) => send(name, props || {});
+  // The gift engine reports its own steps here; it may name the gift type when the page cannot tell.
+  window.kholonaTrack = (name, props, gift) => { named = typeof gift === 'string' ? gift : ''; try { send(name, props || {}); } finally { named = ''; } };
   send('page_view', {}, true);
 
   // Clicks (delegated, so they work for markup the engine re-renders).
