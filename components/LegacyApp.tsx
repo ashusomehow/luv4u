@@ -21,7 +21,10 @@ const EARLY_TAP = `document.addEventListener('click',function(e){var f=document.
 
 export function LegacyApp({ occasion, children }: { occasion?: OccasionKey; children?: ReactNode }) {
   const pixelId = metaPixelId();
-  const html = occasion ? bodyForOccasion(occasion) : LEGACY_BODY_HTML;
+  const full = occasion ? bodyForOccasion(occasion) : LEGACY_BODY_HTML;
+  // The footer is part of the engine's markup; it is moved after the page's own sections (children) so it ends the page.
+  const [start, end] = [full.indexOf('<footer class="site-footer">'), full.indexOf('</footer>') + 9];
+  const [html, footer] = start < 0 ? [full, ''] : [full.slice(0, start) + full.slice(end), full.slice(start, end)];
   return (
     <>
       {/* On a slow phone the buttons show a second or more before the gift engine is ready. A tap in that gap is not lost:
@@ -29,6 +32,7 @@ export function LegacyApp({ occasion, children }: { occasion?: OccasionKey; chil
       <script dangerouslySetInnerHTML={{ __html: EARLY_TAP }} />
       <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: html }} />
       {children}
+      {footer && <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: footer }} />}
       <script id="giftPayload" type="application/json" dangerouslySetInnerHTML={{ __html: 'null' }} />
       <Script src="/legacy/track.js" strategy="afterInteractive" />
       {pixelId && <Script src="/legacy/meta.js" strategy="afterInteractive" data-meta-pixel={pixelId} />}

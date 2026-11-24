@@ -220,7 +220,7 @@ function showViewV1(view) {
  currentView=view; const ids={home:'homeView',creator:'creatorView',share:'shareView',error:'errorView'};
  for(const [key,id] of Object.entries(ids))$('#'+id).hidden=key!==view;
  $('#experience').hidden=true;$('#siteHeader').hidden=false;document.body.classList.remove('experiencing');
- $('#headerRight').innerHTML=view==='home'?'<a href="#how-it-works" class="nav-link nav-how">How it works</a><button class="nav-link pill-link" data-action="create">Make a gift '+icon('up')+'</button>':'<span class="header-note">A little love goes a long way.</span><span style="color:#dc8494;font-size:19px" aria-hidden="true">♡</span>';
+ $('#headerRight').innerHTML=view==='home'?'<a href="#how-it-works" class="nav-link nav-how">How it works</a><a href="/find" class="nav-link nav-find">Find my gift</a><button class="nav-link pill-link" data-action="create">Make a gift '+icon('up')+'</button>':'<span class="header-note">A little love goes a long way.</span><span style="color:#dc8494;font-size:19px" aria-hidden="true">♡</span>';
  document.title=SERVER_TITLE;
  $('meta[name="theme-color"]').content='#faf7f2';
  window.scrollTo(0,0);
