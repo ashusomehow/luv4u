@@ -91,14 +91,14 @@ export function HomeContent() {
 
       <section>
         <h2>Questions people ask</h2>
-        <dl className="seo-faq">
+        <div className="seo-faq">
           {FAQS.map((faq) => (
-            <div key={faq.q}>
-              <dt>{faq.q}</dt>
-              <dd>{faq.a}</dd>
-            </div>
+            <details key={faq.q}>
+              <summary>{faq.q}</summary>
+              <p>{faq.a}</p>
+            </details>
           ))}
-        </dl>
+        </div>
       </section>
     </section>
   );

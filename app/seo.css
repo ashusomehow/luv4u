@@ -14,10 +14,15 @@ body:has(#homeView[hidden]) .seo-content{display:none}
 .seo-cta:hover,.seo-cta:focus-visible{background:var(--rose-dark)}
 .seo-tips{display:grid;gap:18px;grid-template-columns:repeat(3,minmax(0,1fr))}
 .seo-tips p{margin:0;font-size:14px}
-.seo-faq{margin:0}
-.seo-faq div{padding:14px 0;border-top:1px solid var(--line)}
-.seo-faq dt{font-weight:600;margin:0 0 4px}
-.seo-faq dd{margin:0;color:#5b4549}
+.seo-faq{display:grid;gap:10px}
+.seo-faq details{border:1px solid var(--line);border-radius:16px;background:#fffdfa}
+.seo-faq summary{display:flex;justify-content:space-between;gap:12px;padding:16px 18px;font-weight:600;cursor:pointer;list-style:none}
+.seo-faq summary::-webkit-details-marker{display:none}
+.seo-faq summary::after{content:'+';font-size:22px;line-height:1;color:var(--rose,#d6265d);transition:transform .2s}
+.seo-faq details[open] summary::after{transform:rotate(45deg)}
+.seo-faq details p{margin:0;padding:0 18px 16px;color:#5b4549}
+/* the footer sits after this page content (components/LegacyApp.tsx) and, like it, only on the home view */
+body:has(#homeView[hidden]) .site-footer{display:none}
 .seo-related ul{list-style:none;padding:0;display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .seo-related a{display:block;height:100%;padding:16px 18px;border:1px solid var(--line);border-radius:16px;text-decoration:none;color:inherit;background:#fffdfa}
 .seo-related a:hover,.seo-related a:focus-visible{border-color:var(--rose)}
