@@ -52,6 +52,12 @@ Everywhere:
 ## Measuring it
 `gift_opened` → `reply_sent` is the recipient funnel. The one-touch ending should raise the share of recipients who reply (it is now one touch instead of four steps). Compare before and after launch. Replies reach the sender, which is what makes the gift travel.
 
+**Where the maker sees replies.** On the phone they made the gift on: a card on the home page ("💌 Riya replied: …
+· See it") when there is a reply they have not opened, and a "N new" count on the gift in **My little gifts**, where
+**Little replies** shows them all (opening them marks them seen). Replies are checked for the four most recent paid gifts
+at most every 10 minutes. From any other phone: the private edit link, which **Save my private link** on the success
+screen helps them keep.
+
 Risks to watch: auto-advance pace (if people say it moves too fast, lengthen the pauses in `autoAdvance` calls in `public/legacy/app.js`), and whether the shorter path makes the gift feel less substantial (more wow, fewer taps is the bet).
 
 ## Second pass: fewer things in the way

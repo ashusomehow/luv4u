@@ -155,6 +155,12 @@ input[type=range]{min-height:44px}
 .pay-done{text-align:center;padding:26px 0 8px}
 .pay-done h2{margin:14px 0 8px;font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.2;color:var(--ink)}
 .pay-done p{margin:0 0 18px;color:#5b4549;font-size:14px}
+/* after paying: keep the private link, for replies and edits from any phone */
+.pay-done .save-private{margin:18px auto 0;max-width:420px;padding:14px;border:1px dashed #e3c1be;border-radius:16px;background:#fffaf6}
+.pay-done .save-private .btn{width:100%;min-height:46px;font-weight:600}
+.pay-done .save-private p{margin:8px 0 0;font-size:13px;line-height:1.5}
+/* My little gifts: how many replies are new */
+.reply-new{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#d6265d;color:#fff;font-size:12px;font-weight:700;line-height:1.6;vertical-align:1px}
 .pay-check{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#b4184b;color:#fff;font-size:32px;animation:payCheck .5s cubic-bezier(.2,.9,.3,1.3) both}
 @keyframes payCheck{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
 /* Wide screens: the phone sits beside the pitch */
@@ -357,3 +363,5 @@ html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 .unlock-price strong s{font-size:.42em;opacity:.6;font-weight:500;margin-right:6px;vertical-align:.45em}
 .unlock-price strong{white-space:nowrap}
 .ref-form input::placeholder{text-transform:none;letter-spacing:0}
+/* Right after paying, "Save my private link" in the success panel says it; the older note below would repeat it */
+#shareView:has(#unlockPanel:not([hidden]) .pay-done) #ownerNote{display:none}

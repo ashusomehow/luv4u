@@ -646,7 +646,7 @@ try {
       window.Razorpay = function (o) { const on = {}; this.on = (ev, fn) => { on[ev] = fn; }; this.open = async () => {
         window.__rzpOptions = { key: o.key, order_id: o.order_id, amount: o.amount, currency: o.currency, name: o.name, description: o.description };
         if (window.__rzpMode === 'dismiss') { o.modal.ondismiss(); return; }
-        if (window.__rzpMode === 'paywait') { await fetch('${MOCK}/__pay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: o.order_id }) }); return; }   // money moves, the page never hears (tab lost)
+        if (window.__rzpMode === 'paywait') { await fetch('${MOCK}/__pay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: o.order_id }) }); window.__rzpPaid = true; return; }   // money moves, the page never hears (tab lost)
         if (window.__rzpMode === 'decline') { on['payment.failed']({ error: { code: 'BAD_REQUEST_ERROR', description: 'Your card was declined' } }); o.modal.ondismiss(); return; }
         const r = await fetch('${MOCK}/__pay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: o.order_id }) });
         const p = await r.json();
@@ -691,6 +691,52 @@ try {
     assert.deepEqual(st.paymentRows.map(r => r.status), ['paid']);
     assert.doesNotMatch(await zp.content(), /e2e-razorpay-secret/, 'the key secret never reaches the browser');
 
+    // b1) Instagram reloads the page on the way back from the UPI app: the money moved, the page died before it heard.
+    //     The unlock page has its own address, so the reload comes back to it, finds the payment and shows the link.
+    const linkShown = (pg) => pg.waitForFunction(() => /\/g\/[a-f0-9]{24}$/.test(document.querySelector('#paidLink')?.value || (document.querySelector('#shareView:not([hidden])') && document.querySelector('#unlockPanel')?.hidden ? document.querySelector('#giftLink')?.value : '') || ''), null, { timeout: 20000 });
+    const ownIp = { 'x-forwarded-for': '203.0.113.88' }; // these extra steps get their own address, so the shared per-address limits of the later checks are untouched
+    await zp.setExtraHTTPHeaders(ownIp);
+    const kid = await makeGift('Kiara');
+    assert.equal(new URL(zp.url()).hash, '#unlock=' + kid, 'the unlock page has its own address');
+    await zp.evaluate(() => { window.__rzpMode = 'paywait'; delete window.__rzpOptions; delete window.__rzpPaid; });
+    await zp.click('#payGo'); await zp.waitForFunction(() => window.__rzpPaid === true);
+    await zp.reload({ waitUntil: 'load' }); await linkShown(zp);
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${kid}`)).status, 200, 'a reload after paying lands on the link, not the maker');
+    // b1b) Instagram closed instead: back on the site some other way (the ad page here), they land on their link
+    const lid = await makeGift('Lina');
+    await zp.evaluate(() => { window.__rzpMode = 'paywait'; delete window.__rzpOptions; delete window.__rzpPaid; });
+    await zp.click('#payGo'); await zp.waitForFunction(() => window.__rzpPaid === true);
+    const again = await zctx.newPage(); again.setDefaultTimeout(15000); watch(again, 'came-back'); await again.setExtraHTTPHeaders(ownIp);
+    await again.goto(RZP_APP + '/for/show-your-love', { waitUntil: 'load' }); await linkShown(again);
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${lid}`)).status, 200);
+    await again.goto(RZP_APP + '/for/show-your-love', { waitUntil: 'load' }); await again.waitForTimeout(800);
+    assert.equal(await again.locator('#shareView').isHidden(), true, 'once the link was shown, the site is back to normal');
+    await again.close();
+    // b1c) another phone: /find with the UPI reference number from the payment app and the phone number
+    const kr = (await state()).paymentRows.find((r) => r.gift === kid);
+    assert.match(kr.rrn || '', /^\d{12}$/, 'the UPI reference is kept with the payment');
+    const fctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: NORMAL_UA, extraHTTPHeaders: ownIp }); const fp = await fctx.newPage(); fp.setDefaultTimeout(15000); watch(fp, 'find');
+    await fp.goto(RZP_APP + '/find', { waitUntil: 'load' });
+    await fp.fill('#fr', kr.rrn); await fp.fill('#fc', '98765 00000'); await fp.click('.legal-form button[type=submit]');
+    await fp.waitForSelector('.legal-error'); assert.match(await fp.locator('.legal-error').innerText(), /could not find/, 'the wrong phone number finds nothing');
+    await fp.fill('#fc', '+91 98765 43210'); await fp.click('.legal-form button[type=submit]');
+    await fp.waitForSelector('.find-done'); assert.match(await fp.locator('.find-done').innerText(), /Found it\. Kiara’s gift is unlocked/);
+    assert.match(await fp.inputValue('.find-link'), new RegExp(`/g/${kid}$`));
+    await fctx.close();
+    const byId = await (await fetch(`${RZP_APP}/api/find`, { method: 'POST', headers: { 'content-type': 'application/json', ...ownIp }, body: JSON.stringify({ ref: kr.payment, contact: 'Buyer@Example.com' }) })).json();
+    assert.match(byId.url || '', new RegExp(`/g/${kid}$`), 'the pay_ id and the email work too');
+
+    // b1d) a reply comes back: the maker sees it on the home page and in My little gifts, then it is no longer new
+    assert.equal((await fetch(`${RZP_APP}/api/gifts/${kid}/reactions`, { method: 'POST', headers: { 'content-type': 'application/json', ...ownIp }, body: JSON.stringify({ visitor: 'ab'.repeat(16), reaction: '💗', message: 'Forgiven, you idiot' }) })).status, 200);
+    await zp.evaluate(() => sessionStorage.removeItem('kholona.replies'));
+    await zp.goto(RZP_APP + '/', { waitUntil: 'load' }); await zp.waitForSelector('#resumeBanner.show [data-v3="see-replies"]');
+    assert.match(await zp.locator('#resumeBanner').innerText(), /Kiara replied[\s\S]*Forgiven, you idiot/);
+    await zp.click('[data-v3="see-replies"]'); await zp.waitForFunction((id) => /Forgiven, you idiot/.test(document.querySelector('#stats-' + id)?.textContent || ''), kid);
+    assert.ok(await zp.evaluate((id) => JSON.parse(localStorage.getItem('luv4u.library.v2')).find((v) => v.id === id)?.seenAt, kid), 'opening the replies marks them seen');
+    await zp.goto(RZP_APP + '/', { waitUntil: 'load' }); await zp.waitForTimeout(1200);
+    assert.equal(await zp.locator('#resumeBanner.show [data-v3="see-replies"]').count(), 0, 'a seen reply is not announced again');
+    await zp.setExtraHTTPHeaders({});
+
     // b2) the card is declined: a plain message, nothing unlocked, and the buyer can try again
     const did = await makeGift('Dana');
     await zp.evaluate(() => { window.__rzpMode = 'decline'; });
@@ -699,12 +745,18 @@ try {
     assert.match(declined, /Your card was declined/); assert.match(declined, /nothing was unlocked/i); assert.match(declined, /returned automatically/, 'says what happens if the bank debited anyway');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${did}`)).status, 402, 'a declined payment unlocks nothing');
     assert.equal(await zp.locator('#payGo').isDisabled(), false, 'they can try again');
-    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 1, 'no payment was recorded for a declined card');
+    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 3, 'no payment was recorded for a declined card (Zoya, Kiara and Lina paid)');
 
-    // b2b) they leave and come back later: the home page reminds them, with the real days left, and one tap returns to the unlock page
+    // b2b) they leave and come back later: having started paying, they land straight back on the unlock page (checked:
+    //      nothing was paid); later in the same visit the home page reminds them instead, with the real days left
     await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
-    await zp.waitForSelector('#resumeBanner.show');
-    assert.match(await zp.locator('#resumeBanner').innerText(), /Dana’s gift is waiting[\s\S]*Kept for 7 more days/);
+    await zp.waitForSelector('#unlockPanel:not([hidden]) #payGo');
+    assert.match(await zp.locator('#unlockTitle').innerText(), /Dana/, 'back on the gift they were paying for');
+    await zp.waitForFunction(() => /Welcome back/.test(document.querySelector('#payStatus')?.textContent || ''));
+    assert.match(await zp.locator('#payStatus').innerText(), /Welcome back[\s\S]*nothing has been paid yet, so nothing was charged/);
+    await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
+    await zp.waitForSelector('#resumeBanner.show [data-v3="unlock-saved"]');
+    assert.match(await zp.locator('#resumeBanner').innerText(), /Dana’s gift is waiting[\s\S]*Kept for 7 more days/, 'only once per visit: then the home page reminds them');
     await zp.click('#resumeBanner [data-v3="unlock-saved"]'); await zp.waitForSelector('#unlockPanel:not([hidden]) #payGo');
     await zp.waitForFunction(() => /Welcome back/.test(document.querySelector('#payStatus')?.textContent || ''));
     assert.match(await zp.locator('#payStatus').innerText(), /Welcome back[\s\S]*nothing has been paid yet, so nothing was charged/, 'coming back after opening checkout says where things stand');
@@ -721,7 +773,7 @@ try {
     await zp.click('#payGo'); await zp.waitForSelector('#payDone');
     assert.equal(await zp.evaluate(() => !!window.__rzpOptions), false, 'the second press found the payment, it did not open Razorpay again');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${did}`)).status, 200);
-    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 2, 'two gifts, two payments: never a double charge');
+    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 4, 'two more gifts, two more payments: never a double charge');
 
     // b4) paid, then the connection drops before the confirmation arrives: the page says so, waits, and unlocks by itself
     const oid = await makeGift('Omar');
@@ -730,22 +782,22 @@ try {
     assert.equal(await zp.locator('#payGo').isDisabled(), true, 'no second payment while waiting');
     await zp.waitForSelector('#payDone', { timeout: 60000 });
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${oid}`)).status, 200, 'the gift unlocked without a second payment');
-    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 3, 'one payment for the third gift');
+    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 5, 'one payment for the third gift');
     await zp.unroute('**/api/gifts/*/verify');
 
-    // b5) they pay in their UPI app, the tab is lost and reloaded: coming back finds the money and unlocks without paying again
+    // b5) they pay in their UPI app, the tab is lost and reloaded: coming back finds the money and unlocks without paying
+    //     again, with no tap needed (the site goes straight back to the gift they were paying for)
     const pid = await makeGift('Pia');
     await zp.evaluate(() => { window.__rzpMode = 'paywait'; });
     await zp.click('#payGo'); await zp.waitForFunction(() => window.__rzpOptions);
     await zp.waitForTimeout(500);
     await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
-    await zp.waitForSelector('#resumeBanner.show');
-    await zp.click('#resumeBanner [data-v3="unlock-saved"]'); await zp.waitForSelector('#payDone');
+    await zp.waitForSelector('#payDone');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${pid}`)).status, 200, 'the payment made while away unlocked the gift');
     await zp.click('#payDone'); await zp.waitForFunction(() => document.querySelector('#unlockPanel')?.hidden === true);
     await zp.goto('about:blank'); await zp.goto(RZP_APP + '/', { waitUntil: 'load' });
     assert.equal(await zp.locator('#resumeBanner [data-v3="unlock-saved"]').count(), 0, 'no unlock reminder once everything is unlocked');
-    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 4, 'one payment for the fourth gift');
+    assert.equal((await state()).paymentRows.filter(r => r.status === 'paid').length, 6, 'one payment for the fourth gift');
     await zctx.close();
 
     // Creator referral: a creator's link brings the buyer in, the code is applied by itself (₹30 off), can be removed and
@@ -803,7 +855,7 @@ try {
     await fetch(`${MOCK}/__pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order_id: pend2.order.id }) });
     assert.equal((await (await fetch(`${RZP_APP}/api/gifts/${rid}/checkout`, { method: 'POST', headers: { authorization: `Bearer ${rkey}` } })).json()).status, 'paid');
     assert.equal((await fetch(`${RZP_APP}/api/gifts/${rid}`)).status, 200);
-    assert.deepEqual((await state()).paymentRows.map(r => r.status), ['paid', 'paid', 'paid', 'paid', 'paid', 'paid', 'paid']);
+    assert.deepEqual((await state()).paymentRows.map(r => r.status), Array(9).fill('paid'));
   }
 
   // Meta Pixel (ad measurement): absent unless a Pixel id is configured, which this build has not. The loader itself is
@@ -841,7 +893,10 @@ try {
   // Plus the invalid creator code typed on purpose, which the code check answers with a 404.
   const badCode = errors.filter(e => /^referral: Failed to load resource: the server responded with a status of 404/.test(e));
   assert.equal(badCode.length, 1, 'exactly the invalid code was refused');
-  assert.deepEqual(errors.filter(e => !/favicon/.test(e) && !injected.includes(e) && !badCode.includes(e)), [], 'no browser errors');
+  // And the wrong phone number typed on purpose on /find, which finds nothing (404).
+  const notFound = errors.filter(e => /^find: Failed to load resource: the server responded with a status of 404/.test(e));
+  assert.equal(notFound.length, 1, 'exactly the wrong phone number found nothing');
+  assert.deepEqual(errors.filter(e => !/favicon/.test(e) && !injected.includes(e) && !badCode.includes(e) && !notFound.includes(e)), [], 'no browser errors');
   console.log('e2e smoke passed');
 } catch (error) {
   console.error(error);

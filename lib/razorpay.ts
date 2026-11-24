@@ -30,6 +30,8 @@ export interface RazorpayPayment {
   /** The payer's details, when Razorpay collected them. Used only (hashed) for ad-conversion matching. */
   email?: string;
   contact?: string;
+  /** For UPI: the bank's reference number (RRN), the same "UPI Ref No" the buyer's payment app shows. */
+  acquirer_data?: { rrn?: string | null; upi_transaction_id?: string | null } | null;
 }
 
 async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
