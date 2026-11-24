@@ -69,6 +69,28 @@ Every failure ends in a plain message that says what happened to the money. All 
 | Still unconfirmed after that | "Please do not pay again… unlocks on its own… Reference: pay_…" and the button becomes *Check payment status* | The webhook or the next check unlocks it |
 | Payments not set up (no keys) | "Payments are not set up yet…" | Fails closed: nothing unlocks |
 
+### Paid, but the page closed (the link is never lost)
+
+Paying by UPI sends the buyer to Paytm, GPay or PhonePe. Coming back, Instagram often reloads the page, or closes its
+browser altogether and shows Reels. The money is safe either way (the webhook unlocks the gift); these three make sure
+the buyer gets the link:
+
+1. **The unlock page has its own address** (`/#unlock=<gift id>`; the id only, the private key stays in that browser).
+   A reload reopens that gift, checks the payment with Razorpay and shows the link. Before, a reload went back to the
+   gift maker.
+2. **Coming back any other way** (Instagram reopened the ad, they typed kholona.in, opened it from their history): a
+   payment this browser started in the last 12 hours brings its gift straight back, once per visit: the link if it was
+   paid, otherwise the unlock page saying nothing was charged.
+3. **Find my gift** (`/find`, `POST /api/find`), for another phone or a cleared browser: the 12-digit UPI reference
+   number their payment app shows (or Razorpay's `pay_…` id) plus the phone number or email they gave Razorpay. Both
+   must match the payment Razorpay holds; a payment that went through but was never recorded is recorded then. It
+   answers with the gift's link only (the server never keeps the private edit key). Needs migration
+   `0013_payment_rrn.sql` for the UPI-reference lookup (the pay_ id works without it). Put kholona.in/find in the
+   Instagram bio. The unlock page links to it under "Paid, but the page closed?".
+
+After paying, **Save my private link** sends the private edit link to the buyer's Notes or own chat (share sheet), so
+they can read replies and change the gift from any phone.
+
 ### Paying from Instagram's or Facebook's browser
 
 Most buyers arrive from an ad and pay inside the app's own browser, where UPI apps often fail to open. So:

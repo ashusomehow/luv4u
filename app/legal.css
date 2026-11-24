@@ -39,3 +39,9 @@
 .idea-faq{display:grid;gap:14px;margin:0}
 .idea-faq dt{font-weight:600}
 .idea-faq dd{margin:4px 0 0}
+/* Find my gift: the link that was lost, and three ways to use it */
+.find-done p{margin:0 0 10px}
+.find-link{width:100%;font:inherit;font-size:15px;padding:12px 14px;border:1px solid #9ccf9a;border-radius:12px;background:#fff;color:#155522}
+.find-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.find-actions button,.find-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 18px;border-radius:999px;font-weight:600;font-size:15px;text-decoration:none;background:#155522;color:#fff;border:1px solid #155522}
+.find-actions a{background:#fff;color:#155522}

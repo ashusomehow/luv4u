@@ -42,7 +42,7 @@ http.createServer(async (req, res) => {
     if (req.method === 'POST' && p === '/__pay') {
       const { order_id } = JSON.parse(raw.toString()); const order = rzpOrders.get(order_id);
       if (!order) return send(res, 404, { error: 'no such order' });
-      const payment = { id: 'pay_E2E' + rzpSeq++, order_id, amount: order.amount, currency: order.currency, status: 'captured' };
+      const payment = { id: 'pay_E2E' + String(rzpSeq++).padStart(10, '0'), order_id, amount: order.amount, currency: order.currency, status: 'captured', contact: '+919876543210', email: 'buyer@example.com', acquirer_data: { rrn: String(432100000000 + rzpSeq) } };
       rzpPayments.set(payment.id, payment);
       return send(res, 200, { payment, signature: crypto.createHmac('sha256', 'e2e-razorpay-secret').update(order_id + '|' + payment.id).digest('hex') });
     }
@@ -123,6 +123,6 @@ http.createServer(async (req, res) => {
     const { prefixes } = JSON.parse(raw.toString()); prefixes.forEach(x => files.delete(x));
     return send(res, 200, prefixes.map(name => ({ name })));
   }
-  if (p === '/__state') return send(res, 200, { gifts: tables.gifts.length, views: tables.gift_views.length, replies: tables.gift_replies.length, reports: tables.gift_reports.length, rzpOrders: rzpOrders.size, paymentRows: tables.payments.map(r => ({ gift: r.gift_id, status: r.status, payment: r.payment_id })), rateHits: tables.rate_hits.length, events: tables.events.map(e => e.name), files: [...files].map(([k, v]) => [k, v.type, v.bytes.length]) });
+  if (p === '/__state') return send(res, 200, { gifts: tables.gifts.length, views: tables.gift_views.length, replies: tables.gift_replies.length, reports: tables.gift_reports.length, rzpOrders: rzpOrders.size, paymentRows: tables.payments.map(r => ({ gift: r.gift_id, status: r.status, payment: r.payment_id, rrn: r.rrn })), rateHits: tables.rate_hits.length, events: tables.events.map(e => e.name), files: [...files].map(([k, v]) => [k, v.type, v.bytes.length]) });
   send(res, 404, { error: 'mock: unhandled ' + req.method + ' ' + p });
 }).listen(PORT, () => console.log('mock supabase on', PORT));

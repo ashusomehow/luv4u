@@ -662,7 +662,7 @@ function rememberGift(entry){libraryCache=libraryCache.filter(v=>v.id!==entry.id
 async function api(path,options={}){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),options.timeout||45000);try{const r=await fetch(path,{method:options.method||'GET',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.key?{Authorization:'Bearer '+options.key}:{})},body:options.body?JSON.stringify(options.body):undefined,signal:controller.signal,cache:'no-store',credentials:options.credentials?'same-origin':'omit'});let data;try{data=await r.json();}catch{throw new Error('The gift server returned an unexpected response. Your draft is still safe.');}if(!r.ok){const err=new Error(data.error||'The gift could not be saved.');err.status=r.status;throw err;}return data;}catch(err){if(err.name==='AbortError')throw new Error('The gift server is taking too long. Try again; your draft is still here.');throw err;}finally{clearTimeout(timeout);}}
 async function checkBackend(){if(!['http:','https:'].includes(location.protocol)){backendChecked=true;return;}try{const c=await api('/api/config',{timeout:2500});backendReady=c.product==='luv4u'&&[2,3].includes(c.version)&&c.hosted;backendOccasions=Array.isArray(c.occasions)?c.occasions:['birthday'];mediaBase=typeof c.mediaBase==='string'?c.mediaBase:'';paymentsRequired=backendReady&&c.payments?.required===true;payPrice=paymentsRequired?Number(c.payments.priceInr)||0:0;payPrices=paymentsRequired&&c.payments.prices&&typeof c.payments.prices==='object'?c.payments.prices:{};paySimulated=paymentsRequired&&c.payments.simulated===true;payProvider=paymentsRequired?String(c.payments.provider||''):'';payTestMode=paymentsRequired&&c.payments.testMode===true;payLinkDays=Number(c.payments?.linkDays)||365;payReviews=c.reviews&&Array.isArray(c.reviews.quotes)&&c.reviews.quotes.length?c.reviews:null;updatePaymentsUI();}catch{}backendChecked=true;delivery=backendReady?'hosted':'portable';updateDelivery();}
 function clearGiftHash(){try{const p=/^\/(g|for)\//.test(location.pathname)?'/':location.pathname;history.replaceState(null,'',p+location.search);}catch{}}
-function showView(view){if($('.skip-link'))$('.skip-link').hidden=view!=='home';stopPreviewAudio();showViewV1(view);updateResumeBanner();$('#myGiftsView').hidden=view!=='library';if(view==='library')$('#myGiftsView').hidden=false;const right=$('#headerRight');if(!right.querySelector('.my-gifts-link'))right.insertAdjacentHTML('afterbegin','<button class="nav-link my-gifts-link" data-v2="library">My little gifts</button>');if(view==='creator')setStep(wizardStep,false);if(view==='library'){document.title='Your little gifts · Kholona';right.innerHTML='<button class="nav-link pill-link" data-action="create">Make another little gift ♡</button>';}}
+function showView(view){if($('.skip-link'))$('.skip-link').hidden=view!=='home';stopPreviewAudio();showViewV1(view);syncUnlockAddress(view);updateResumeBanner();$('#myGiftsView').hidden=view!=='library';if(view==='library')$('#myGiftsView').hidden=false;const right=$('#headerRight');if(!right.querySelector('.my-gifts-link'))right.insertAdjacentHTML('afterbegin','<button class="nav-link my-gifts-link" data-v2="library">My little gifts</button>');if(view==='creator')setStep(wizardStep,false);if(view==='library'){document.title='Your little gifts · Kholona';right.innerHTML='<button class="nav-link pill-link" data-action="create">Make another little gift ♡</button>';}}
 async function openCreator(key='birthday'){
  if(occasionSwitchBusy||publishing)return;occasionSwitchBusy=true;
  try{
@@ -1116,6 +1116,13 @@ function updateResumeBanner(){
   b.innerHTML=`<span class="resume-copy"><strong>${nm}’s gift is waiting</strong><span>Saved, but not unlocked yet.${waiting.expiresAt?(left<=1?' Kept for about a day more.':' Kept for '+left+' more days.'):''}</span></span><button type="button" class="resume-btn" data-v3="unlock-saved" data-id="${e(waiting.id)}">Finish</button><button type="button" class="resume-close" data-v3="resume-dismiss" aria-label="Dismiss">×</button>`;
   return;
  }
+ const news=Object.entries(replyNews).find(([id,list])=>list.length&&libraryCache.some(v=>v.id===id));
+ if(news&&currentView==='home'&&!dismissed){
+  const [id,list]=news,en=libraryCache.find(v=>v.id===id),r=list[0],who=en.occasion==='wedding'?'A guest':e(en.name||'Someone');
+  b.dataset.on='1';b.classList.add('show');b.inert=false;
+  b.innerHTML=`<span class="resume-copy"><strong>💌 ${who} replied${list.length>1?' · '+list.length+' new':''}</strong><span>${e((r.reaction+' '+r.message).trim()||'A little feeling, sent back.')}</span></span><button type="button" class="resume-btn" data-v3="see-replies" data-id="${e(id)}">See it</button><button type="button" class="resume-close" data-v3="resume-dismiss" aria-label="Dismiss">×</button>`;
+  return;
+ }
  const name=draft.name.trim(),show=!!name&&currentView==='home'&&!dismissed;
  b.dataset.on=show?'1':'';b.classList.toggle('show',show);b.inert=!show;
  if(!show)return;
@@ -1227,6 +1234,7 @@ ${paySimulated||payTestMode?'':'<p class="pay-methods"><span aria-hidden="true">
 ${inAppBrowser&&publishedGift.server?`<div class="pay-alt" id="payAlt"><p class="pay-alt-q">UPI app not opening here?</p><button type="button" class="btn btn-secondary pay-alt-btn" data-v3="pay-in-browser">Pay in ${realBrowserName} instead</button><p class="pay-alt-help" id="payAltHelp" role="status" hidden></p></div>`:''}
 </div>
 ${proofHtml()}
+<details class="unlock-faq"><summary>Paid, but the page closed?</summary><p>Your gift is safe and unlocks by itself. Open kholona.in again on this phone and it comes straight back with your link. On another phone, use <a href="/find">Find my gift</a> with the UPI reference number from your payment app.</p></details>
 <details class="unlock-faq"><summary>What happens after I pay?</summary><p>Your private link appears right away. Send it on WhatsApp or anywhere. ${name} opens it with no account and no app.</p></details>
 <details class="unlock-faq"><summary>What if the payment fails?</summary><p>Nothing unlocks and your gift stays saved, so you can try again or use another method. If your bank shows a debit anyway, it is returned automatically, usually in 5–7 working days. If a payment goes through but the page doesn’t update, the gift unlocks on its own within minutes. <a href="/contact">Still stuck? Write to us.</a></p></details>
 <details class="unlock-faq"><summary>Can I change it after paying?</summary><p>Yes. Edit the words, photos or music any time and the same link shows the new version.</p></details>
@@ -1314,7 +1322,7 @@ async function copyQuiet(text){
 function unlockDone(name){
  const panel=$('#unlockPanel');if(!panel)return;
  panel.dataset.frame='';clearPayStarted(editing.id);{const en=libraryCache.find(v=>v.id===editing.id);if(en&&en.waiting)rememberGift({...en,waiting:false});}
- panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">${publishedGift.occasion==='wedding'?'Unlocked. Send it to your guests 💛':`Unlocked. ${name} can open it now.`}</h2><p id="paidNote" role="status">Getting your private link…</p><input class="link-input paid-link" id="paidLink" readonly spellcheck="false" aria-label="Your private gift link" hidden><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone" disabled>One moment…</button></div>`;
+ panel.innerHTML=`<div class="pay-done"><span class="pay-check" aria-hidden="true">✓</span><h2 id="unlockTitle">${publishedGift.occasion==='wedding'?'Unlocked. Send it to your guests 💛':`Unlocked. ${name} can open it now.`}</h2><p id="paidNote" role="status">Getting your private link…</p><input class="link-input paid-link" id="paidLink" readonly spellcheck="false" aria-label="Your private gift link" hidden><p class="pay-error" id="payError" role="alert" hidden></p><button type="button" class="btn btn-primary pay-btn" id="payDone" disabled>One moment…</button><div class="save-private"><button type="button" class="btn btn-secondary" data-v3="save-private">🔒 Save my private link</button><p>${publishedGift.occasion==='wedding'?'Keep it to read your guests’ blessings':'Keep it to read '+name+'’s reply'} and change the gift from any phone. It is just for you: send the link above, not this one.</p></div></div>`;
  confetti(140);
  const btn=$('#payDone'),note=$('#paidNote'),box=$('#paidLink');let copied=false;
  const load=async()=>{
@@ -1401,9 +1409,62 @@ async function payInBrowser(btn){
 }
 /* Someone who opened the payment window and left (closed it, switched to their UPI app, lost the tab) gets a calm nudge when they come back. */
 const payFlagKey=id=>'kholona.paystart.'+id;
+/* The unlock page has its own address while it shows a server gift (#unlock=<id>; the id only, the private key stays in
+   this browser). Instagram often reloads the page when a buyer comes back from their UPI app: the reload now reopens
+   this gift and checks the payment, instead of the gift maker. Leaving the page removes the address again. */
+function syncUnlockAddress(view){
+ try{
+  const id=publishedGift?.id,on=view==='share'&&publishedGift?.server===true&&editing?.mode==='hosted'&&editing.id===id&&/^[a-f0-9]{24}$/.test(id||'');
+  if(on){if(location.hash!=='#unlock='+id)history.replaceState(history.state,'',location.pathname+location.search+'#unlock='+id);unlockAddressSet=true;}
+  /* Only an address this page set is removed: at start-up the home view shows before the address is read. */
+  else if(unlockAddressSet&&location.hash.startsWith('#unlock=')){history.replaceState(history.state,'',location.pathname+location.search);unlockAddressSet=false;}
+ }catch{}
+}
+let unlockAddressSet=false;
+/* The private edit link, kept somewhere the buyer will find it again (Notes, their own WhatsApp chat). */
+async function savePrivateLink(){
+ const entry=libraryCache.find(v=>v.id===editing?.id);if(!entry?.key)return;
+ const url=recoveryURL(entry),text='My private Kholona link: read replies and edit the gift. Just for me, do not send it to anyone.';
+ if(navigator.share){try{await navigator.share({title:'My private Kholona link',text,url});return;}catch(err){if(err?.name==='AbortError')return;}}
+ copyText(url,'Your private link is copied. Save it in Notes, or send it to yourself.');
+}
+/* Replies: the newest replies to the gifts made in this browser are checked once in a while; new ones (not yet seen in
+   My little gifts) show as a card on the home page and a count on the gift. Seen = up to the newest reply opened. */
+let replyNews={};
+async function checkReplies(){
+ if(!backendReady)return;
+ const since=Date.now()-120*864e5,mine=libraryCache.filter(v=>v.mode==='hosted'&&v.key&&v.waiting!==true&&(!v.at||new Date(v.at).getTime()>since)).slice(0,4);
+ if(!mine.length)return;
+ let cache={};try{cache=JSON.parse(sessionStorage.getItem('kholona.replies')||'{}')||{};}catch{}
+ await Promise.all(mine.map(async v=>{
+  let c=cache[v.id];
+  if(!c||Date.now()-c.t>10*60e3){
+   try{const st=await api('/api/gifts/'+v.id+'/stats',{key:v.key,timeout:8000});c={t:Date.now(),replies:(st.replies||[]).slice(0,20).map(r=>({reaction:String(r.reaction||''),message:String(r.message||'').slice(0,160),at:String(r.created_at||'')}))};cache[v.id]=c;}
+   catch{return;}
+  }
+  replyNews[v.id]=c.replies.filter(r=>r.at&&(!v.seenAt||r.at>v.seenAt));
+ }));
+ try{sessionStorage.setItem('kholona.replies',JSON.stringify(cache));}catch{}
+ updateResumeBanner();
+}
+function markRepliesSeen(id,newest){
+ const entry=libraryCache.find(v=>v.id===id);replyNews[id]=[];
+ if(entry&&newest&&(!entry.seenAt||newest>entry.seenAt)){entry.seenAt=newest;saveLibrary();}
+ $('#stats-'+id)?.closest('.saved-gift')?.querySelector('.reply-new')?.remove();
+ updateResumeBanner();
+}
+async function seeReplies(id){await showLibrary();await showStats(id);$('#stats-'+id)?.scrollIntoView({block:'center',behavior:reducedMotion?'auto':'smooth'});}
+/* Back to a gift this browser was paying for: its page, and the payment checked with Razorpay. A paid gift shows its link. */
+async function resumeGift(id,quiet){
+ if(!(await openSavedShare(id,quiet))){clearPayStarted(id);return false;}
+ if(publishedStatus==='preview')await welcomeBack();
+ else if(payResumed!==id){payResumed=id;toast('Payment received ✓ Your link is ready to send.');}
+ return true;
+}
+let payResumed='';
 function markPayStarted(id){try{localStorage.setItem(payFlagKey(id),String(Date.now()));}catch{}}
 function clearPayStarted(id){try{localStorage.removeItem(payFlagKey(id));}catch{}}
-function payStartedRecently(id){try{const t=Number(localStorage.getItem(payFlagKey(id)));return t>0&&Date.now()-t<48*3600*1000;}catch{return false;}}
+function payStartedRecently(id,within=48*3600*1000){try{const t=Number(localStorage.getItem(payFlagKey(id)));return t>0&&Date.now()-t<within;}catch{return false;}}
 const keptLine=()=>{const n=savedDaysLeft();return n===null?'':n<=1?' It is kept for about a day more.':' It is kept for '+n+' more days.';};
 /* Asks the server (which also looks for money that moved while we were away). Unlocks the page if it did. */
 async function recheckPayment(){
@@ -1430,10 +1491,10 @@ window.addEventListener('message',ev=>{
  if(ev.data.type==='kholona-embed-unlock'){startPayment();$('#payGo')?.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});}
 });
 /* Open a saved gift's share screen (used for gifts still waiting to be unlocked). */
-async function openSavedShare(id){
- const entry=libraryCache.find(v=>v.id===id);if(!entry)return;
- try{const r=await api('/api/gifts/'+id+'/owner',{key:entry.key});publishedGift=sanitizeGift(r.gift);publishedURL=r.url;publishedStatus=r.status||'paid';publishedExpiresAt=r.expiresAt||'';setOpensAt(r.opensAt);editing={id,key:entry.key,mode:'hosted',revision:r.revision};if((entry.waiting===true)!==(publishedStatus==='preview'))rememberGift({...entry,waiting:publishedStatus==='preview',expiresAt:r.expiresAt||entry.expiresAt});showShare();}
- catch(err){toast(err.message);}
+async function openSavedShare(id,quiet=false){
+ const entry=libraryCache.find(v=>v.id===id);if(!entry)return false;
+ try{const r=await api('/api/gifts/'+id+'/owner',{key:entry.key});publishedGift=sanitizeGift(r.gift);publishedURL=r.url;publishedStatus=r.status||'paid';publishedExpiresAt=r.expiresAt||'';setOpensAt(r.opensAt);editing={id,key:entry.key,mode:'hosted',revision:r.revision};if((entry.waiting===true)!==(publishedStatus==='preview'))rememberGift({...entry,waiting:publishedStatus==='preview',expiresAt:r.expiresAt||entry.expiresAt});if(publishedStatus!=='preview')clearPayStarted(id);showShare();return true;}
+ catch(err){if(!quiet)toast(err.message);return false;}
 }
 async function portableGift(){const g=sanitizeGift(publishedGift);g.server=false;const clone=JSON.parse(JSON.stringify(g));const fields=clone.photos.map(p=>({object:p,key:'src'}));if(clone.voice)fields.push({object:clone,key:'voice'});if(clone.musicSrc)fields.push({object:clone,key:'musicSrc'});for(const f of fields){const src=f.object[f.key];if(!src.startsWith('http'))continue;let u;try{u=new URL(src);}catch{continue;}if(!mediaBase||!src.startsWith(mediaBase))continue;const r=await fetch(src,{cache:'no-store'});if(!r.ok)throw new Error('One uploaded file could not be packed. Please try again.');const blob=await r.blob();if(blob.size>3*1024*1024)throw new Error('One uploaded file is too large to pack safely.');f.object[f.key]=await readDataURL(blob);}return clone;}
 /* Next.js hosts this app: a downloaded gift must not depend on /_next chunks, so we
@@ -1466,9 +1527,9 @@ async function downloadGiftHTML(){
 }
 async function nativeShare(){if(!publishedURL||!publicHosting())return;const data={title:occasionOf(publishedGift).label+(publishedGift.sharePreview===false?' for you':' for '+publishedGift.name),text:'Psst… I made you a little Kholona. Kholo na, when you have a quiet moment. ♡',url:publishedURL};try{if(navigator.share)await navigator.share(data);else await copyText(publishedURL);}catch(err){if(err.name!=='AbortError')toast('Sharing is unavailable here. Copy the little link instead.');}}
 async function shareCover(){if(!coverData)return;const blob=await (await fetch(coverData)).blob();const file=new File([blob],'a-little-gift.jpg',{type:blob.type||'image/jpeg'});try{if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:occasionOf(publishedGift).label,text:publishedURL||'A little world, made just for you.'});else{downloadBlob(blob,'a-little-gift.jpg');toast('Artwork saved. Attach it with the gift link in your message.');}}catch(err){if(err.name!=='AbortError')toast('This browser cannot share artwork directly. Use Save the little artwork.');}}
-async function showLibrary(){clearGiftHash();showView('library');$('#savedGiftList').innerHTML=libraryCache.length?libraryCache.map(entry=>`<article class="saved-gift"><span aria-hidden="true">${THEMES[entry.vibe]?.symbol||'♡'}</span><div><h2>${entry.occasion==='wedding'?e([entry.name,entry.partner].filter(Boolean).join(' & ')||'Our wedding')+'.':`For ${e(entry.name||'your person')}.`}</h2><p>${entry.occasion==='wedding'?'Wedding invite · '+(entry.mode==='hosted'?'Live link':'Keepsake'):`${e(occasionOf(entry).short)} · ${e(entry.vibe||'A little')} · ${entry.mode==='hosted'?'A live little world':'A standalone keepsake'}`}${entry.at?' · '+e(new Date(entry.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</p><div class="saved-actions"><button data-v2="edit-saved" data-id="${e(entry.id)}">Open & edit</button><button data-v2="copy-saved" data-id="${e(entry.id)}">${entry.url?'Copy gift link':'Open gift file options'}</button>${entry.mode==='hosted'?`<button data-v2="stats" data-id="${e(entry.id)}">Little replies</button><button data-v2="copy-recovery" data-id="${e(entry.id)}">Private recovery link</button>`:''}<button class="danger" data-v2="delete-saved" data-id="${e(entry.id)}">${entry.mode==='hosted'?'Remove gift':'Forget here'}</button></div><div class="saved-stats" id="stats-${e(entry.id)}" hidden></div></div></article>`).join(''):'<p class="empty-shelf">No ribbons tied just yet.<br>Your first little gift belongs right here.</p>';}
+async function showLibrary(){clearGiftHash();showView('library');$('#savedGiftList').innerHTML=libraryCache.length?libraryCache.map(entry=>`<article class="saved-gift"><span aria-hidden="true">${THEMES[entry.vibe]?.symbol||'♡'}</span><div><h2>${entry.occasion==='wedding'?e([entry.name,entry.partner].filter(Boolean).join(' & ')||'Our wedding')+'.':`For ${e(entry.name||'your person')}.`}</h2><p>${entry.occasion==='wedding'?'Wedding invite · '+(entry.mode==='hosted'?'Live link':'Keepsake'):`${e(occasionOf(entry).short)} · ${e(entry.vibe||'A little')} · ${entry.mode==='hosted'?'A live little world':'A standalone keepsake'}`}${entry.at?' · '+e(new Date(entry.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</p><div class="saved-actions"><button data-v2="edit-saved" data-id="${e(entry.id)}">Open & edit</button><button data-v2="copy-saved" data-id="${e(entry.id)}">${entry.url?'Copy gift link':'Open gift file options'}</button>${entry.mode==='hosted'?`<button data-v2="stats" data-id="${e(entry.id)}">Little replies${(replyNews[entry.id]||[]).length?` <b class="reply-new">${replyNews[entry.id].length} new</b>`:''}</button><button data-v2="copy-recovery" data-id="${e(entry.id)}">Private recovery link</button>`:''}<button class="danger" data-v2="delete-saved" data-id="${e(entry.id)}">${entry.mode==='hosted'?'Remove gift':'Forget here'}</button></div><div class="saved-stats" id="stats-${e(entry.id)}" hidden></div></div></article>`).join(''):'<p class="empty-shelf">No ribbons tied just yet.<br>Your first little gift belongs right here.</p>';}
 async function editSaved(id,key=null){let entry=libraryCache.find(v=>v.id===id);if(key)entry={id,key,mode:'hosted'};if(!entry){toast('That gift is not saved in this browser. Use its private recovery link.');return;}try{let g;if(entry.mode==='hosted'){const result=await api('/api/gifts/'+id+'/owner',{key:entry.key});g=sanitizeGift(result.gift);publishedStatus=result.status||'paid';publishedExpiresAt=result.expiresAt||'';setOpensAt(result.opensAt);editing={id,key:entry.key,mode:'hosted',revision:result.revision};rememberGift({...editing,name:g.name,partner:g.partner||'',vibe:g.vibe,occasion:g.occasion,url:result.url,expiresAt:result.expiresAt,waiting:publishedStatus==='preview'});delivery='hosted';}else{g=await store('gift:'+id);if(!g)throw new Error('The saved gift data is no longer in this browser. Open the exported HTML to enjoy it.');editing=null;delivery=backendReady?'hosted':'portable';}draft=sanitizeGift(g);publishAttempt=null;clearGiftHash();wizardStep=1;populateForm();$('#expiryDays').dataset.changed='false';showView('creator');toast(entry.mode==='hosted'?'Your little gift is open. Changes will keep the same link.':'A new copy of your standalone gift is ready to edit.');}catch(err){toast(err.message);}}
-async function showStats(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const root=$('#stats-'+id);root.hidden=false;root.textContent='Opening the little postbox…';try{const stats=await api('/api/gifts/'+id+'/stats',{key:entry.key});const counts=stats.reactions.map(r=>`${e(r.reaction)} ${r.count}`).join(' · ')||'No emoji replies yet';root.innerHTML=`${stats.status==='preview'?`<p><strong>Waiting to be unlocked.</strong> Only you can see this gift until then. <button type="button" data-v3="unlock-saved" data-id="${e(id)}">Unlock & get link</button></p>`:''}<p>${stats.opens} ${stats.opens===1?'opening':'openings'} · ${counts}</p><p class="privacy-small">Approximate openings, deduplicated per browser session. Replies are anonymous; we don’t verify who sends them.</p>${stats.replies.length?stats.replies.map(r=>`<blockquote>${e(r.reaction)} ${e(r.message||'A little feeling, sent back with love.')}</blockquote>`).join(''):'<p>Nothing here yet. Give them a little room to smile.</p>'}${stats.expiresAt?'<p>Expires '+e(new Date(stats.expiresAt).toLocaleString())+'</p>':''}`;}catch(err){root.textContent=err.message;}}
+async function showStats(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const root=$('#stats-'+id);root.hidden=false;root.textContent='Opening the little postbox…';try{const stats=await api('/api/gifts/'+id+'/stats',{key:entry.key});markRepliesSeen(id,stats.replies?.[0]?.created_at);const counts=stats.reactions.map(r=>`${e(r.reaction)} ${r.count}`).join(' · ')||'No emoji replies yet';root.innerHTML=`${stats.status==='preview'?`<p><strong>Waiting to be unlocked.</strong> Only you can see this gift until then. <button type="button" data-v3="unlock-saved" data-id="${e(id)}">Unlock & get link</button></p>`:''}<p>${stats.opens} ${stats.opens===1?'opening':'openings'} · ${counts}</p><p class="privacy-small">Approximate openings, deduplicated per browser session. Replies are anonymous; we don’t verify who sends them.</p>${stats.replies.length?stats.replies.map(r=>`<blockquote>${e(r.reaction)} ${e(r.message||'A little feeling, sent back with love.')}</blockquote>`).join(''):'<p>Nothing here yet. Give them a little room to smile.</p>'}${stats.expiresAt?'<p>Expires '+e(new Date(stats.expiresAt).toLocaleString())+'</p>':''}`;}catch(err){root.textContent=err.message;}}
 async function deleteSaved(id){const entry=libraryCache.find(v=>v.id===id);if(!entry)return;const message=entry.mode==='hosted'?'Remove this gift? Its live link, uploaded media and replies will stop being available. Downloaded copies cannot be recalled.':'Forget this gift in this browser? Links and already-downloaded copies will still work.';if(!window.confirm(message))return;try{if(entry.mode==='hosted')await api('/api/gifts/'+id,{method:'DELETE',key:entry.key});await removeStored('gift:'+id).catch(()=>{});libraryCache=libraryCache.filter(v=>v.id!==id);saveLibrary();if(editing?.id===id)editing=null;showLibrary();toast('A little space on the shelf.');}catch(err){toast(err.message);}}
 function visitorToken(){const k='luv4u.visitor.'+gift.id;try{let value=sessionStorage.getItem(k);if(!/^[a-f0-9]{32}$/.test(value||'')){value=hexToken(16);sessionStorage.setItem(k,value);}return value;}catch{if(!window.__luvVisitor)window.__luvVisitor=hexToken(16);return window.__luvVisitor;}}
 async function countOpening(){try{await api('/api/gifts/'+gift.id+'/views',{method:'POST',body:{visitor:visitorToken()}});}catch{/* Opening the birthday must not depend on counting it. */}}
@@ -1532,6 +1593,7 @@ function bindV2(){
 }
 /* Removes one query parameter from the address bar without reloading, keeping the rest (utm tags stay for tracking). */
 function dropParam(name){const u=new URL(location.href);if(!u.searchParams.has(name))return;u.searchParams.delete(name);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}
+const sessionFlag=(k,set)=>{try{if(set)sessionStorage.setItem(k,'1');return sessionStorage.getItem(k)==='1';}catch{return !!set;}};
 async function arriveFromElsewhere(){
  const sp=new URLSearchParams(location.search);
  const hand=/^([a-f0-9]{24})\.([A-Za-z0-9_-]{40,400})$/.exec(sp.get('handoff')||'');
@@ -1547,6 +1609,19 @@ async function arriveFromElsewhere(){
    if(publishedStatus==='preview')setTimeout(()=>{const s=$('#payStatus');if(s){s.textContent='You’re in '+(isIOS?'Safari':isAndroid?'Chrome':'your browser')+' now. Tap the button to pay; your UPI app opens from here.';s.hidden=false;}$('#payGo')?.scrollIntoView({block:'center'});},250);
   }catch(err){showView('error');$('#errorMessage').textContent=err.message;}
   return true;
+ }
+ /* Layer 1: a reload of the unlock page (#unlock=<id>) reopens that gift. */
+ const unlock=/^#unlock=([a-f0-9]{24})$/.exec(location.hash);
+ if(unlock){
+  if(libraryCache.some(v=>v.id===unlock[1]&&v.key)&&(await resumeGift(unlock[1],false)))return true;
+  history.replaceState(history.state,'',location.pathname+location.search);
+  if(!libraryCache.some(v=>v.id===unlock[1])){showView('error');$('#errorMessage').innerHTML='This gift was made in another browser, so its page is not saved here. Paid already? <a href="/find">Find your gift’s link</a>.';return true;}
+ }
+ /* Layer 2: Instagram closed or reopened the ad instead of reloading. A payment this browser started in the last 12
+    hours brings its gift back (once per visit), so a buyer who paid lands on their link, not on the maker. */
+ if(backendReady&&!/^#(edit|gift|demo|occasion)=/.test(location.hash)&&!/^\/g\//.test(location.pathname)&&!sp.has('back')){
+  const recent=libraryCache.find(v=>v.mode==='hosted'&&v.key&&payStartedRecently(v.id,12*3600*1000)&&!sessionFlag('kholona.autoresume.'+v.id));
+  if(recent){sessionFlag('kholona.autoresume.'+recent.id,true);if(await resumeGift(recent.id,true))return true;}
  }
  /* A retargeting ad links to /?back=1: open the gift this browser left waiting, or the unfinished draft. */
  if(sp.get('back')==='1'){
@@ -1611,6 +1686,7 @@ async function init(){
  await checkBackend();
  try{const pending=await store('pending-create');if(pending&&/^[a-f0-9]{24}$/.test(pending.id)&&/^[a-f0-9]{64}$/.test(pending.key)){publishAttempt={id:pending.id,key:pending.key};}}catch{}
  try{await routeV2();}finally{document.documentElement.classList.remove('gift-loading');}
+ checkReplies().catch(()=>{});
 }
 
 /* v2.1 · A little help with the words. All suggestions are local, editable copy.
@@ -2087,6 +2163,8 @@ function installOccasions(){
   switch(b.dataset.v3){
    case'change-gift':browseGifts();break;
    case'unlock':startPayment();break;
+   case'see-replies':seeReplies(b.dataset.id);break;
+   case'save-private':savePrivateLink();break;
    case'resume-dismiss':try{sessionStorage.setItem('luv4u.resume.dismissed','1');}catch{}updateResumeBanner();break;
    case'unlock-saved':openSavedShare(b.dataset.id);break;
    case'pay-in-browser':payInBrowser(b);break;

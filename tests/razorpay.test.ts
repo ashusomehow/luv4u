@@ -14,6 +14,7 @@ import { GET as readGift } from '@/app/api/gifts/[id]/route';
 import { POST as checkout } from '@/app/api/gifts/[id]/checkout/route';
 import { POST as verify } from '@/app/api/gifts/[id]/verify/route';
 import { POST as webhook } from '@/app/api/webhooks/razorpay/route';
+import { POST as findGift } from '@/app/api/find/route';
 
 const ID = 'a1b2c3d4e5f6a1b2c3d4e5f6';
 const ID2 = 'b1b2c3d4e5f6a1b2c3d4e5f6';
@@ -37,7 +38,7 @@ const start = (id = ID, key: string | null = KEY) => checkout(req('/x', 'POST', 
 const isPublic = async (id = ID) => (await readGift(req('/x', 'GET'), ctx(id))).status === 200;
 
 /* A stand-in for api.razorpay.com that remembers orders and payments. */
-interface P { id: string; order_id: string; amount: number; currency: string; status: string }
+interface P { id: string; order_id: string; amount: number; currency: string; status: string; contact?: string; email?: string; acquirer_data?: { rrn?: string } }
 const rzp = {
   orders: new Map<string, { id: string; amount: number; currency: string; status: string }>(),
   payments: new Map<string, P>(),
@@ -564,5 +565,54 @@ describe('Meta conversions', () => {
     expect((await verify(adReq('/x', pay(orderId)), ctx())).status).toBe(200);
     await settleMeta();
     expect(sent).toHaveLength(0);
+  });
+});
+
+describe('find my gift (paid, but the page closed)', () => {
+  const find = (body: unknown) => findGift(req('/api/find', 'POST', body));
+  /** A UPI payment as Razorpay holds it: the phone and email typed in the window, and the bank's reference. */
+  const upi = (paymentId: string) => Object.assign(rzp.payments.get(paymentId)!, { contact: '+919876543210', email: 'Riya@Example.com', acquirer_data: { rrn: '432112345678' } });
+
+  it('keeps the UPI reference with the payment, and finds the gift by it and the phone number', async () => {
+    await create();
+    const body = pay(await openOrder());
+    const p = upi(body.razorpay_payment_id);
+    expect((await hook(capturedEvent(p))).status).toBe(200);
+    expect(fake.tables.payments[0]).toMatchObject({ status: 'paid', rrn: '432112345678' });
+    const res = await find({ ref: '4321 1234 5678', contact: '98765 43210' });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, url: `https://kholona.test/g/${ID}`, name: 'Sarah', occasion: 'love' });
+    expect((await find({ ref: body.razorpay_payment_id, contact: 'riya@example.com' })).status).toBe(200);
+  });
+
+  it('finds nothing with the wrong phone, and says so the same way as for an unknown reference', async () => {
+    await create();
+    const body = pay(await openOrder());
+    await hook(capturedEvent(upi(body.razorpay_payment_id)));
+    const wrong = await find({ ref: '432112345678', contact: '9000000000' });
+    const unknown = await find({ ref: '999912345678', contact: '9876543210' });
+    expect(wrong.status).toBe(404);
+    expect(unknown.status).toBe(404);
+    expect((await wrong.json()).error).toBe((await unknown.json()).error);
+  });
+
+  it('records a payment that went through but was never confirmed, and unlocks the gift', async () => {
+    await create();
+    const body = pay(await openOrder());
+    upi(body.razorpay_payment_id);
+    expect(await isPublic()).toBe(false);
+    expect((await find({ ref: body.razorpay_payment_id, contact: '+91 98765 43210' })).status).toBe(200);
+    expect(await isPublic()).toBe(true);
+    expect(fake.tables.payments[0]).toMatchObject({ status: 'paid', rrn: '432112345678' });
+  });
+
+  it('refuses junk and a payment that has not gone through', async () => {
+    await create();
+    expect((await find({ ref: 'hello', contact: '9876543210' })).status).toBe(400);
+    expect((await find({ ref: '432112345678', contact: '' })).status).toBe(400);
+    const body = pay(await openOrder(), 'failed');
+    upi(body.razorpay_payment_id);
+    expect((await find({ ref: body.razorpay_payment_id, contact: '9876543210' })).status).toBe(409);
+    expect(await isPublic()).toBe(false);
   });
 });

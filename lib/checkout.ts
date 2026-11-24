@@ -92,7 +92,7 @@ async function confirmWithProvider(row: PaymentRow, paymentId: string): Promise<
  * retries and the owner pressing Unlock again can all land here). The gift is unlocked first, so a failure
  * halfway can only leave a payment record to repair, never a paid customer with a locked gift.
  */
-export async function recordPaid(row: PaymentRow, paymentId: string, buyer?: { email?: unknown; contact?: unknown }): Promise<void> {
+export async function recordPaid(row: PaymentRow, paymentId: string, buyer?: { email?: unknown; contact?: unknown; rrn?: unknown }): Promise<void> {
   if (row.status === 'paid') {
     await markPaid(row.gift_id);
     return;
@@ -109,7 +109,11 @@ export async function recordPaid(row: PaymentRow, paymentId: string, buyer?: { e
   const paid: Record<string, unknown> = { status: 'paid', payment_id: paymentId, paid_at: new Date().toISOString() };
   // A referred sale keeps hashed buyer details, so a creator buying through their own code can be spotted.
   if (row.ref_code) Object.assign(paid, buyerHashes(buyer));
-  const { error } = await db.from('payments').update(paid).eq('id', row.id);
+  // The UPI reference lets a buyer whose page closed find the gift again (/find). Before migration 0013 the column is
+  // missing: save the payment without it rather than fail.
+  const rrn = typeof buyer?.rrn === 'string' && /^\d{12}$/.test(buyer.rrn) ? buyer.rrn : null;
+  let { error } = await db.from('payments').update(rrn ? { ...paid, rrn } : paid).eq('id', row.id);
+  if (error && rrn && /rrn|42703|PGRST204/.test(`${error.code ?? ''} ${error.message ?? ''}`)) ({ error } = await db.from('payments').update(paid).eq('id', row.id));
   if (error) throw error;
 
   // Tell Meta about the sale, once: only the call that moved this order from created to paid gets here.
@@ -140,7 +144,7 @@ export async function completeOrder(row: PaymentRow, paymentId: string): Promise
   }
   const payment = await confirmWithProvider(row, paymentId);
   if (!payment) return false;
-  await recordPaid(row, paymentId, { email: payment.email, contact: payment.contact });
+  await recordPaid(row, paymentId, { email: payment.email, contact: payment.contact, rrn: payment.acquirer_data?.rrn });
   return true;
 }
 
