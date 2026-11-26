@@ -510,9 +510,9 @@ try {
     await ig.click('#createGiftBtn');                                // stopped: no name yet
     await ig.locator('#recipientName').click(); await ig.keyboard.type('Riya', { delay: 20 });
     await ig.click('#createGiftBtn'); await ig.waitForSelector('#shareView:not([hidden]) #payGo', { timeout: 25000 });
-    assert.equal(await ig.locator('#payAlt').isVisible(), true, 'in the Instagram browser the unlock page offers to pay in Chrome');
-    assert.match(await ig.locator('[data-v3="pay-in-browser"]').innerText(), /Pay in Chrome instead/);
-    await ig.click('[data-v3="pay-in-browser"]'); await ig.waitForSelector('#payAltHelp:not([hidden])');
+    assert.match(await ig.locator('.pay-alt-small').innerText(), /Pay in Chrome instead/, 'in the Instagram browser the unlock page offers to pay in Chrome, as one small line');
+    assert.equal(await ig.locator('#payAlt').isVisible(), false, 'the pinned pay area holds only the pay button until a payment is closed or fails');
+    await ig.click('.pay-alt-small button'); await ig.waitForSelector('#payAltHelp:not([hidden])');
     const handoff = (await ig.locator('#payAltHelp').innerText()).match(/https?:\/\/\S+\?handoff=[a-f0-9]{24}\.[A-Za-z0-9_-]+/)?.[0];
     assert.ok(handoff, 'a computer has no Chrome to switch to, so the link is shown to open by hand');
     const made = await ig.evaluate(() => JSON.parse(localStorage.getItem('luv4u.library.v2'))[0]);

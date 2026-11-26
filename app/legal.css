@@ -16,7 +16,7 @@
 .legal-foot a{color:#5b4549;padding:6px 0}
 .legal-form{display:grid;gap:8px;margin-top:22px}
 .legal-form label{font-size:14px;font-weight:600;margin-top:8px}
-.legal-form input,.legal-form select,.legal-form textarea{font:inherit;font-size:16px;padding:12px 14px;border:1px solid #daaaa4;border-radius:12px;background:#fffdfa;color:#432d32;min-height:48px}
+.legal-form input,.legal-form select,.legal-form textarea{font:inherit;font-size:16px;padding:12px 14px;border:1px solid #a7807c;border-radius:12px;background:#fff;color:#432d32;min-height:48px}
 .legal-form button{margin-top:14px;min-height:52px;border-radius:999px;background:linear-gradient(180deg,#d6265d,#bc1e57);color:#fffaf5;font-size:16px;font-weight:600}
 .legal-form button:disabled{opacity:.6}
 .legal-error{margin:4px 0 0;padding:10px 12px;border-radius:12px;background:#ffe2e2;color:#9d0027;font-size:14px}
