@@ -304,6 +304,10 @@ html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 .unlock-cta{padding-top:18px}
 .unlock-panel .pay-methods{margin:8px 0 0;text-align:center;font-size:15px;line-height:1.4;color:#4d3a3f}
 /* In Instagram's or Facebook's browser: the way out to Chrome or Safari, where UPI apps open */
+.unlock-panel .pay-alt:not(.is-hot){display:none}
+.unlock-panel .pay-alt-small{margin:12px 0 0;text-align:center;font-size:14px;color:#6f5b60}
+.unlock-panel .pay-alt-small button{min-height:44px;padding:0 4px;color:#a3123f;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.unlock-panel .ref-tail{margin-top:14px}
 .unlock-panel .pay-alt{margin:14px 0 0;padding:12px 14px;border:1px dashed #e3c1be;border-radius:16px;text-align:center;background:#fffaf6}
 .unlock-panel .pay-alt-q{margin:0 0 8px;font-size:14px;color:#6f5b60}
 .unlock-panel .pay-alt-btn{width:100%;min-height:46px;font-weight:600}
@@ -353,7 +357,7 @@ html.is-embed .experience.has-nudge .story-scroll{padding-bottom:190px}
 .ref-entry summary::after{content:'›';margin-left:8px;transition:transform .2s}
 .ref-entry[open] summary::after{transform:rotate(90deg)}
 .ref-form{display:flex;gap:8px;margin-top:4px}
-.ref-form input{flex:1;min-width:0;font:inherit;font-size:17px;letter-spacing:.06em;text-transform:uppercase;padding:10px 14px;min-height:48px;border:1.5px solid #daaaa4;border-radius:12px;background:#fffdfa;color:#432d32}
+.ref-form input{flex:1;min-width:0;font:inherit;font-size:17px;letter-spacing:.06em;text-transform:uppercase;padding:10px 14px;min-height:48px;border:1.5px solid #a7807c;border-radius:12px;background:#fff;color:#432d32}
 .ref-form button{min-height:48px;padding:0 18px;border-radius:12px;background:#432d32;color:#fffaf5;font-size:16px;font-weight:700}
 .ref-form button:disabled{opacity:.6}
 .ref-msg{margin:6px 0 0;font-size:15px;color:#9d0027}
